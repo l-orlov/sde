@@ -1,3 +1,4 @@
+<!-- EMPRESA -->
 <div class="datos">
   <div class="datos_header">
     <h1>1. Datos de la empresa</h1>
@@ -6,19 +7,19 @@
   <div class="form controls" novalidate>
     <!-- Nombre -->
     <div class="label"><label for="nombre">Nombre de la Empresa/Emprendimiento <span class="req">*</span></label></div>
-    <div class="field"><input id="nombre" name="nombre" required></div>
+    <div class="field"><input type="search" id="nombre" name="nombre" required></div>
     <!-- CUIT -->
     <div class="label"><label for="cuit">CUIT / Identificación Fiscal <span class="req">*</span></label></div>
-    <div class="field"><input id="cuit" name="cuit" placeholder="XX-XXXXXXXX-X" required></div>
+    <div class="field"><input type="search" id="cuit" name="cuit" placeholder="XX-XXXXXXXX-X" required></div>
     <!-- Razón social -->
     <div class="label"><label for="razon">Razón social <span class="req">*</span></label></div>
-    <div class="field"><input id="razon" name="razon" required></div>
+    <div class="field"><input type="search" id="razon" name="razon" required></div>
     <!-- Fecha de inicio -->
     <div class="label"><label for="inicio">Fecha de Inicio de Actividad <span class="req">*</span></label></div>
-    <div class="field"><input id="inicio" name="inicio" placeholder="dd/mm/aaaa" inputmode="numeric" required></div>
+    <div class="field"><input type="search" id="inicio" name="inicio" placeholder="dd/mm/aaaa" inputmode="numeric" required></div>
     <!-- Página web -->
     <div class="label"><label for="web">Página web (si aplica)</label></div>
-    <div class="field"><input id="web" name="web" type="url" placeholder="http://…"></div>
+    <div class="field"><input type="search" id="web" name="web" type="url" placeholder="http://…"></div>
     <!-- Redes sociales -->
     <div class="label"><span>Redes sociales:</span></div>
     <div class="field" id="social-wrapper">
@@ -42,15 +43,15 @@
       <div class="label"><span>Domicilio Legal <span class="req">*</span></span></div>
       <div class="address_grid">
         <label class="label_span">Calle <span class="req">*</span></label>
-        <input class="span_right">
+        <input type="search" class="span_right">
         <label class="label_span">Altura <span class="req">*</span></label>
-        <input class="">
+        <input type="search" class="">
         <label class="label_span">Código Postal <span class="req">*</span></label>
-        <input class="">
+        <input type="search" class="">
         <label class="label_span">Piso</label>
-        <input class="">
+        <input type="search" class="">
         <label class="label_span">Departamento</label>
-        <input class="">
+        <input type="search" class="">
         <label class="label_span">Localidad <span class="req">*</span></label>
         <select class="span_right"></select>
         <label class="label_span">Departamento <span class="req">*</span></label>
@@ -62,15 +63,15 @@
       <div class="label"><span>Dirección administrativa <span class="req">*</span></span></div>
       <div class="address_grid">
         <label class="label_span">Calle <span class="req">*</span></label>
-        <input class="span_right">
+        <input type="search" class="span_right">
         <label class="label_span">Altura <span class="req">*</span></label>
-        <input class="">
+        <input type="search" class="">
         <label class="label_span">Código Postal <span class="req">*</span></label>
-        <input class="">
+        <input type="search" class="">
         <label class="label_span">Piso</label>
-        <input class="">
+        <input type="search" class="">
         <label class="label_span">Departamento</label>
-        <input class="">
+        <input type="search" class="">
         <label class="label_span">Localidad <span class="req">*</span></label>
         <select class="span_right"></select>
         <label class="label_span">Departamento <span class="req">*</span></label>
@@ -81,39 +82,46 @@
     <div class="contacto_datos">
       <div class="label"><span>Persona de Contacto <span class="req">*</span></span></div>
       <div class="contacto_grid">
-        <input class="span_all">
+        <input type="search" class="span_all">
         <label class="label_span">Cargo de Persona de contacto <span class="req">*</span></label>
-        <input>
+        <input type="search">
         <label class="label_span">E-mail <span class="req">*</span></label>
-        <input type="email">
+        <input type="search" type="email">
         <label class="label_span">Teléfono <span class="req">*</span></label>
         <div class="phone_inline">
-          <input class="area" placeholder="Código de área">
-          <input placeholder="">
+          <input type="search" class="area" placeholder="Código de área">
+          <input type="search" placeholder="">
         </div>
       </div>
     </div>
+  </div>
+</div>
+<div class="datos">
+  <div class="datos_header">
+    <h1>2. Clasificación de la Empresa</h1>
+    <img src="img/icons/clasificacion.png">
+  </div>
+  <div class="form controls" novalidate>
+    <div class="label"><label>Tipo de Organización <span class="req">*</span></label></div>
+    <div class="field"><select></select></div>
+    <div class="label"><label>Actividad Principal <span class="req">*</span></label></div>
+    <div class="field"><select></select></div>
   </div>
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const wrapper = document.getElementById('social-wrapper');
   const addBtn  = document.getElementById('add-social');
-
   function bindRow(row) {
     const sel   = row.querySelector('select.net');
     const other = row.querySelector('input.net-other');
     const final = row.querySelector('input.net-final');
     const rmBtn = row.querySelector('.remove');
-
-    // Инициализация финального значения при загрузке
     syncFinal();
-
-    // Селект: показываем/прячем поле "Otra" и синхронизируем
     sel.addEventListener('change', () => {
       if (sel.value === 'Otra') {
         other.hidden = false;
-        other.required = true;          // опционально
+        other.required = true;
         other.focus();
       } else {
         other.hidden = true;
@@ -122,11 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       syncFinal();
     });
-
-    // Ввод в поле "Otra": пишем в скрытое финальное
     other.addEventListener('input', syncFinal);
-
-    // Кнопка удаления
     if (rmBtn && !rmBtn._bound) {
       rmBtn.addEventListener('click', () => {
         row.remove();
@@ -134,7 +138,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       rmBtn._bound = true;
     }
-
     function syncFinal() {
       if (sel.value === 'Otra') {
         final.value = other.value.trim();
@@ -143,49 +146,37 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
-
   function updateRemoveButtons() {
     const rows = wrapper.querySelectorAll('.social_row');
     rows.forEach((row, idx) => {
       const rm = row.querySelector('.remove');
       if (!rm) return;
-      rm.hidden = (rows.length === 1 || idx === 0); // первую не удаляем
+      rm.hidden = (rows.length === 1 || idx === 0);
     });
   }
-
-  // Кнопка «добавить»
   addBtn.addEventListener('click', () => {
     const first = wrapper.querySelector('.social_row');
     const clone = first.cloneNode(true);
-
-    // Очистка значений в клоне
     const sel   = clone.querySelector('select.net');
     const other = clone.querySelector('input.net-other');
     const final = clone.querySelector('input.net-final');
     const url   = clone.querySelector('input[name="social_url[]"]');
-
     sel.selectedIndex = 0;
     other.value = '';
     other.hidden = true;
     other.required = false;
     final.value = '';
     if (url) url.value = '';
-
-    // Убедимся, что remove видна у клонов
     const rm = clone.querySelector('.remove');
     if (rm) rm.hidden = false;
-
-    // Вставка и привязка обработчиков
     addBtn.before(clone);
     bindRow(clone);
     updateRemoveButtons();
   });
-
-  // Привязать обработчики к первой строке
   const firstRow = wrapper.querySelector('.social_row');
   if (firstRow) bindRow(firstRow);
-
   updateRemoveButtons();
 });
 </script>
+<!-- EMPRESA -->
 
