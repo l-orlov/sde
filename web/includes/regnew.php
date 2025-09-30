@@ -4,7 +4,7 @@
     <h1>1. Datos de la empresa</h1>
     <img src="img/icons/datos.png">
   </div>
-  <div class="form controls" novalidate>
+  <div class="form" novalidate>
     <!-- Nombre -->
     <div class="label"><label for="nombre">Nombre de la Empresa/Emprendimiento <span class="req">*</span></label></div>
     <div class="field"><input type="search" id="nombre" name="nombre" required></div>
@@ -53,9 +53,9 @@
         <label class="label_span">Departamento</label>
         <input type="search" class="">
         <label class="label_span">Localidad <span class="req">*</span></label>
-        <select class="span_right"></select>
+        <select class="span_right"><option value="">…</option></select>
         <label class="label_span">Departamento <span class="req">*</span></label>
-        <select class="span_right"></select>
+        <select class="span_right"><option value="">…</option></select>
       </div>
     </div>
     <!-- Dirección administrativa -->
@@ -73,9 +73,9 @@
         <label class="label_span">Departamento</label>
         <input type="search" class="">
         <label class="label_span">Localidad <span class="req">*</span></label>
-        <select class="span_right"></select>
+        <select class="span_right"><option value="">…</option></select>
         <label class="label_span">Departamento <span class="req">*</span></label>
-        <select class="span_right"></select>
+        <select class="span_right"><option value="">…</option></select>
       </div>
     </div>
     <!-- Contacto -->
@@ -101,11 +101,11 @@
     <h1>2. Clasificación de la Empresa</h1>
     <img src="img/icons/clasificacion.png">
   </div>
-  <div class="form controls" novalidate>
+  <div class="form" novalidate>
     <div class="label"><label>Tipo de Organización <span class="req">*</span></label></div>
-    <div class="field"><select></select></div>
+    <div class="field"><select><option value="">…</option></select></div>
     <div class="label"><label>Actividad Principal <span class="req">*</span></label></div>
-    <div class="field"><select></select></div>
+    <div class="field"><select><option value="">…</option></select></div>
   </div>
 </div>
 <script>
@@ -180,3 +180,135 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 <!-- EMPRESA -->
 
+<!-- PRODUCTOS -->
+<div class="datos">
+  <div class="datos_header">
+    <h1>3. Información sobre Productos y Servicios</h1>
+    <img src="img/icons/sobre_productos.png">
+  </div>
+  <div class="form" novalidate>
+    <div class="label"><span>Producto o servicio principal <span class="req">*</span></span></div>
+    <div class="producto_grid">
+      <input type="search" class="span_all">
+      <label class="label_span">Código Arancelario <span class="req">*</span></label>
+      <input type="search">
+      <label class="label_span">Descripción <span class="req">*</span></label>
+      <input type="search" type="email">
+      <label class="label_span">Volumen de Producción Anual <span class="req">*</span></label>
+      <div class="anual_inline">
+        <div class="field"><select><option value="">…</option></select></div>
+        <input type="search">
+      </div>
+      <label class="label_span">Exportación Anual (USD) <span class="req">*</span></label>
+      <input type="search" type="email">
+      <label class="label_span">Foto del Producto <span class="req">*</span></label>
+      <input class="file-ph" placeholder="subir archivo (JPG, PNG, PDF) ">
+    </div>
+    <div class="label"><span>Lista de Productos/Servicios Secundarios</span></div>
+    <div class="producto_sec">
+      <div class="sec-list"></div>
+      <button type="button" class="add_more sec-add">agregar más</button>
+      <template class="sec-template">
+        <div class="sec_item">
+          <div class="producto_grid">
+            <input type="search" class="span_all">
+            <label class="label_span">Código Arancelario <span class="req">*</span></label>
+            <input type="search">
+            <label class="label_span">Descripción <span class="req">*</span></label>
+            <input type="search">
+            <label class="label_span">Volumen de Producción Anual <span class="req">*</span></label>
+            <div class="anual_inline">
+              <div class="field"><select><option value="">…</option></select></div>
+              <input type="search">
+            </div>
+            <label class="label_span">Exportación Anual (USD) <span class="req">*</span></label>
+            <input type="search">
+            <label class="label_span">Foto del Producto <span class="req">*</span></label>
+            <input class="file-ph" placeholder="subir archivo (JPG, PNG, PDF) ">
+          </div>
+          <div class="sec-actions">
+            <button type="button" class="sec-remove" aria-label="Eliminar">×</button>
+          </div>
+        </div>
+      </template>
+    </div>
+    <!-- Certificaciones -->
+    <div class="label"><span>Certificaciones <span class="req">*</span></span></div>
+    <div class="field">
+      <input type="search" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
+    </div>
+    <!-- Exportación Anual (USD) -->
+    <div class="label"><span>Exportación Anual (USD)</span></div>
+    <div class="field exp_anual">
+      <div class="exp_anual_grid">
+        <label class="label_span">2022 <span class="req">*</span></label>
+        <input type="search">
+        <label class="label_span">2023 <span class="req">*</span></label>
+        <input type="search">
+        <label class="label_span">2024 <span class="req">*</span></label>
+        <input type="search">
+      </div>
+    </div>
+    <!-- Mercados Actuales (Continente) -->
+    <div class="label"><span>Mercados Actuales (Continente)</span></div>
+    <div class="field mercados_act">
+      <div class="act-list"></div>
+      <button type="button" class="add_more act-add">agregar más</button>
+      <template class="act-item-tpl">
+        <div class="act-row">
+          <select>
+            <option value="">…</option>
+          </select>
+          <button type="button" class="remove" aria-label="Eliminar">&times;</button>
+        </div>
+      </template>
+    </div>
+    <!-- Mercados de Interés (Continente) -->
+    <div class="label"><span>Mercados de Interés (Continente) <span class="req">*</span></span></div>
+    <div class="act-row">
+      <select>
+        <option value="">… a donde le gustaría exportar</option>
+      </select>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.producto_sec').forEach(sec => {
+    const list = sec.querySelector('.sec-list');
+    const tpl  = sec.querySelector('.sec-template');
+    const add  = sec.querySelector('.sec-add');
+    function addCard(){
+      const node = tpl.content.firstElementChild.cloneNode(true);
+      node.querySelector('.sec-remove').addEventListener('click', () => node.remove());
+      list.appendChild(node);
+    }
+    add.addEventListener('click', addCard);
+  });
+  document.querySelectorAll('.mercados_act').forEach(box => {
+    const list = box.querySelector('.act-list');
+    const tpl  = box.querySelector('.act-item-tpl');
+    const add  = box.querySelector('.act-add');
+    function updateRemoves(){
+      const rows = list.querySelectorAll('.act-row');
+      rows.forEach((row, i) => {
+        const btn = row.querySelector('.remove');
+        if (!btn) return;
+        btn.hidden = (rows.length === 1 && i === 0);
+      });
+    }
+    function addRow(){
+      const node = tpl.content.firstElementChild.cloneNode(true);
+      node.querySelector('.remove').addEventListener('click', () => {
+        node.remove();
+        updateRemoves();
+      });
+      list.appendChild(node);
+      updateRemoves();
+    }
+    add.addEventListener('click', addRow);
+    if (!list.children.length) addRow();
+  });
+});
+</script>
+<!-- PRODUCTOS -->
