@@ -312,3 +312,77 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <!-- PRODUCTOS -->
+
+<!-- competitividad -->
+<div class="datos">
+  <div class="datos_header">
+    <h1>4. Competitividad y Diferenciación</h1>
+    <img src="img/icons/competitividad.png">
+  </div>
+  <div class="form" novalidate>
+    <div class="compet_blk">
+      <div class="label">
+        <span>Factores de Diferenciación</span>
+        <div class="sub">(puede seleccionar varias opciones)</div>
+      </div>
+      <div class="field">
+        <div class="factors_grid">
+          <label class="chk"><input type="checkbox"><span>Calidad</span></label>
+          <label class="chk"><input type="checkbox"><span>Innovación</span></label>
+          <label class="chk"><input type="checkbox"><span>Origen territorial</span></label>
+          <label class="chk"><input type="checkbox"><span>Trazabilidad</span></label>
+          <label class="chk"><input type="checkbox"><span>Precio competitivo</span></label>
+          <div class="other">
+            <label class="chk"><input type="checkbox" class="otros_cb"><span>Otros</span></label>
+            <input type="search" class="otros_inp" placeholder="" disabled>
+          </div>
+        </div>
+      </div>
+      <!-- 2) Historia -->
+      <div class="label"><label>Historia de la Empresa y del Producto <span class="req">*</span></label></div>
+      <div class="field"><textarea class="ta" rows="4"></textarea></div>
+      <!-- 3) Premios -->
+      <div class="label"><label>Premios <span class="req">*</span></label></div>
+      <div class="field">
+        <div class="yesno_line with_input">
+          <label class="yn"><input type="checkbox"><span>Si</span></label>
+          <label class="yn"><input type="checkbox"><span>No</span></label>
+          <input type="search" class="detail">
+        </div>
+      </div>
+      <!-- 4) Ferias -->
+      <div class="label"><label>Ferias <span class="req">*</span></label></div>
+      <div class="field">
+        <div class="yesno_line">
+          <label class="yn"><input type="checkbox"><span>Si</span></label>
+          <label class="yn"><input type="checkbox"><span>No</span></label>
+        </div>
+      </div>
+      <!-- 5) Rondas -->
+      <div class="label"><label>Rondas <span class="req">*</span></label></div>
+      <div class="field">
+        <div class="yesno_line">
+          <label class="yn"><input type="checkbox"><span>Si</span></label>
+          <label class="yn"><input type="checkbox"><span>No</span></label>
+        </div>
+      </div>
+      <!-- 6) Experiencia Exportadora previa -->
+      <div class="label"><label>Experiencia Exportadora previa <span class="req">*</span></label></div>
+      <div class="field"><select><option value="">…</option></select></div>
+      <!-- 7) Referencias comerciales -->
+      <div class="label"><label>Referencias comerciales <span class="req">*</span></label></div>
+      <div class="field"><textarea class="ta" rows="4"></textarea></div>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.compet_blk .other').forEach(box => {
+    const cb = box.querySelector('.otros_cb');
+    const inp = box.querySelector('.otros_inp');
+    const sync = () => { inp.disabled = !cb.checked; if (!cb.checked) inp.value = ''; };
+    cb.addEventListener('change', sync);
+    sync();
+  });
+});
+</script>
