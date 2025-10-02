@@ -388,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 <!-- competitividad -->
 
-<!-- informacion visual -->
+<!-- visual -->
 <div class="datos">
   <div class="datos_header">
     <h1>5. Información Visual y Promocional</h1>
@@ -481,4 +481,150 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
-<!-- informacion visual -->
+<!-- visual -->
+
+<!-- logistica -->
+<div class="datos">
+  <div class="datos_header">
+    <h1>6. Logística y Distribución</h1>
+    <img src="img/icons/logistica.png">
+  </div>
+  <div class="form" novalidate>
+    <div class="label"><span>Capacidad de Exportación Inmediata <span class="req">*</span></span></div>
+    <div class="field logi-right">
+      <div class="cap-row">
+        <div class="yn-line">
+          <label class="yn"><input type="checkbox"><span>Si</span></label>
+          <label class="yn"><input type="checkbox"><span>No</span></label>
+        </div>
+        <label class="lbl plazo-lbl">Plazo estimado <span class="req">*</span></label>
+        <input class="fld plazo" placeholder="meses">
+      </div>
+    </div>
+    <div class="label"><span>Infraestructura Logística Disponible <span class="req">*</span></span></div>
+    <div class="field">
+      <input type="search" placeholder="ejemplo: frigoríficos, transporte propio, alianzas logísticas, etc.">
+    </div>
+    <div class="label"><span>Puertos/Aeropuertos de Salida habituales o posibles <span class="req">*</span></span></div>
+    <div class="field"><textarea class="ta" rows="4"></textarea></div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.logi-right .yn-line').forEach(line => {
+    const boxes = line.querySelectorAll('input[type="checkbox"]');
+    boxes.forEach(b => b.addEventListener('change', () => {
+      if (b.checked) boxes.forEach(x => { if (x !== b) x.checked = false; });
+    }));
+  });
+});
+</script>
+<!-- logistica -->
+
+<!-- expectivas -->
+<div class="datos">
+  <div class="datos_header">
+    <h1>7. Necesidades y Expectativas</h1>
+    <img src="img/icons/expectivas.png">
+  </div>
+  <div class="form" novalidate>
+    <div class="needs-blk">
+      <div class="label">
+        <span>Principales Necesidades para mejorar capacidad exportadora <span class="req">*</span></span>
+      </div>
+      <div class="field">
+        <div class="needs-grid">
+          <label class="chk"><input type="checkbox"><span>Capacitación</span></label>
+          <label class="chk"><input type="checkbox"><span>Acceso a ferias</span></label>
+          <label class="chk"><input type="checkbox"><span>Certificaciones</span></label>
+          <label class="chk"><input type="checkbox"><span>Financiamiento</span></label>
+          <label class="chk"><input type="checkbox"><span>Socios comerciales</span></label>
+          <div class="other">
+            <label class="chk"><input type="checkbox" class="otros-cb"><span>Otros</span></label>
+            <input class="fld otros-inp" type="text" placeholder="" disabled>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <label>Interés en Participar de Misiones Comerciales/Ferias Internacionales <span class="req">*</span></label>
+      </div>
+      <div class="field">
+        <div class="yn-line">
+          <label class="yn"><input type="checkbox"><span>Si</span></label>
+          <label class="yn"><input type="checkbox"><span>No</span></label>
+        </div>
+      </div>
+      <div class="label">
+        <label>Disponibilidad para Capacitaciones y Asistencia Técnica <span class="req">*</span></label>
+      </div>
+      <div class="field">
+        <div class="yn-line">
+          <label class="yn"><input type="checkbox"><span>Si</span></label>
+          <label class="yn"><input type="checkbox"><span>No</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.needs-blk .other').forEach(box => {
+    const cb = box.querySelector('.otros-cb');
+    const inp = box.querySelector('.otros-inp');
+    const sync = () => { inp.disabled = !cb.checked; if (!cb.checked) inp.value=''; };
+    cb.addEventListener('change', sync);
+    sync();
+  });
+});
+</script>
+<!-- expectivas -->
+
+<!-- validacion -->
+<div class="datos">
+  <div class="datos_header">
+    <h1>8. Validación y Consentimiento</h1>
+    <img src="img/icons/validacion.png">
+  </div>
+  <div class="form" novalidate>
+    <div class="consent-blk">
+      <div class="consent-row">
+        <div class="consent-text">
+          Autorización para Difundir la Información Cargada en la Plataforma Provincial <span class="req">*</span>
+        </div>
+        <div class="yn-line">
+          <label class="yn"><input type="checkbox"><span>Si</span></label>
+          <label class="yn"><input type="checkbox"><span>No</span></label>
+        </div>
+      </div>
+      <div class="consent-row">
+        <div class="consent-text">
+          Autorizo la Publicación de mi Información para Promoción Exportadora <span class="req">*</span>
+        </div>
+        <div class="yn-line">
+          <label class="yn"><input type="checkbox"><span>Si</span></label>
+          <label class="yn"><input type="checkbox"><span>No</span></label>
+        </div>
+      </div>
+      <div class="consent-row">
+        <div class="consent-text">
+          Acepto ser Contactado por Organismos de Promoción y Compradores Internacionales <span class="req">*</span>
+        </div>
+        <div class="yn-line">
+          <label class="yn"><input type="checkbox"><span>Si</span></label>
+          <label class="yn"><input type="checkbox"><span>No</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.consent-row .yn-line').forEach(line => {
+    const boxes = line.querySelectorAll('input[type="checkbox"]');
+    boxes.forEach(b => b.addEventListener('change', () => {
+      if (b.checked) boxes.forEach(x => { if (x !== b) x.checked = false; });
+    }));
+  });
+});
+</script>
+<!-- validacion -->
