@@ -537,3 +537,67 @@ textarea::placeholder{font-size: 14px;}}
   margin-top: 6px;
 }}
 /* competitividad */
+
+/* informacion visual */
+.visual-row{
+  display: grid;
+  gap: 8px;
+}
+.files-list .file-item{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.files-list .file-item .file-ph{
+  flex:1 1 auto;
+  min-width:0;
+  width:auto;     
+}
+.files-list .file-item .remove{
+  flex:0 0 28px;
+  width:28px; height:28px;
+  margin-left:8px;
+  border:2px solid #0082C6;
+  border-radius:7px;
+  padding:0;
+  background:#fff;
+  color:#0082C6;
+  font-size:16px; line-height:1;
+  cursor:pointer;
+}
+.files-list .file-item .remove:hover{
+  color:#EE3124; border-color:#EE3124;
+}
+.files-list .file-item .remove[hidden]{ display:none !important; }
+.file-ph{
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  background-size: 18px 18px;
+  padding-left: 36px;
+}
+.file-ph:placeholder-shown{
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.44 11.05l-8.49 8.49a6 6 0 1 1-8.49-8.49l9.19-9.19a4 4 0 1 1 5.66 5.66L9.9 16.94a2 2 0 1 1-2.83-2.83l8.49-8.49'/%3E%3C/svg%3E");
+}
+.file-ph:not(:placeholder-shown){ background-image: none; }
+@media (max-width: 750px){
+  .visual-row{ gap:10px; }
+  .visual-row .files-list{ display:grid; gap:10px; }
+  .files-list .file-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:0;
+  }
+  .files-list .file-item .file-ph{
+    flex:1 1 auto;
+    width:100%;
+    min-width:0;
+  }
+  .files-list .file-item .remove{
+    flex:0 0 32px;
+    width:32px; height:32px;
+    margin-left:8px;
+  }
+  .files-list .file-item .remove[hidden]{ display:none !important; }}
+/* informacion visual */

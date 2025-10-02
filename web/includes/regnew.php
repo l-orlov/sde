@@ -386,3 +386,99 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+<!-- competitividad -->
+
+<!-- informacion visual -->
+<div class="datos">
+  <div class="datos_header">
+    <h1>5. Información Visual y Promocional</h1>
+    <img src="img/icons/visual.png">
+  </div>
+  <div class="form" novalidate>
+    <div class="label"><span>Adjuntar Logo de la Empresa <span class="req">*</span></span></div>
+    <div class="field visual-row">
+      <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)">
+        <div class="file-item">
+          <input class="file-ph" placeholder="subir archivo (JPG, PNG, PDF)">
+          <button type="button" class="remove" aria-label="Eliminar" hidden>&times;</button>
+        </div>
+      </div>
+      <button type="button" class="add_more">agregar más</button>
+    </div>
+    <div class="label"><span>Adjuntar Fotos de los Procesos/Servicios <span class="req">*</span></span></div>
+    <div class="field visual-row">
+      <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)">
+        <div class="file-item">
+          <input class="file-ph" placeholder="subir archivo (JPG, PNG, PDF)">
+          <button type="button" class="remove" aria-label="Eliminar" hidden>&times;</button>
+        </div>
+      </div>
+      <button type="button" class="add_more">agregar más</button>
+    </div>
+    <div class="label"><span>Adjuntar Catálogo Digital (si existe)</span></div>
+    <div class="field visual-row">
+      <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)">
+        <div class="file-item">
+          <input class="file-ph" placeholder="subir archivo (JPG, PNG, PDF)">
+          <button type="button" class="remove" aria-label="Eliminar" hidden>&times;</button>
+        </div>
+      </div>
+      <button type="button" class="add_more">agregar más</button>
+    </div>
+    <div class="label"><span>Adjuntar Video Institucional (si existe)</span></div>
+    <div class="field visual-row">
+      <div class="files-list" data-ph="subir archivo (MP4, MKV, AVI)">
+        <div class="file-item">
+          <input class="file-ph" placeholder="subir archivo (MP4, MKV, AVI)">
+          <button type="button" class="remove" aria-label="Eliminar" hidden>&times;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.visual-row').forEach(row => {
+    const list   = row.querySelector('.files-list');
+    const addBtn = row.querySelector('.add_more');
+    const ph     = list?.getAttribute('data-ph') || '';
+    function updateRemoveButtons(){
+      const items = list.querySelectorAll('.file-item');
+      items.forEach((it, i) => {
+        const rm = it.querySelector('.remove');
+        if (!rm) return;
+        rm.hidden = (i === 0);
+      });
+    }
+    function bindRemove(btn, item){
+      btn.addEventListener('click', () => {
+        item.remove();
+        updateRemoveButtons();
+      });
+    }
+    if (addBtn){
+      addBtn.addEventListener('click', () => {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        const input = document.createElement('input');
+        input.className = 'file-ph';
+        input.placeholder = ph;
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'remove';
+        rm.setAttribute('aria-label','Eliminar');
+        rm.textContent = '×';
+        item.append(input, rm);
+        list.appendChild(item);
+        bindRemove(rm, item);
+        updateRemoveButtons();
+      });
+    }
+    list.querySelectorAll('.file-item .remove').forEach((btn) => {
+      bindRemove(btn, btn.closest('.file-item'));
+    });
+    updateRemoveButtons();
+  });
+});
+</script>
+<!-- informacion visual -->
