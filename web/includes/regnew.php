@@ -24,11 +24,23 @@
     <div class="label"><span>Redes sociales:</span></div>
     <div class="field" id="social-wrapper">
       <div class="social_row">
-        <select class="net" aria-label="Тип сети">
-          <option value="">…</option>
-          <option>Instagram</option><option>Facebook</option><option>LinkedIn</option>
-          <option>X (Twitter)</option><option>TikTok</option><option>YouTube</option><option>Otra</option>
-        </select>
+        <div class="custom-dropdown">
+          <div class="dropdown-selected">
+            <span class="selected-text">…</span>
+            <span class="dropdown-arrow">▼</span>
+          </div>
+          <div class="dropdown-options">
+            <div class="dropdown-option" data-value="">…</div>
+            <div class="dropdown-option" data-value="Instagram">Instagram</div>
+            <div class="dropdown-option" data-value="Facebook">Facebook</div>
+            <div class="dropdown-option" data-value="LinkedIn">LinkedIn</div>
+            <div class="dropdown-option" data-value="X (Twitter)">X (Twitter)</div>
+            <div class="dropdown-option" data-value="TikTok">TikTok</div>
+            <div class="dropdown-option" data-value="YouTube">YouTube</div>
+            <div class="dropdown-option" data-value="Otra">Otra</div>
+          </div>
+          <input type="hidden" class="net" name="social_tipo[]" value="">
+        </div>
         <input class="net-other" type="text" placeholder="Ingresa la red…" hidden>
         <input class="net-final" type="hidden" name="social_tipo[]">
         <div class="inline">
@@ -53,9 +65,73 @@
         <label class="label_span">Departamento</label>
         <input type="search" class="">
         <label class="label_span">Localidad <span class="req">*</span></label>
-        <select class="span_right"><option value="">…</option></select>
+        <div class="span_right">
+          <div class="custom-dropdown">
+            <div class="dropdown-selected">
+              <span class="selected-text">…</span>
+              <span class="dropdown-arrow">▼</span>
+            </div>
+            <div class="dropdown-options">
+              <div class="dropdown-option" data-value="">…</div>
+              <div class="dropdown-option" data-value="Santiago del Estero (la capital)">Santiago del Estero (la capital)</div>
+              <div class="dropdown-option" data-value="La Banda">La Banda</div>
+              <div class="dropdown-option" data-value="Termas de Río Hondo">Termas de Río Hondo</div>
+              <div class="dropdown-option" data-value="Añatuya">Añatuya</div>
+              <div class="dropdown-option" data-value="Frías">Frías</div>
+              <div class="dropdown-option" data-value="Fernández">Fernández</div>
+              <div class="dropdown-option" data-value="Clodomira">Clodomira</div>
+              <div class="dropdown-option" data-value="Suncho">Suncho</div>
+              <div class="dropdown-option" data-value="Corral">Corral</div>
+              <div class="dropdown-option" data-value="Loreto">Loreto</div>
+              <div class="dropdown-option" data-value="Quimilí">Quimilí</div>
+              <div class="dropdown-option" data-value="Beltrán">Beltrán</div>
+              <div class="dropdown-option" data-value="Pampa de los Guanacos">Pampa de los Guanacos</div>
+              <div class="dropdown-option" data-value="Bandera">Bandera</div>
+              <div class="dropdown-option" data-value="Monte Quemado y Sumampa">Monte Quemado y Sumampa</div>
+            </div>
+            <input type="hidden" name="localidad_legal" value="">
+          </div>
+        </div>
         <label class="label_span">Departamento <span class="req">*</span></label>
-        <select class="span_right"><option value="">…</option></select>
+        <div class="span_right">
+          <div class="custom-dropdown">
+            <div class="dropdown-selected">
+              <span class="selected-text">…</span>
+              <span class="dropdown-arrow">▼</span>
+            </div>
+            <div class="dropdown-options">
+              <div class="dropdown-option" data-value="">…</div>
+              <div class="dropdown-option" data-value="Aguirre">Aguirre</div>
+              <div class="dropdown-option" data-value="Alberdi">Alberdi</div>
+              <div class="dropdown-option" data-value="Atamisqui">Atamisqui</div>
+              <div class="dropdown-option" data-value="Avellaneda">Avellaneda</div>
+              <div class="dropdown-option" data-value="Banda">Banda</div>
+              <div class="dropdown-option" data-value="Belgrano">Belgrano</div>
+              <div class="dropdown-option" data-value="Capital">Capital</div>
+              <div class="dropdown-option" data-value="Choya">Choya</div>
+              <div class="dropdown-option" data-value="Copo">Copo</div>
+              <div class="dropdown-option" data-value="Figueroa">Figueroa</div>
+              <div class="dropdown-option" data-value="General Taboada">General Taboada</div>
+              <div class="dropdown-option" data-value="Guasayán">Guasayán</div>
+              <div class="dropdown-option" data-value="Jiménez">Jiménez</div>
+              <div class="dropdown-option" data-value="Juan Felipe Ibarra">Juan Felipe Ibarra</div>
+              <div class="dropdown-option" data-value="Loreto">Loreto</div>
+              <div class="dropdown-option" data-value="Mitre">Mitre</div>
+              <div class="dropdown-option" data-value="Moreno">Moreno</div>
+              <div class="dropdown-option" data-value="Ojo de Agua">Ojo de Agua</div>
+              <div class="dropdown-option" data-value="Pellegrini">Pellegrini</div>
+              <div class="dropdown-option" data-value="Quebrachos">Quebrachos</div>
+              <div class="dropdown-option" data-value="Río Hondo">Río Hondo</div>
+              <div class="dropdown-option" data-value="Rivadavia">Rivadavia</div>
+              <div class="dropdown-option" data-value="Robles">Robles</div>
+              <div class="dropdown-option" data-value="Salavina">Salavina</div>
+              <div class="dropdown-option" data-value="San Martín">San Martín</div>
+              <div class="dropdown-option" data-value="Sarmiento">Sarmiento</div>
+              <div class="dropdown-option" data-value="Silípica">Silípica</div>
+            </div>
+            <input type="hidden" name="departamento_legal" value="">
+          </div>
+        </div>
       </div>
     </div>
     <!-- Dirección administrativa -->
@@ -73,9 +149,73 @@
         <label class="label_span">Departamento</label>
         <input type="search" class="">
         <label class="label_span">Localidad <span class="req">*</span></label>
-        <select class="span_right"><option value="">…</option></select>
+        <div class="span_right">
+          <div class="custom-dropdown">
+            <div class="dropdown-selected">
+              <span class="selected-text">…</span>
+              <span class="dropdown-arrow">▼</span>
+            </div>
+            <div class="dropdown-options">
+              <div class="dropdown-option" data-value="">…</div>
+              <div class="dropdown-option" data-value="Santiago del Estero (la capital)">Santiago del Estero (la capital)</div>
+              <div class="dropdown-option" data-value="La Banda">La Banda</div>
+              <div class="dropdown-option" data-value="Termas de Río Hondo">Termas de Río Hondo</div>
+              <div class="dropdown-option" data-value="Añatuya">Añatuya</div>
+              <div class="dropdown-option" data-value="Frías">Frías</div>
+              <div class="dropdown-option" data-value="Fernández">Fernández</div>
+              <div class="dropdown-option" data-value="Clodomira">Clodomira</div>
+              <div class="dropdown-option" data-value="Suncho">Suncho</div>
+              <div class="dropdown-option" data-value="Corral">Corral</div>
+              <div class="dropdown-option" data-value="Loreto">Loreto</div>
+              <div class="dropdown-option" data-value="Quimilí">Quimilí</div>
+              <div class="dropdown-option" data-value="Beltrán">Beltrán</div>
+              <div class="dropdown-option" data-value="Pampa de los Guanacos">Pampa de los Guanacos</div>
+              <div class="dropdown-option" data-value="Bandera">Bandera</div>
+              <div class="dropdown-option" data-value="Monte Quemado y Sumampa">Monte Quemado y Sumampa</div>
+            </div>
+            <input type="hidden" name="localidad_admin" value="">
+          </div>
+        </div>
         <label class="label_span">Departamento <span class="req">*</span></label>
-        <select class="span_right"><option value="">…</option></select>
+        <div class="span_right">
+          <div class="custom-dropdown">
+            <div class="dropdown-selected">
+              <span class="selected-text">…</span>
+              <span class="dropdown-arrow">▼</span>
+            </div>
+            <div class="dropdown-options">
+              <div class="dropdown-option" data-value="">…</div>
+              <div class="dropdown-option" data-value="Aguirre">Aguirre</div>
+              <div class="dropdown-option" data-value="Alberdi">Alberdi</div>
+              <div class="dropdown-option" data-value="Atamisqui">Atamisqui</div>
+              <div class="dropdown-option" data-value="Avellaneda">Avellaneda</div>
+              <div class="dropdown-option" data-value="Banda">Banda</div>
+              <div class="dropdown-option" data-value="Belgrano">Belgrano</div>
+              <div class="dropdown-option" data-value="Capital">Capital</div>
+              <div class="dropdown-option" data-value="Choya">Choya</div>
+              <div class="dropdown-option" data-value="Copo">Copo</div>
+              <div class="dropdown-option" data-value="Figueroa">Figueroa</div>
+              <div class="dropdown-option" data-value="General Taboada">General Taboada</div>
+              <div class="dropdown-option" data-value="Guasayán">Guasayán</div>
+              <div class="dropdown-option" data-value="Jiménez">Jiménez</div>
+              <div class="dropdown-option" data-value="Juan Felipe Ibarra">Juan Felipe Ibarra</div>
+              <div class="dropdown-option" data-value="Loreto">Loreto</div>
+              <div class="dropdown-option" data-value="Mitre">Mitre</div>
+              <div class="dropdown-option" data-value="Moreno">Moreno</div>
+              <div class="dropdown-option" data-value="Ojo de Agua">Ojo de Agua</div>
+              <div class="dropdown-option" data-value="Pellegrini">Pellegrini</div>
+              <div class="dropdown-option" data-value="Quebrachos">Quebrachos</div>
+              <div class="dropdown-option" data-value="Río Hondo">Río Hondo</div>
+              <div class="dropdown-option" data-value="Rivadavia">Rivadavia</div>
+              <div class="dropdown-option" data-value="Robles">Robles</div>
+              <div class="dropdown-option" data-value="Salavina">Salavina</div>
+              <div class="dropdown-option" data-value="San Martín">San Martín</div>
+              <div class="dropdown-option" data-value="Sarmiento">Sarmiento</div>
+              <div class="dropdown-option" data-value="Silípica">Silípica</div>
+            </div>
+            <input type="hidden" name="departamento_admin" value="">
+          </div>
+        </div>
       </div>
     </div>
     <!-- Contacto -->
@@ -103,23 +243,69 @@
   </div>
   <div class="form" novalidate>
     <div class="label"><label>Tipo de Organización <span class="req">*</span></label></div>
-    <div class="field"><select><option value="">…</option></select></div>
+    <div class="field">
+      <div class="custom-dropdown">
+        <div class="dropdown-selected">
+          <span class="selected-text">…</span>
+          <span class="dropdown-arrow">▼</span>
+        </div>
+        <div class="dropdown-options">
+          <div class="dropdown-option" data-value="">…</div>
+          <div class="dropdown-option" data-value="Empresa grande">Empresa grande</div>
+          <div class="dropdown-option" data-value="PyME">PyME</div>
+          <div class="dropdown-option" data-value="Cooperativa">Cooperativa</div>
+          <div class="dropdown-option" data-value="Emprendimiento">Emprendimiento</div>
+          <div class="dropdown-option" data-value="Startup">Startup, Clúster</div>
+          <div class="dropdown-option" data-value="Clúster">Clúster</div>
+          <div class="dropdown-option" data-value="Consorcio">Consorcio</div>
+          <div class="dropdown-option" data-value="Otros (especificar)">Otros (especificar)</div>
+        </div>
+        <input type="hidden" name="tipo_organizacion" value="">
+      </div>
+    </div>
     <div class="label"><label>Actividad Principal <span class="req">*</span></label></div>
-    <div class="field"><select><option value="">…</option></select></div>
+    <div class="field">
+      <div class="custom-dropdown">
+        <div class="dropdown-selected">
+          <span class="selected-text">…</span>
+          <span class="dropdown-arrow">▼</span>
+        </div>
+        <div class="dropdown-options">
+          <div class="dropdown-option" data-value="">…</div>
+          <div class="dropdown-option" data-value="Agroindustria">Agroindustria</div>
+          <div class="dropdown-option" data-value="Industria manufacturera">Industria manufacturera</div>
+          <div class="dropdown-option" data-value="Servicios basados en conocimiento">Servicios basados en conocimiento</div>
+          <div class="dropdown-option" data-value="Turismo">Turismo</div>
+          <div class="dropdown-option" data-value="Economía cultural/creativa">Economía cultural/creativa</div>
+          <div class="dropdown-option" data-value="Otros (especificar)">Otros (especificar)</div>
+        </div>
+        <input type="hidden" name="actividad_principal" value="">
+      </div>
+    </div>
   </div>
 </div>
 <script>
+
 document.addEventListener('DOMContentLoaded', () => {
   const wrapper = document.getElementById('social-wrapper');
   const addBtn  = document.getElementById('add-social');
   function bindRow(row) {
-    const sel   = row.querySelector('select.net');
+    const dropdown = row.querySelector('.custom-dropdown');
+    const hiddenInput = row.querySelector('input.net');
     const other = row.querySelector('input.net-other');
     const final = row.querySelector('input.net-final');
     const rmBtn = row.querySelector('.remove');
+    
+    // Initialize custom dropdown
+    if (dropdown && hiddenInput) {
+      initCustomDropdown(dropdown, hiddenInput);
+    }
+    
     syncFinal();
-    sel.addEventListener('change', () => {
-      if (sel.value === 'Otra') {
+    
+    // Listen for changes in the hidden input (set by custom dropdown)
+    hiddenInput.addEventListener('change', () => {
+      if (hiddenInput.value === 'Otra') {
         other.hidden = false;
         other.required = true;
         other.focus();
@@ -130,7 +316,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       syncFinal();
     });
+    
     other.addEventListener('input', syncFinal);
+    
     if (rmBtn && !rmBtn._bound) {
       rmBtn.addEventListener('click', () => {
         row.remove();
@@ -138,11 +326,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       rmBtn._bound = true;
     }
+    
     function syncFinal() {
-      if (sel.value === 'Otra') {
+      if (hiddenInput.value === 'Otra') {
         final.value = other.value.trim();
       } else {
-        final.value = sel.value;
+        final.value = hiddenInput.value;
       }
     }
   }
@@ -157,16 +346,27 @@ document.addEventListener('DOMContentLoaded', () => {
   addBtn.addEventListener('click', () => {
     const first = wrapper.querySelector('.social_row');
     const clone = first.cloneNode(true);
-    const sel   = clone.querySelector('select.net');
+    const dropdown = clone.querySelector('.custom-dropdown');
+    const hiddenInput = clone.querySelector('input.net');
     const other = clone.querySelector('input.net-other');
     const final = clone.querySelector('input.net-final');
-    const url   = clone.querySelector('input[name="social_url[]"]');
-    sel.selectedIndex = 0;
+    const url = clone.querySelector('input[name="social_url[]"]');
+    
+    // Reset dropdown to default state
+    const selectedText = dropdown.querySelector('.selected-text');
+    selectedText.textContent = '…';
+    hiddenInput.value = '';
     other.value = '';
     other.hidden = true;
     other.required = false;
     final.value = '';
     if (url) url.value = '';
+    
+    // Remove selected class from all options
+    dropdown.querySelectorAll('.dropdown-option').forEach(opt => {
+      opt.classList.remove('selected');
+    });
+    
     const rm = clone.querySelector('.remove');
     if (rm) rm.hidden = false;
     addBtn.before(clone);
@@ -176,6 +376,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const firstRow = wrapper.querySelector('.social_row');
   if (firstRow) bindRow(firstRow);
   updateRemoveButtons();
+  
+  // Initialize all custom dropdowns (except social media ones which are handled by bindRow)
+  document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+    // Skip social media dropdowns (they have input.net class)
+    const socialInput = dropdown.querySelector('input.net');
+    if (socialInput) {
+      return; // Skip this dropdown, it's handled by bindRow
+    }
+    
+    const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+    if (hiddenInput) {
+      initCustomDropdown(dropdown, hiddenInput);
+    }
+  });
 });
 </script>
 <!-- EMPRESA -->
@@ -196,7 +410,23 @@ document.addEventListener('DOMContentLoaded', () => {
       <input type="search" type="email">
       <label class="label_span">Volumen de Producción Anual <span class="req">*</span></label>
       <div class="anual_inline">
-        <div class="field"><select><option value="">…</option></select></div>
+        <div class="field">
+          <div class="custom-dropdown">
+            <div class="dropdown-selected">
+              <span class="selected-text">…</span>
+              <span class="dropdown-arrow">▼</span>
+            </div>
+            <div class="dropdown-options">
+              <div class="dropdown-option" data-value="">…</div>
+              <div class="dropdown-option" data-value="kg">kg</div>
+              <div class="dropdown-option" data-value="toneladas">toneladas</div>
+              <div class="dropdown-option" data-value="litros">litros</div>
+              <div class="dropdown-option" data-value="unidades">unidades</div>
+              <div class="dropdown-option" data-value="horas">horas</div>
+            </div>
+            <input type="hidden" name="volumen_unidad" value="">
+          </div>
+        </div>
         <input type="search">
       </div>
       <label class="label_span">Exportación Anual (USD) <span class="req">*</span></label>
@@ -218,7 +448,23 @@ document.addEventListener('DOMContentLoaded', () => {
             <input type="search">
             <label class="label_span">Volumen de Producción Anual <span class="req">*</span></label>
             <div class="anual_inline">
-              <div class="field"><select><option value="">…</option></select></div>
+              <div class="field">
+                <div class="custom-dropdown">
+                  <div class="dropdown-selected">
+                    <span class="selected-text">…</span>
+                    <span class="dropdown-arrow">▼</span>
+                  </div>
+                  <div class="dropdown-options">
+                    <div class="dropdown-option" data-value="">…</div>
+                    <div class="dropdown-option" data-value="kg">kg</div>
+                    <div class="dropdown-option" data-value="toneladas">toneladas</div>
+                    <div class="dropdown-option" data-value="litros">litros</div>
+                    <div class="dropdown-option" data-value="unidades">unidades</div>
+                    <div class="dropdown-option" data-value="horas">horas</div>
+                  </div>
+                  <input type="hidden" name="volumen_unidad_sec[]" value="">
+                </div>
+              </div>
               <input type="search">
             </div>
             <label class="label_span">Exportación Anual (USD) <span class="req">*</span></label>
@@ -256,9 +502,22 @@ document.addEventListener('DOMContentLoaded', () => {
       <button type="button" class="add_more act-add">agregar más</button>
       <template class="act-item-tpl">
         <div class="act-row">
-          <select>
-            <option value="">…</option>
-          </select>
+          <div class="custom-dropdown">
+            <div class="dropdown-selected">
+              <span class="selected-text">…</span>
+              <span class="dropdown-arrow">▼</span>
+            </div>
+            <div class="dropdown-options">
+              <div class="dropdown-option" data-value="">…</div>
+              <div class="dropdown-option" data-value="América del Norte">América del Norte</div>
+              <div class="dropdown-option" data-value="América del Sur">América del Sur</div>
+              <div class="dropdown-option" data-value="Europa">Europa</div>
+              <div class="dropdown-option" data-value="Asia">Asia</div>
+              <div class="dropdown-option" data-value="África">África</div>
+              <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
+            </div>
+            <input type="hidden" name="mercados_actuales[]" value="">
+          </div>
           <button type="button" class="remove" aria-label="Eliminar">&times;</button>
         </div>
       </template>
@@ -266,9 +525,22 @@ document.addEventListener('DOMContentLoaded', () => {
     <!-- Mercados de Interés (Continente) -->
     <div class="label"><span>Mercados de Interés (Continente) <span class="req">*</span></span></div>
     <div class="act-row">
-      <select>
-        <option value="">… a donde le gustaría exportar</option>
-      </select>
+      <div class="custom-dropdown">
+        <div class="dropdown-selected">
+          <span class="selected-text">… a donde le gustaría exportar</span>
+          <span class="dropdown-arrow">▼</span>
+        </div>
+        <div class="dropdown-options">
+          <div class="dropdown-option" data-value="">… a donde le gustaría exportar</div>
+          <div class="dropdown-option" data-value="América del Norte">América del Norte</div>
+          <div class="dropdown-option" data-value="América del Sur">América del Sur</div>
+          <div class="dropdown-option" data-value="Europa">Europa</div>
+          <div class="dropdown-option" data-value="Asia">Asia</div>
+          <div class="dropdown-option" data-value="África">África</div>
+          <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
+        </div>
+        <input type="hidden" name="mercados_interes" value="">
+      </div>
     </div>
   </div>
 </div>
@@ -281,6 +553,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function addCard(){
       const node = tpl.content.firstElementChild.cloneNode(true);
       node.querySelector('.sec-remove').addEventListener('click', () => node.remove());
+      
+      // Initialize custom dropdown in the new card
+      const dropdown = node.querySelector('.custom-dropdown');
+      if (dropdown) {
+        const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+        if (hiddenInput) {
+          initCustomDropdown(dropdown, hiddenInput);
+        }
+      }
+      
       list.appendChild(node);
     }
     add.addEventListener('click', addCard);
@@ -303,6 +585,16 @@ document.addEventListener('DOMContentLoaded', () => {
         node.remove();
         updateRemoves();
       });
+      
+      // Initialize custom dropdown in the new row
+      const dropdown = node.querySelector('.custom-dropdown');
+      if (dropdown) {
+        const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+        if (hiddenInput) {
+          initCustomDropdown(dropdown, hiddenInput);
+        }
+      }
+      
       list.appendChild(node);
       updateRemoves();
     }
@@ -368,7 +660,21 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <!-- 6) Experiencia Exportadora previa -->
       <div class="label"><label>Experiencia Exportadora previa <span class="req">*</span></label></div>
-      <div class="field"><select><option value="">…</option></select></div>
+      <div class="field">
+        <div class="custom-dropdown">
+          <div class="dropdown-selected">
+            <span class="selected-text">…</span>
+            <span class="dropdown-arrow">▼</span>
+          </div>
+          <div class="dropdown-options">
+            <div class="dropdown-option" data-value="">…</div>
+            <div class="dropdown-option" data-value="Sí, ya exportamos regularmente">Sí, ya exportamos regularmente</div>
+            <div class="dropdown-option" data-value="Hemos exportado ocasionalmente">Hemos exportado ocasionalmente</div>
+            <div class="dropdown-option" data-value="Nunca exportamos">Nunca exportamos</div>
+          </div>
+          <input type="hidden" name="experiencia_exportadora" value="">
+        </div>
+      </div>
       <!-- 7) Referencias comerciales -->
       <div class="label"><label>Referencias comerciales <span class="req">*</span></label></div>
       <div class="field"><textarea class="ta" rows="4"></textarea></div>
@@ -626,5 +932,52 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
   });
 });
+</script>
+
+<!-- Global function for custom dropdowns -->
+<script>
+function initCustomDropdown(dropdown, hiddenInput) {
+  const selected = dropdown.querySelector('.dropdown-selected');
+  const selectedText = dropdown.querySelector('.selected-text');
+  const options = dropdown.querySelectorAll('.dropdown-option');
+  
+  // Handle dropdown toggle
+  if (selected) {
+    selected.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.classList.toggle('open');
+    });
+  }
+  
+  // Handle option selection
+  options.forEach(option => {
+    option.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const value = option.dataset.value;
+      const text = option.textContent;
+      
+      // Update selected text
+      selectedText.textContent = text;
+      
+      // Update hidden input
+      hiddenInput.value = value;
+      hiddenInput.dispatchEvent(new Event('change'));
+      
+      // Update visual selection
+      options.forEach(opt => opt.classList.remove('selected'));
+      option.classList.add('selected');
+      
+      // Close dropdown
+      dropdown.classList.remove('open');
+    });
+  });
+  
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target)) {
+      dropdown.classList.remove('open');
+    }
+  });
+}
 </script>
 <!-- validacion -->
