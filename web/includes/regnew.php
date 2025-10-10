@@ -255,7 +255,7 @@
           <div class="dropdown-option" data-value="PyME">PyME</div>
           <div class="dropdown-option" data-value="Cooperativa">Cooperativa</div>
           <div class="dropdown-option" data-value="Emprendimiento">Emprendimiento</div>
-          <div class="dropdown-option" data-value="Startup">Startup, Clúster</div>
+          <div class="dropdown-option" data-value="Startup">Startup</div>
           <div class="dropdown-option" data-value="Clúster">Clúster</div>
           <div class="dropdown-option" data-value="Consorcio">Consorcio</div>
           <div class="dropdown-option" data-value="Otros (especificar)">Otros (especificar)</div>
@@ -523,15 +523,18 @@ document.addEventListener('DOMContentLoaded', () => {
       </template>
     </div>
     <!-- Mercados de Interés (Continente) -->
-    <div class="label"><span>Mercados de Interés (Continente) <span class="req">*</span></span></div>
+    <div class="label">
+      <span>Mercados de Interés (Continente) <span class="req">*</span></span>
+      <div class="sub">(a donde le gustaría exportar)</div>
+    </div>
     <div class="act-row">
       <div class="custom-dropdown">
         <div class="dropdown-selected">
-          <span class="selected-text">… a donde le gustaría exportar</span>
+          <span class="selected-text">…</span>
           <span class="dropdown-arrow">▼</span>
         </div>
         <div class="dropdown-options">
-          <div class="dropdown-option" data-value="">… a donde le gustaría exportar</div>
+          <div class="dropdown-option" data-value="">…</div>
           <div class="dropdown-option" data-value="América del Norte">América del Norte</div>
           <div class="dropdown-option" data-value="América del Sur">América del Sur</div>
           <div class="dropdown-option" data-value="Europa">Europa</div>
