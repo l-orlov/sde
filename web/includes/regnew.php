@@ -640,8 +640,8 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="label"><label>Premios <span class="req">*</span></label></div>
       <div class="field">
         <div class="yesno_line with_input">
-          <label class="yn"><input type="checkbox"><span>Si</span></label>
-          <label class="yn"><input type="checkbox"><span>No</span></label>
+          <label class="yn"><input type="radio" name="premios" value="si"><span>Si</span></label>
+          <label class="yn"><input type="radio" name="premios" value="no"><span>No</span></label>
           <input type="search" class="detail">
         </div>
       </div>
@@ -649,16 +649,16 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="label"><label>Ferias <span class="req">*</span></label></div>
       <div class="field">
         <div class="yesno_line">
-          <label class="yn"><input type="checkbox"><span>Si</span></label>
-          <label class="yn"><input type="checkbox"><span>No</span></label>
+          <label class="yn"><input type="radio" name="ferias" value="si"><span>Si</span></label>
+          <label class="yn"><input type="radio" name="ferias" value="no"><span>No</span></label>
         </div>
       </div>
       <!-- 5) Rondas -->
       <div class="label"><label>Rondas <span class="req">*</span></label></div>
       <div class="field">
         <div class="yesno_line">
-          <label class="yn"><input type="checkbox"><span>Si</span></label>
-          <label class="yn"><input type="checkbox"><span>No</span></label>
+          <label class="yn"><input type="radio" name="rondas" value="si"><span>Si</span></label>
+          <label class="yn"><input type="radio" name="rondas" value="no"><span>No</span></label>
         </div>
       </div>
       <!-- 6) Experiencia Exportadora previa -->
@@ -803,8 +803,8 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="field logi-right">
       <div class="cap-row">
         <div class="yn-line">
-          <label class="yn"><input type="checkbox"><span>Si</span></label>
-          <label class="yn"><input type="checkbox"><span>No</span></label>
+          <label class="yn"><input type="radio" name="capacidad_exportacion" value="si"><span>Si</span></label>
+          <label class="yn"><input type="radio" name="capacidad_exportacion" value="no"><span>No</span></label>
         </div>
         <label class="lbl plazo-lbl">Plazo estimado <span class="req">*</span></label>
         <input class="fld plazo" placeholder="meses">
@@ -819,14 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 </div>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.logi-right .yn-line').forEach(line => {
-    const boxes = line.querySelectorAll('input[type="checkbox"]');
-    boxes.forEach(b => b.addEventListener('change', () => {
-      if (b.checked) boxes.forEach(x => { if (x !== b) x.checked = false; });
-    }));
-  });
-});
+// Radio button logic is now handled by global functions
 </script>
 <!-- logistica -->
 
@@ -859,8 +852,8 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="field">
         <div class="yn-line">
-          <label class="yn"><input type="checkbox"><span>Si</span></label>
-          <label class="yn"><input type="checkbox"><span>No</span></label>
+          <label class="yn"><input type="radio" name="interes_participar" value="si"><span>Si</span></label>
+          <label class="yn"><input type="radio" name="interes_participar" value="no"><span>No</span></label>
         </div>
       </div>
       <div class="label">
@@ -868,8 +861,8 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="field">
         <div class="yn-line">
-          <label class="yn"><input type="checkbox"><span>Si</span></label>
-          <label class="yn"><input type="checkbox"><span>No</span></label>
+          <label class="yn"><input type="radio" name="disponibilidad_capacitaciones" value="si"><span>Si</span></label>
+          <label class="yn"><input type="radio" name="disponibilidad_capacitaciones" value="no"><span>No</span></label>
         </div>
       </div>
     </div>
@@ -901,8 +894,8 @@ document.addEventListener('DOMContentLoaded', () => {
           Autorización para Difundir la Información Cargada en la Plataforma Provincial <span class="req">*</span>
         </div>
         <div class="yn-line">
-          <label class="yn"><input type="checkbox"><span>Si</span></label>
-          <label class="yn"><input type="checkbox"><span>No</span></label>
+          <label class="yn"><input type="radio" name="autorizacion_difundir" value="si"><span>Si</span></label>
+          <label class="yn"><input type="radio" name="autorizacion_difundir" value="no"><span>No</span></label>
         </div>
       </div>
       <div class="consent-row">
@@ -910,8 +903,8 @@ document.addEventListener('DOMContentLoaded', () => {
           Autorizo la Publicación de mi Información para Promoción Exportadora <span class="req">*</span>
         </div>
         <div class="yn-line">
-          <label class="yn"><input type="checkbox"><span>Si</span></label>
-          <label class="yn"><input type="checkbox"><span>No</span></label>
+          <label class="yn"><input type="radio" name="autorizacion_publicacion" value="si"><span>Si</span></label>
+          <label class="yn"><input type="radio" name="autorizacion_publicacion" value="no"><span>No</span></label>
         </div>
       </div>
       <div class="consent-row">
@@ -919,22 +912,15 @@ document.addEventListener('DOMContentLoaded', () => {
           Acepto ser Contactado por Organismos de Promoción y Compradores Internacionales <span class="req">*</span>
         </div>
         <div class="yn-line">
-          <label class="yn"><input type="checkbox"><span>Si</span></label>
-          <label class="yn"><input type="checkbox"><span>No</span></label>
+          <label class="yn"><input type="radio" name="acepto_contacto" value="si"><span>Si</span></label>
+          <label class="yn"><input type="radio" name="acepto_contacto" value="no"><span>No</span></label>
         </div>
       </div>
     </div>
   </div>
 </div>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.consent-row .yn-line').forEach(line => {
-    const boxes = line.querySelectorAll('input[type="checkbox"]');
-    boxes.forEach(b => b.addEventListener('change', () => {
-      if (b.checked) boxes.forEach(x => { if (x !== b) x.checked = false; });
-    }));
-  });
-});
+// Radio button logic is now handled by global functions
 </script>
 
 <!-- Global function for custom dropdowns -->
@@ -982,5 +968,38 @@ function initCustomDropdown(dropdown, hiddenInput) {
     }
   });
 }
+
+// Global function to initialize radio button groups
+function initRadioGroups() {
+  // Get all radio button groups by name
+  const radioGroups = {};
+  document.querySelectorAll('input[type="radio"]').forEach(radio => {
+    const name = radio.name;
+    if (!radioGroups[name]) {
+      radioGroups[name] = [];
+    }
+    radioGroups[name].push(radio);
+  });
+  
+  // Add event listeners to each group
+  Object.keys(radioGroups).forEach(groupName => {
+    const radios = radioGroups[groupName];
+    radios.forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (this.checked) {
+          // Uncheck all other radios in the same group
+          radios.forEach(r => {
+            if (r !== this) {
+              r.checked = false;
+            }
+          });
+        }
+      });
+    });
+  });
+}
+
+// Initialize radio groups when DOM is loaded
+document.addEventListener('DOMContentLoaded', initRadioGroups);
 </script>
 <!-- validacion -->
