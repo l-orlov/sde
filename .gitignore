@@ -1,0 +1,7 @@
+node_modules
+tmp
+config.php
+config_prod.php
+.DS_Store
+.vscode
+.idea

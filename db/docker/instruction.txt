@@ -1,0 +1,8 @@
+docker-compose up -d
+
+docker exec -it sde_mariadb bash
+/usr/bin/mariadb -u root -p
+
+enter: rootpassword
+
+USE db;

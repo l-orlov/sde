@@ -1,3 +1,13 @@
+<?
+session_start();
+set_time_limit (0);
+error_reporting(E_ALL);
+ob_implicit_flush();
+
+include "includes/functions.php";
+DBconnect();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
