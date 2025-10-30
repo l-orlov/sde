@@ -20,7 +20,12 @@ DBconnect();
 <body>
 
 <?
-include "includes/lending.php";
+$page = isset($_REQUEST['page']) ? htmlspecialchars($_REQUEST['page']) : '';
+
+SWITCH ( $page ) {
+    case 'regfull':			include "includes/regfull.php";      break;
+    default:			    include "includes/landing.php";
+}
 ?>
 
 </body>
