@@ -1,11 +1,9 @@
-<!-- Hero Section -->
+<!-- HEADER -->
 <div class="hero-section">
-    <!-- Header -->
     <header class="hero-header">
         <div class="logo">
             <img src="img/logo.png" alt="Santiago del Estero" class="logo-image">
         </div>
-        
         <div class="nav-container">
             <nav class="hero-nav">
                 <a href="#nosotros" class="nav-link">Nosotros</a>
@@ -17,19 +15,14 @@
                 </a>
             </nav>
         </div>
-        
         <div class="hero-buttons">
-            <a href="#registrarse" class="btn btn-register">Registrarse</a>
-            <a href="#entrar" class="btn btn-login">Entrar</a>
+            <a onclick="location.href='?page=regnew';" class="btn btn-register">Registrarse</a>
+            <a onclick="location.href='?page=login';" class="btn btn-login">Entrar</a>
         </div>
     </header>
-    
-    <!-- Hero Content -->
     <div class="hero-content">
         <h1 class="hero-title">Conectamos el trabajo local<br>con el mercado global</h1>
     </div>
-    
-    <!-- Hero Footer -->
     <div class="hero-footer">
         <div class="hero-tagline">
             <span class="tagline-normal">CON </span>
@@ -40,3 +33,4 @@
         </div>
     </div>
 </div>
+<!-- HEADER -->

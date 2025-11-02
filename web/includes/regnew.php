@@ -35,14 +35,14 @@
                 </div>
                 <div class="login_input_box">
                     <div class="login_input_inp">
-                        <input type="Text" id="phone" placeholder="Ingrese su Correo electrónico">
+                        <input type="Text" id="mail" placeholder="Ingrese su Correo electrónico">
                         <!-- data-i18n-placeholder="register_phone_placeholder -->
                     </div>
                 </div>
                 
                 <div class="login_input_box">
                     <div class="login_input_inp">
-                        <input type="Password" id="pass" placeholder="Ingrese su Número de WhatsApp">
+                        <input type="Text" id="phone" placeholder="Ingrese su Número de WhatsApp">
                         <!-- data-i18n-placeholder="register_pass_placeholder" -->
                     </div>
                 </div>

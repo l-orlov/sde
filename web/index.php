@@ -23,8 +23,9 @@ DBconnect();
 $page = isset($_REQUEST['page']) ? htmlspecialchars($_REQUEST['page']) : '';
 
 SWITCH ( $page ) {
-    case 'regfull':			include "includes/regfull.php";      break;
-    case 'regnew':			include "includes/regnew.php";       break;
+    case 'regfull':			include "includes/regfull.php";         break;
+    case 'regnew':			include "includes/regnew.php";          break;
+    case 'login':			include "includes/login.php";           break;
     default:			    include "includes/landing.php";
 }
 ?>
