@@ -26,6 +26,7 @@ SWITCH ( $page ) {
     case 'regfull':			include "includes/regfull.php";         break;
     case 'regnew':			include "includes/regnew.php";          break;
     case 'login':			include "includes/login.php";           break;
+    case 'home':			include "includes/home.php";            break;
     default:			    include "includes/landing.php";
 }
 ?>
