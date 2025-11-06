@@ -5,3 +5,4 @@ config_prod.php
 .DS_Store
 .vscode
 .idea
+.cursor
