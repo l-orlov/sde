@@ -35,17 +35,6 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
       <div class="home-logo">
         <img src="img/logo.png" alt="Santiago del Estero" class="home-logo-image">
       </div>
-      <div class="home-nav-container">
-        <nav class="home-nav">
-          <a href="#" class="home-nav-link">Nosotros</a>
-          <a href="#" class="home-nav-link">Oferta exportable</a>
-          <a href="#" class="home-nav-link">Noticias</a>
-          <a href="#" class="home-nav-link">Contactos</a>
-          <a href="https://wa.me/" class="home-nav-whatsapp" target="_blank">
-            <img src="img/icono_whatsapp.png" alt="WhatsApp" class="whatsapp-icon">
-          </a>
-        </nav>
-      </div>
       <div class="home-header-actions">
         <button class="btn btn-export-tariffs">Ver aranceles de exportación</button>
         <div class="home-header-icons">

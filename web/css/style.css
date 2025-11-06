@@ -1616,8 +1616,8 @@ to {
 .home-header-wrapper {
   max-width: 1600px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   padding: 0 40px 0 0;
   gap: 20px;
@@ -2291,15 +2291,6 @@ to {
   .home-logo-image {
     height: 60px;
   }
-  .home-nav-container {
-    padding: 8px 15px;
-  }
-  .home-nav {
-    gap: 15px;
-  }
-  .home-nav-link {
-    font-size: 16px;
-  }
   .home-header-actions {
     gap: 10px;
   }
@@ -2319,15 +2310,6 @@ to {
   .home-logo-image {
     height: 50px;
   }
-  .home-nav-container {
-    padding: 6px 12px;
-  }
-  .home-nav {
-    gap: 12px;
-  }
-  .home-nav-link {
-    font-size: 14px;
-  }
   .btn-export-tariffs {
     padding: 8px 20px;
     font-size: 13px;
@@ -2336,28 +2318,17 @@ to {
 
 @media (max-width: 768px) {
   .home-header-wrapper {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: 15px;
     padding: 20px 30px;
+    align-items: stretch;
   }
   
   .home-logo {
     background: none;
     padding: 0;
     border-radius: 0;
-    justify-self: flex-start;
-  }
-  
-  .home-nav-container {
-    justify-self: stretch;
-    width: 100%;
-    background: rgba(255, 255, 255, 0.95);
-  }
-  
-  .home-nav {
-    width: 100%;
     justify-content: flex-start;
-    flex-wrap: wrap;
   }
   
   .home-header-actions {
@@ -2365,7 +2336,6 @@ to {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    justify-self: stretch;
   }
   
   .btn-export-tariffs {
