@@ -215,7 +215,10 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
           <?php } ?>
         </div>
         
-        <button class="btn btn-show-more" id="showMoreProducts">Mostrar más</button>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+          <button class="btn btn-show-more" id="showMoreProducts">Mostrar más</button>
+          <button class="btn btn-show-less" id="showLessProducts" style="display: none;">Ocultar</button>
+        </div>
       </section>
 
       <!-- Presentations Section -->
@@ -297,10 +300,11 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const showMoreBtn = document.getElementById('showMoreProducts');
+  const showLessBtn = document.getElementById('showLessProducts');
   const productsGrid = document.querySelector('.home-products-grid');
   const countElement = document.querySelector('.home-products-section .home-section-count');
   
-  if (!showMoreBtn || !productsGrid || !countElement) return;
+  if (!showMoreBtn || !showLessBtn || !productsGrid || !countElement) return;
   
   const totalProducts = parseInt(countElement.getAttribute('data-total')) || 25;
   let visibleCount = 0;
@@ -340,19 +344,32 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
+  // Функция для обновления видимости кнопок
+  function updateButtonsVisibility() {
+    const productsPerRow = getProductsPerRow();
+    
+    // Кнопка "Свернуть" показывается только если открыто больше одного ряда
+    if (visibleCount > productsPerRow) {
+      showLessBtn.style.display = 'block';
+    } else {
+      showLessBtn.style.display = 'none';
+    }
+    
+    // Кнопка "Показать больше" скрывается если все продукты показаны
+    if (visibleCount >= totalProducts) {
+      showMoreBtn.style.display = 'none';
+    } else {
+      showMoreBtn.style.display = 'block';
+    }
+  }
+  
   // Функция для инициализации и обновления видимых карточек
   function updateVisibleCards() {
     const productsPerRow = getProductsPerRow();
     hideExtraCards(productsPerRow);
     visibleCount = productsPerRow;
     updateCounter();
-    
-    // Скрываем кнопку, если все продукты показаны
-    if (visibleCount >= totalProducts) {
-      showMoreBtn.style.display = 'none';
-    } else {
-      showMoreBtn.style.display = 'block';
-    }
+    updateButtonsVisibility();
   }
   
   // Инициализация - ждем немного, чтобы сетка успела отрендериться
@@ -378,14 +395,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     visibleCount += productsToShow;
     updateCounter();
-    
-    if (visibleCount >= totalProducts) {
-      showMoreBtn.style.display = 'none';
-    }
+    updateButtonsVisibility();
   }
   
-  // Обработчик клика на кнопку
+  // Функция для сворачивания продуктов до первого ряда
+  function collapseToFirstRow() {
+    const productsPerRow = getProductsPerRow();
+    hideExtraCards(productsPerRow);
+    visibleCount = productsPerRow;
+    updateCounter();
+    updateButtonsVisibility();
+  }
+  
+  // Обработчики кликов на кнопки
   showMoreBtn.addEventListener('click', showNextRow);
+  showLessBtn.addEventListener('click', collapseToFirstRow);
   
   // Обновление при изменении размера окна
   let resizeTimeout;
@@ -410,12 +434,8 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCounter();
       }
       
-      // Обновляем видимость кнопки
-      if (visibleCount >= totalProducts) {
-        showMoreBtn.style.display = 'none';
-      } else {
-        showMoreBtn.style.display = 'block';
-      }
+      // Обновляем видимость кнопок
+      updateButtonsVisibility();
     }, 250);
   });
 });
