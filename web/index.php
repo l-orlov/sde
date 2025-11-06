@@ -21,13 +21,20 @@ DBconnect();
 
 <?
 $page = isset($_REQUEST['page']) ? htmlspecialchars($_REQUEST['page']) : '';
+if ($page=='logout') include 'includes/logout.php';
 
-SWITCH ( $page ) {
-    case 'regfull':			include "includes/regfull.php";         break;
-    case 'regnew':			include "includes/regnew.php";          break;
-    case 'login':			include "includes/login.php";           break;
-    case 'home':			include "includes/home.php";            break;
-    default:			    include "includes/landing.php";
+if ( !isset($_SESSION['uid']) ) {
+    SWITCH ( $page ) {
+        case 'regfull':			include "includes/regfull.php";             break;
+        case 'regnew':			include "includes/regnew.php";              break;
+        case 'login':			include "includes/login.php";               break;
+        default:                include "includes/landing.php";             break;
+    }
+} else {
+    SWITCH ( $page ) {
+        case 'home':                 include "includes/home.php";                break;
+        default:                     include "includes/home.php";                break;
+    }
 }
 ?>
 

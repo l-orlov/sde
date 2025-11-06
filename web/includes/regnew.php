@@ -1,24 +1,19 @@
 <div class="contener">
 	<div class="login_main_box">
     <div class="login_box">
-
         <div class="login_logo">
             <img src="img/logo.png">
         </div>
-
 		<div class="login_lang" onclick="toggleLangMenu()">
 			<img src="img/icons/lang.png" />
 			<span id="current-lang">Es</span>
-
 			<ul id="login_lang_menu" class="login_lang_menu hidden">
 				<li onclick="setLang('reg', 'es')">Español</li>
 				<li onclick="setLang('reg', 'en')">English</li>
 				<li onclick="setLang('reg', 'ru')">Русский</li>
 			</ul>
 		</div>
-
         <div class="login_tit" data-i18n="register_title">REGISTRO DE DATOS</div>
-        
         <div class="login_data_box">
             <div class="logins">
                 <div class="login_input_box">
@@ -39,21 +34,18 @@
                         <!-- data-i18n-placeholder="register_phone_placeholder -->
                     </div>
                 </div>
-                
                 <div class="login_input_box">
                     <div class="login_input_inp">
                         <input type="Text" id="phone" placeholder="Ingrese su Número de WhatsApp">
                         <!-- data-i18n-placeholder="register_pass_placeholder" -->
                     </div>
                 </div>
-               
                 <div class="login_input_box">
                     <div class="login_input_inp">
-                        <input type="Password" id="repass" placeholder="Ingrese su Contraseña">
+                        <input type="Password" id="pass" placeholder="Ingrese su Contraseña">
                         <!-- data-i18n-placeholder="register_repass_placeholder" -->
                     </div>
                 </div>
-
                 <div class="login_input_box">
                     <div class="login_input_inp">
                         <input type="Password" id="repass" placeholder="Confirmar Contraseña">
@@ -61,7 +53,6 @@
                     </div>
                 </div>
             </div>
-            
             <div class="general_bt login_input_bt" data-i18n="register_button" onclick="regUser()">Guardar Datos</div>
 			<div class="login_info_msg" id="login_info_msg"></div>
         </div>
@@ -94,11 +85,12 @@ function regUser() {
 
 	let lastname = document.getElementById('lastname').value.trim();
 	let firstname = document.getElementById('firstname').value.trim();
+	let mail = document.getElementById('mail').value.trim();
 	let phone = document.getElementById('phone').value.trim();
 	let pass = document.getElementById('pass').value.trim();
 	let repass = document.getElementById('repass').value.trim();
 	
-	let requiredFields = { lastname, firstname, phone, pass, repass };
+	let requiredFields = { lastname, firstname, mail, phone, pass, repass };
 	for (let field in requiredFields) {
 		const val = String(requiredFields[field]).trim();
 		if (!val) {
@@ -117,6 +109,7 @@ function regUser() {
 	let senddata = {
 		lastname: lastname,
 		firstname: firstname,
+		mail: mail,
 		phone: phone,
 		pass: pass
 	};
@@ -130,7 +123,6 @@ function regUser() {
 		let err = res_arr['err'];
 		if ( ok == 1 ) {
 			clearForm();
-
 			// Redirect to home page
 			window.location.href = '?page=home';
 		} else {
@@ -148,6 +140,7 @@ function clearForm() {
 	// Clear fields
 	document.getElementById('lastname').value='';
 	document.getElementById('firstname').value='';
+	document.getElementById('mail').value='';
 	document.getElementById('phone').value='';
 	document.getElementById('pass').value='';
 	document.getElementById('repass').value='';
