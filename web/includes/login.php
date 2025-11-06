@@ -1,3 +1,12 @@
+<?
+// Обработка logout
+// session_start() уже вызван в index.php
+if (isset($_GET['logout']) && $_GET['logout'] == '1') {
+    session_destroy();
+    header('Location: ?page=login');
+    exit();
+}
+?>
 <div class="contener">
 	<div class="login_main_box">
 		<div class="login_box">

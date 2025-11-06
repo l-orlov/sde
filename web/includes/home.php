@@ -1,3 +1,33 @@
+<?
+// Загружаем данные пользователя из базы данных
+// session_start() и DBconnect() уже вызваны в index.php
+$userData = null;
+if (isset($_SESSION['uid'])) {
+    $userId = intval($_SESSION['uid']);
+    $query = "SELECT * FROM users WHERE id = ?";
+    $stmt = mysqli_prepare($link, $query);
+    mysqli_stmt_bind_param($stmt, 'i', $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    if ($result && mysqli_num_rows($result) > 0) {
+        $userData = mysqli_fetch_assoc($result);
+    }
+    mysqli_stmt_close($stmt);
+}
+
+// Если нет данных пользователя, редирект на логин
+if (!$userData) {
+    header('Location: ?page=login');
+    exit();
+}
+
+$lastname = htmlspecialchars($userData['last_name'] ?? '');
+$firstname = htmlspecialchars($userData['first_name'] ?? '');
+$email = htmlspecialchars($userData['email'] ?? '');
+$phone = htmlspecialchars($userData['phone'] ?? '');
+// Проверяем наличие колонки company_name (может отсутствовать в старых версиях таблицы)
+$companyName = isset($userData['company_name']) ? htmlspecialchars($userData['company_name']) : '';
+?>
 <div class="home-container">
   <!-- Header -->
   <header class="home-header">
@@ -44,56 +74,56 @@
       <div class="home-profile-form">
         <div class="home-avatar-upload">
           <div class="home-avatar-placeholder">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </div>
-          <div class="home-avatar-label">Agregar logotipo</div>
-          <div class="home-avatar-camera">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-              <circle cx="12" cy="13" r="4"></circle>
-            </svg>
+            <span class="home-avatar-text">Agregar<br>logotipo</span>
+            <div class="home-avatar-camera">
+              <img src="img/icons/edit_icon.png" alt="Edit">
+            </div>
           </div>
         </div>
         
         <div class="home-form-fields">
           <div class="home-form-field">
             <label class="home-form-label">Apellido:</label>
-            <input type="text" class="home-form-input" value="Pérez">
+            <input type="text" class="home-form-input" id="profile-lastname" value="<?= $lastname ?>">
           </div>
           
           <div class="home-form-field">
             <label class="home-form-label">Nombre:</label>
-            <input type="text" class="home-form-input" value="Juan">
+            <input type="text" class="home-form-input" id="profile-firstname" value="<?= $firstname ?>">
           </div>
           
           <div class="home-form-field">
             <label class="home-form-label">Nombre de la empresa:</label>
-            <input type="text" class="home-form-input" value="Santiago del Estero">
+            <input type="text" class="home-form-input" id="profile-company" value="<?= $companyName ?>">
           </div>
           
           <div class="home-form-field">
             <label class="home-form-label">Correo electrónico:</label>
-            <input type="email" class="home-form-input" value="user@example.com">
+            <input type="email" class="home-form-input" id="profile-email" value="<?= $email ?>">
           </div>
           
           <div class="home-form-field">
             <label class="home-form-label">Número de WhatsApp:</label>
-            <input type="tel" class="home-form-input" value="+XX XXX XXX XXXX">
+            <input type="tel" class="home-form-input" id="profile-phone" value="<?= $phone ?>">
           </div>
           
           <div class="home-form-field">
             <label class="home-form-label">Contraseña:</label>
             <div class="home-form-password">
-              <input type="password" class="home-form-input" value="********">
+              <input type="password" class="home-form-input" id="profile-password" placeholder="Nueva contraseña">
               <button class="home-form-change-btn">Cambiar</button>
             </div>
           </div>
         </div>
         
-        <button class="btn btn-save-profile">Guardar cambios</button>
+        <div class="home-profile-buttons">
+          <button class="btn btn-save-profile">Guardar cambios</button>
+          <button class="btn btn-logout">Cerrar sesión</button>
+        </div>
+      </div>
+      
+      <div class="home-profile-action">
+        <button class="btn btn-edit-form">Editar formulario: agregar nuevos productos y servicios</button>
       </div>
     </aside>
 
@@ -269,11 +299,6 @@
       </section>
     </div>
   </div>
-
-  <!-- Footer Action -->
-  <div class="home-footer-action">
-    <button class="btn btn-edit-form">Editar formulario: agregar nuevos productos y servicios</button>
-  </div>
 </div>
 
 <script>
@@ -416,6 +441,16 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   });
+  
+  // Logout button handler
+  const logoutBtn = document.querySelector('.btn-logout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', function() {
+      if (confirm('¿Está seguro de que desea cerrar sesión?')) {
+        window.location.href = '?page=logout';
+      }
+    });
+  }
 });
 </script>
 

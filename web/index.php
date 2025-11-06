@@ -25,6 +25,7 @@ if ($page=='logout') include 'includes/logout.php';
 
 if ( !isset($_SESSION['uid']) ) {
     SWITCH ( $page ) {
+        case 'landing':         include "includes/landing.php";             break;
         case 'regfull':			include "includes/regfull.php";             break;
         case 'regnew':			include "includes/regnew.php";              break;
         case 'login':			include "includes/login.php";               break;
