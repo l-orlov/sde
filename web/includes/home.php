@@ -116,7 +116,7 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
       </div>
       
       <div class="home-profile-action">
-        <button class="btn btn-edit-form">Editar formulario: agregar nuevos productos y servicios</button>
+        <button onclick="location.href='?page=regfull';" class="btn btn-edit-form">Editar formulario: agregar nuevos productos y servicios</button>
       </div>
     </aside>
 

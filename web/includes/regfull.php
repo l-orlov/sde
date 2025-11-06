@@ -919,6 +919,12 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>
 </div>
+
+<!-- Submit Button -->
+<div style="text-align: center; margin: 40px 0;">
+  <button type="button" class="btn btn-save-register" id="btnSaveRegister">Guardar y registrarse</button>
+</div>
+
 <script>
 // Radio button logic is now handled by global functions
 </script>

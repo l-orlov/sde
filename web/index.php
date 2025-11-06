@@ -33,6 +33,7 @@ if ( !isset($_SESSION['uid']) ) {
     }
 } else {
     SWITCH ( $page ) {
+        case 'regfull':			     include "includes/regfull.php";             break;
         case 'home':                 include "includes/home.php";                break;
         default:                     include "includes/home.php";                break;
     }

@@ -1290,6 +1290,26 @@ textarea::placeholder{font-size: 14px;}}
   background: #4B5563;
   transform: translateY(-2px);
 }
+
+.btn-save-register {
+  background: #FFD60A;
+  color: #000;
+  padding: 15px 40px;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: inline-block;
+}
+
+.btn-save-register:hover {
+  background: #ffc107;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 214, 10, 0.4);
+}
 .hero-content {
   position: relative;
   z-index: 1;
