@@ -97,15 +97,6 @@ textarea::placeholder{font-size: 14px;}}
   font-weight: 500;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.18);
 }
-input::placeholder,
-input:focus,
-input:active,
-input:-webkit-autofill {
-	font-size: 14px;
-	color: #6A7D7E;
-	-webkit-text-fill-color: #6A7D7E;
-}
-
 
 /* EMPRESA */
 .datos {
@@ -1932,7 +1923,6 @@ to {
   position: relative;
   width: 300px;
 }
-
 .home-search-input {
   width: 100%;
   padding: 10px 40px 10px 12px;
