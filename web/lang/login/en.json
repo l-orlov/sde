@@ -1,0 +1,8 @@
+{
+    "login_phone_placeholder": "Enter your WhatsApp number",
+    "login_pass_placeholder": "Enter your Password",
+    "login_title": "LOG-IN",
+    "login_button": "LOGIN",
+    "login_register": "REGISTER NEW",
+    "login_forgot": "FORGOT PASSWORD"
+}

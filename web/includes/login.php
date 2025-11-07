@@ -1,6 +1,4 @@
 <?
-// Обработка logout
-// session_start() уже вызван в index.php
 if (isset($_GET['logout']) && $_GET['logout'] == '1') {
     session_destroy();
     header('Location: ?page=login');
@@ -63,10 +61,8 @@ function toggleLangMenu() {
   menu.classList.toggle('hidden');
 }
 document.addEventListener('DOMContentLoaded', () => {
-  // Установка текущего языка при загрузке
   initLang('login');
 });
-// (опционально) закрытие меню по клику вне
 document.addEventListener('click', function (e) {
   const langBox = document.querySelector('.login_lang');
   const menu = document.getElementById('login_lang_menu');

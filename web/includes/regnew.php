@@ -8,9 +8,9 @@
 			<img src="img/icons/lang.png" />
 			<span id="current-lang">Es</span>
 			<ul id="login_lang_menu" class="login_lang_menu hidden">
-				<li onclick="setLang('reg', 'es')">Español</li>
-				<li onclick="setLang('reg', 'en')">English</li>
-				<li onclick="setLang('reg', 'ru')">Русский</li>
+				<li onclick="setLang('regnew', 'es')">Español</li>
+				<li onclick="setLang('regnew', 'en')">English</li>
+				<li onclick="setLang('regnew', 'ru')">Русский</li>
 			</ul>
 		</div>
         <div class="login_tit" data-i18n="register_title">REGISTRO DE DATOS</div>
@@ -18,38 +18,32 @@
             <div class="logins">
                 <div class="login_input_box">
                     <div class="login_input_inp">
-                        <input type="Text" id="lastname" placeholder="Ingrese su Apellido">
-                        <!-- data-i18n-placeholder="register_lastname_placeholder" -->
+                        <input type="Text" id="lastname" data-i18n-placeholder="register_lastname_placeholder">
                     </div>
                 </div>
                 <div class="login_input_box">
                     <div class="login_input_inp">
-                        <input type="Text" id="firstname" placeholder="Ingrese su Nombre">
-                        <!-- data-i18n-placeholder="register_firstname_placeholder" -->
+                        <input type="Text" id="firstname" data-i18n-placeholder="register_firstname_placeholder">
                     </div>
                 </div>
                 <div class="login_input_box">
                     <div class="login_input_inp">
-                        <input type="Text" id="mail" placeholder="Ingrese su Correo electrónico">
-                        <!-- data-i18n-placeholder="register_phone_placeholder -->
+                        <input type="Text" id="mail" data-i18n-placeholder="register_mail_placeholder">
                     </div>
                 </div>
                 <div class="login_input_box">
                     <div class="login_input_inp">
-                        <input type="Text" id="phone" placeholder="Ingrese su Número de WhatsApp">
-                        <!-- data-i18n-placeholder="register_pass_placeholder" -->
+                        <input type="Text" id="phone" data-i18n-placeholder="register_phone_placeholder">
                     </div>
                 </div>
                 <div class="login_input_box">
                     <div class="login_input_inp">
-                        <input type="Password" id="pass" placeholder="Ingrese su Contraseña">
-                        <!-- data-i18n-placeholder="register_repass_placeholder" -->
+                        <input type="Password" id="pass" data-i18n-placeholder="register_pass_placeholder">
                     </div>
                 </div>
                 <div class="login_input_box">
                     <div class="login_input_inp">
-                        <input type="Password" id="repass" placeholder="Confirmar Contraseña">
-                        <!-- data-i18n-placeholder="register_repass_placeholder" -->
+                        <input type="Password" id="repass" data-i18n-placeholder="register_repass_placeholder">
                     </div>
                 </div>
             </div>
@@ -66,10 +60,8 @@ function toggleLangMenu() {
   menu.classList.toggle('hidden');
 }
 document.addEventListener('DOMContentLoaded', () => {
-  // Установка текущего языка при загрузке
-  initLang('reg');
+  initLang('regnew');
 });
-// (опционально) закрытие меню по клику вне
 document.addEventListener('click', function (e) {
   const langBox = document.querySelector('.login_lang');
   const menu = document.getElementById('login_lang_menu');

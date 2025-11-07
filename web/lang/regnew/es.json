@@ -1,0 +1,11 @@
+{
+    "register_title": "REGISTRO DE DATOS",
+    "register_lastname_placeholder": "Ingrese su Apellido",
+    "register_firstname_placeholder": "Ingrese su Nombre",
+    "register_mail_placeholder": "Ingrese su Correo electrónico",
+    "register_phone_placeholder": "Ingrese su Número de WhatsApp",
+    "register_pass_placeholder": "Ingrese su Contraseña",
+    "register_repass_placeholder": "Confirmar Contraseña",
+    "register_button": "GUARDAR DATOS"
+}
+

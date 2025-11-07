@@ -1268,13 +1268,13 @@ textarea::placeholder{font-size: 14px;}}
   border-radius: 20px;
   padding: 8px;
   position: absolute;
-  top: 10%;
+  top: 20%;
   right: 3%;
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 14px;
-  color: #577C8E;
+  color: #000;
   z-index: 10;
   cursor: pointer;
 }
@@ -1325,14 +1325,14 @@ textarea::placeholder{font-size: 14px;}}
   box-shadow: 0 5px 15px rgba(255, 214, 10, 0.4);
 }
 .btn-login {
-  background: #6B7280;
-  color: white;
+  background: white;
+  border: 2px solid #FFD60A;
+  color: #000;
 }
 .btn-login:hover {
-  background: #4B5563;
+  background: #f5f7f9;
   transform: translateY(-2px);
 }
-
 .btn-save-register {
   background: #FFD60A;
   color: #000;

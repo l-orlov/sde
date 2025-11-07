@@ -1,0 +1,10 @@
+{
+    "register_title": "РЕГИСТРАЦИЯ ДАННЫХ",
+    "register_lastname_placeholder": "Введите вашу Фамилию",
+    "register_firstname_placeholder": "Введите ваше Имя",
+    "register_mail_placeholder": "Введите ваш Email",
+    "register_phone_placeholder": "Введите ваш номер WhatsApp",
+    "register_pass_placeholder": "Введите ваш пароль",
+    "register_repass_placeholder": "Подтвердите пароль",
+    "register_button": "СОХРАНИТЬ ДАННЫЕ"
+}

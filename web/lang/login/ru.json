@@ -1,0 +1,8 @@
+{
+    "login_phone_placeholder": "Введите ваш номер WhatsApp",
+    "login_pass_placeholder": "Введите ваш пароль",
+    "login_title": "ВХОД",
+    "login_button": "ВХОД",
+    "login_register": "РЕГИСТРАЦИЯ",
+    "login_forgot": "ЗАБЫЛИ ПАРОЛЬ"
+}
