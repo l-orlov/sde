@@ -1,27 +1,36 @@
 <!-- EMPRESA -->
+<div class="regfull-lang" onclick="toggleRegfullLangMenu()">
+  <img src="img/icons/lang.png" alt="Language">
+  <span id="regfull-current-lang">Es</span>
+  <ul id="regfull_lang_menu" class="regfull_lang_menu hidden">
+    <li onclick="setLang('regfull', 'es')">Español</li>
+    <li onclick="setLang('regfull', 'en')">English</li>
+    <li onclick="setLang('regfull', 'ru')">Русский</li>
+  </ul>
+</div>
 <div class="datos">
   <div class="datos_header">
-    <h1>1. Datos de la empresa</h1>
+    <h1 data-i18n="regfull_section1_title">1. Datos de la empresa</h1>
     <img src="img/icons/datos.png">
   </div>
   <div class="form" novalidate>
     <!-- Nombre -->
-    <div class="label"><label for="nombre">Nombre de la Empresa/Emprendimiento <span class="req">*</span></label></div>
+    <div class="label"><label for="nombre" data-i18n="regfull_company_name">Nombre de la Empresa/Emprendimiento <span class="req">*</span></label></div>
     <div class="field"><input type="search" id="nombre" name="nombre" required></div>
     <!-- CUIT -->
-    <div class="label"><label for="cuit">CUIT / Identificación Fiscal <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="cuit" name="cuit" placeholder="XX-XXXXXXXX-X" required></div>
+    <div class="label"><label for="cuit" data-i18n="regfull_cuit">CUIT / Identificación Fiscal <span class="req">*</span></label></div>
+    <div class="field"><input type="search" id="cuit" name="cuit" data-i18n-placeholder="regfull_cuit_placeholder" placeholder="XX-XXXXXXXX-X" required></div>
     <!-- Razón social -->
-    <div class="label"><label for="razon">Razón social <span class="req">*</span></label></div>
+    <div class="label"><label for="razon" data-i18n="regfull_razon_social">Razón social <span class="req">*</span></label></div>
     <div class="field"><input type="search" id="razon" name="razon" required></div>
     <!-- Fecha de inicio -->
-    <div class="label"><label for="inicio">Fecha de Inicio de Actividad <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="inicio" name="inicio" placeholder="dd/mm/aaaa" inputmode="numeric" required></div>
+    <div class="label"><label for="inicio" data-i18n="regfull_start_date">Fecha de Inicio de Actividad <span class="req">*</span></label></div>
+    <div class="field"><input type="search" id="inicio" name="inicio" data-i18n-placeholder="regfull_date_placeholder" placeholder="dd/mm/aaaa" inputmode="numeric" required></div>
     <!-- Página web -->
-    <div class="label"><label for="web">Página web (si aplica)</label></div>
-    <div class="field"><input type="search" id="web" name="web" type="url" placeholder="http://…"></div>
+    <div class="label"><label for="web" data-i18n="regfull_website">Página web (si aplica)</label></div>
+    <div class="field"><input type="search" id="web" name="web" type="url" data-i18n-placeholder="regfull_website_placeholder" placeholder="http://…"></div>
     <!-- Redes sociales -->
-    <div class="label"><span>Redes sociales:</span></div>
+    <div class="label"><span data-i18n="regfull_social_networks">Redes sociales:</span></div>
     <div class="field" id="social-wrapper">
       <div class="social_row">
         <div class="custom-dropdown">
@@ -41,30 +50,30 @@
           </div>
           <input type="hidden" class="net" name="social_tipo[]" value="">
         </div>
-        <input class="net-other" type="text" placeholder="Ingresa la red…" hidden>
+        <input class="net-other" type="text" data-i18n-placeholder="regfull_social_enter_network" placeholder="Ingresa la red…" hidden>
         <input class="net-final" type="hidden" name="social_tipo[]">
         <div class="inline">
-          <input name="social_url[]" type="url" placeholder="http://…">
+          <input name="social_url[]" type="url" data-i18n-placeholder="regfull_website_placeholder" placeholder="http://…">
           <button type="button" class="remove" hidden>&times;</button>
         </div>
       </div>
-      <button type="button" class="add_more" id="add-social">agregar más</button>
+      <button type="button" class="add_more" id="add-social" data-i18n="regfull_add_more">agregar más</button>
     </div>
     <!-- Domicilio Legal -->
     <div class="address">
-      <div class="label"><span>Domicilio Legal <span class="req">*</span></span></div>
+      <div class="label"><span data-i18n="regfull_legal_address">Domicilio Legal <span class="req">*</span></span></div>
       <div class="address_grid">
-        <label class="label_span">Calle <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_street">Calle <span class="req">*</span></label>
         <input type="search" class="span_right">
-        <label class="label_span">Altura <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_number">Altura <span class="req">*</span></label>
         <input type="search" class="">
-        <label class="label_span">Código Postal <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_postal_code">Código Postal <span class="req">*</span></label>
         <input type="search" class="">
-        <label class="label_span">Piso</label>
+        <label class="label_span" data-i18n="regfull_floor">Piso</label>
         <input type="search" class="">
-        <label class="label_span">Departamento</label>
+        <label class="label_span" data-i18n="regfull_apartment">Departamento</label>
         <input type="search" class="">
-        <label class="label_span">Localidad <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_locality">Localidad <span class="req">*</span></label>
         <div class="span_right">
           <div class="custom-dropdown">
             <div class="dropdown-selected">
@@ -92,7 +101,7 @@
             <input type="hidden" name="localidad_legal" value="">
           </div>
         </div>
-        <label class="label_span">Departamento <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_department">Departamento <span class="req">*</span></label>
         <div class="span_right">
           <div class="custom-dropdown">
             <div class="dropdown-selected">
@@ -136,19 +145,19 @@
     </div>
     <!-- Dirección administrativa -->
     <div class="address">
-      <div class="label"><span>Dirección administrativa <span class="req">*</span></span></div>
+      <div class="label"><span data-i18n="regfull_admin_address">Dirección administrativa <span class="req">*</span></span></div>
       <div class="address_grid">
-        <label class="label_span">Calle <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_street">Calle <span class="req">*</span></label>
         <input type="search" class="span_right">
-        <label class="label_span">Altura <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_number">Altura <span class="req">*</span></label>
         <input type="search" class="">
-        <label class="label_span">Código Postal <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_postal_code">Código Postal <span class="req">*</span></label>
         <input type="search" class="">
-        <label class="label_span">Piso</label>
+        <label class="label_span" data-i18n="regfull_floor">Piso</label>
         <input type="search" class="">
-        <label class="label_span">Departamento</label>
+        <label class="label_span" data-i18n="regfull_apartment">Departamento</label>
         <input type="search" class="">
-        <label class="label_span">Localidad <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_locality">Localidad <span class="req">*</span></label>
         <div class="span_right">
           <div class="custom-dropdown">
             <div class="dropdown-selected">
@@ -176,7 +185,7 @@
             <input type="hidden" name="localidad_admin" value="">
           </div>
         </div>
-        <label class="label_span">Departamento <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_department">Departamento <span class="req">*</span></label>
         <div class="span_right">
           <div class="custom-dropdown">
             <div class="dropdown-selected">
@@ -220,16 +229,16 @@
     </div>
     <!-- Contacto -->
     <div class="contacto_datos">
-      <div class="label"><span>Persona de Contacto <span class="req">*</span></span></div>
+      <div class="label"><span data-i18n="regfull_contact_person">Persona de Contacto <span class="req">*</span></span></div>
       <div class="contacto_grid">
         <input type="search" class="span_all">
-        <label class="label_span">Cargo de Persona de contacto <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_contact_position">Cargo de Persona de contacto <span class="req">*</span></label>
         <input type="search">
-        <label class="label_span">E-mail <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_email">E-mail <span class="req">*</span></label>
         <input type="search" type="email">
-        <label class="label_span">Teléfono <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_phone">Teléfono <span class="req">*</span></label>
         <div class="phone_inline">
-          <input type="search" class="area" placeholder="Código de área">
+          <input type="search" class="area" data-i18n-placeholder="regfull_area_code" placeholder="Código de área">
           <input type="search" placeholder="">
         </div>
       </div>
@@ -238,11 +247,11 @@
 </div>
 <div class="datos">
   <div class="datos_header">
-    <h1>2. Clasificación de la Empresa</h1>
+    <h1 data-i18n="regfull_section2_title">2. Clasificación de la Empresa</h1>
     <img src="img/icons/clasificacion.png">
   </div>
   <div class="form" novalidate>
-    <div class="label"><label>Tipo de Organización <span class="req">*</span></label></div>
+    <div class="label"><label data-i18n="regfull_org_type">Tipo de Organización <span class="req">*</span></label></div>
     <div class="field">
       <div class="custom-dropdown">
         <div class="dropdown-selected">
@@ -263,7 +272,7 @@
         <input type="hidden" name="tipo_organizacion" value="">
       </div>
     </div>
-    <div class="label"><label>Actividad Principal <span class="req">*</span></label></div>
+    <div class="label"><label data-i18n="regfull_main_activity">Actividad Principal <span class="req">*</span></label></div>
     <div class="field">
       <div class="custom-dropdown">
         <div class="dropdown-selected">
@@ -397,18 +406,18 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- PRODUCTOS -->
 <div class="datos">
   <div class="datos_header">
-    <h1>3. Información sobre Productos y Servicios</h1>
+    <h1 data-i18n="regfull_section3_title">3. Información sobre Productos y Servicios</h1>
     <img src="img/icons/sobre_productos.png">
   </div>
   <div class="form" novalidate>
-    <div class="label"><span>Producto o servicio principal <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_main_product">Producto o servicio principal <span class="req">*</span></span></div>
     <div class="producto_grid">
       <input type="search" class="span_all">
-      <label class="label_span">Código Arancelario <span class="req">*</span></label>
+      <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario <span class="req">*</span></label>
       <input type="search">
-      <label class="label_span">Descripción <span class="req">*</span></label>
+      <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
       <input type="search" type="email">
-      <label class="label_span">Volumen de Producción Anual <span class="req">*</span></label>
+      <label class="label_span" data-i18n="regfull_annual_volume">Volumen de Producción Anual <span class="req">*</span></label>
       <div class="anual_inline">
         <div class="field">
           <div class="custom-dropdown">
@@ -429,24 +438,24 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <input type="search">
       </div>
-      <label class="label_span">Exportación Anual (USD) <span class="req">*</span></label>
+      <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD) <span class="req">*</span></label>
       <input type="search" type="email">
-      <label class="label_span">Foto del Producto <span class="req">*</span></label>
-      <input class="file-ph" placeholder="subir archivo (JPG, PNG, PDF) ">
+      <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto <span class="req">*</span></label>
+      <input class="file-ph" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF) ">
     </div>
-    <div class="label"><span>Lista de Productos/Servicios Secundarios</span></div>
+    <div class="label"><span data-i18n="regfull_secondary_products">Lista de Productos/Servicios Secundarios</span></div>
     <div class="producto_sec">
       <div class="sec-list"></div>
-      <button type="button" class="add_more sec-add">agregar más</button>
+      <button type="button" class="add_more sec-add" data-i18n="regfull_add_more">agregar más</button>
       <template class="sec-template">
         <div class="sec_item">
           <div class="producto_grid">
             <input type="search" class="span_all">
-            <label class="label_span">Código Arancelario <span class="req">*</span></label>
+            <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario <span class="req">*</span></label>
             <input type="search">
-            <label class="label_span">Descripción <span class="req">*</span></label>
+            <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
             <input type="search">
-            <label class="label_span">Volumen de Producción Anual <span class="req">*</span></label>
+            <label class="label_span" data-i18n="regfull_annual_volume">Volumen de Producción Anual <span class="req">*</span></label>
             <div class="anual_inline">
               <div class="field">
                 <div class="custom-dropdown">
@@ -467,24 +476,24 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
               <input type="search">
             </div>
-            <label class="label_span">Exportación Anual (USD) <span class="req">*</span></label>
+            <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD) <span class="req">*</span></label>
             <input type="search">
-            <label class="label_span">Foto del Producto <span class="req">*</span></label>
-            <input class="file-ph" placeholder="subir archivo (JPG, PNG, PDF) ">
+            <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto <span class="req">*</span></label>
+            <input class="file-ph" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF) ">
           </div>
           <div class="sec-actions">
-            <button type="button" class="sec-remove" aria-label="Eliminar">×</button>
+            <button type="button" class="sec-remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">×</button>
           </div>
         </div>
       </template>
     </div>
     <!-- Certificaciones -->
-    <div class="label"><span>Certificaciones <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_certifications">Certificaciones <span class="req">*</span></span></div>
     <div class="field">
-      <input type="search" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
+      <input type="search" data-i18n-placeholder="regfull_certifications_placeholder" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
     </div>
     <!-- Exportación Anual (USD) -->
-    <div class="label"><span>Exportación Anual (USD)</span></div>
+    <div class="label"><span data-i18n="regfull_annual_export_title">Exportación Anual (USD)</span></div>
     <div class="field exp_anual">
       <div class="exp_anual_grid">
         <label class="label_span">2022 <span class="req">*</span></label>
@@ -496,10 +505,10 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     </div>
     <!-- Mercados Actuales (Continente) -->
-    <div class="label"><span>Mercados Actuales (Continente)</span></div>
+    <div class="label"><span data-i18n="regfull_current_markets">Mercados Actuales (Continente)</span></div>
     <div class="field mercados_act">
       <div class="act-list"></div>
-      <button type="button" class="add_more act-add">agregar más</button>
+      <button type="button" class="add_more act-add" data-i18n="regfull_add_more">agregar más</button>
       <template class="act-item-tpl">
         <div class="act-row">
           <div class="custom-dropdown">
@@ -518,14 +527,14 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <input type="hidden" name="mercados_actuales[]" value="">
           </div>
-          <button type="button" class="remove" aria-label="Eliminar">&times;</button>
+          <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
         </div>
       </template>
     </div>
     <!-- Mercados de Interés (Continente) -->
     <div class="label">
-      <span>Mercados de Interés (Continente) <span class="req">*</span></span>
-      <div class="sub">(a donde le gustaría exportar)</div>
+      <span data-i18n="regfull_interest_markets">Mercados de Interés (Continente) <span class="req">*</span></span>
+      <div class="sub" data-i18n="regfull_interest_markets_sub">(a donde le gustaría exportar)</div>
     </div>
     <div class="act-row">
       <div class="custom-dropdown">
@@ -611,58 +620,58 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- competitividad -->
 <div class="datos">
   <div class="datos_header">
-    <h1>4. Competitividad y Diferenciación</h1>
+    <h1 data-i18n="regfull_section4_title">4. Competitividad y Diferenciación</h1>
     <img src="img/icons/competitividad.png">
   </div>
   <div class="form" novalidate>
     <div class="compet_blk">
       <div class="label">
-        <span>Factores de Diferenciación</span>
-        <div class="sub">(puede seleccionar varias opciones)</div>
+        <span data-i18n="regfull_differentiation_factors">Factores de Diferenciación</span>
+        <div class="sub" data-i18n="regfull_select_multiple">(puede seleccionar varias opciones)</div>
       </div>
       <div class="field">
         <div class="factors_grid">
-          <label class="chk"><input type="checkbox"><span>Calidad</span></label>
-          <label class="chk"><input type="checkbox"><span>Innovación</span></label>
-          <label class="chk"><input type="checkbox"><span>Origen territorial</span></label>
-          <label class="chk"><input type="checkbox"><span>Trazabilidad</span></label>
-          <label class="chk"><input type="checkbox"><span>Precio competitivo</span></label>
+          <label class="chk"><input type="checkbox"><span data-i18n="regfull_quality">Calidad</span></label>
+          <label class="chk"><input type="checkbox"><span data-i18n="regfull_innovation">Innovación</span></label>
+          <label class="chk"><input type="checkbox"><span data-i18n="regfull_territorial_origin">Origen territorial</span></label>
+          <label class="chk"><input type="checkbox"><span data-i18n="regfull_traceability">Trazabilidad</span></label>
+          <label class="chk"><input type="checkbox"><span data-i18n="regfull_competitive_price">Precio competitivo</span></label>
           <div class="other">
-            <label class="chk"><input type="checkbox" class="otros_cb"><span>Otros</span></label>
+            <label class="chk"><input type="checkbox" class="otros_cb"><span data-i18n="regfull_others">Otros</span></label>
             <input type="search" class="otros_inp" placeholder="" disabled>
           </div>
         </div>
       </div>
       <!-- 2) Historia -->
-      <div class="label"><label>Historia de la Empresa y del Producto <span class="req">*</span></label></div>
+      <div class="label"><label data-i18n="regfull_company_history">Historia de la Empresa y del Producto <span class="req">*</span></label></div>
       <div class="field"><textarea class="ta" rows="4"></textarea></div>
       <!-- 3) Premios -->
-      <div class="label"><label>Premios <span class="req">*</span></label></div>
+      <div class="label"><label data-i18n="regfull_awards">Premios <span class="req">*</span></label></div>
       <div class="field">
         <div class="yesno_line with_input">
-          <label class="yn"><input type="radio" name="premios" value="si"><span>Si</span></label>
-          <label class="yn"><input type="radio" name="premios" value="no"><span>No</span></label>
+          <label class="yn"><input type="radio" name="premios" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="premios" value="no"><span data-i18n="regfull_no">No</span></label>
           <input type="search" class="detail">
         </div>
       </div>
       <!-- 4) Ferias -->
-      <div class="label"><label>Ferias <span class="req">*</span></label></div>
+      <div class="label"><label data-i18n="regfull_fairs">Ferias <span class="req">*</span></label></div>
       <div class="field">
         <div class="yesno_line">
-          <label class="yn"><input type="radio" name="ferias" value="si"><span>Si</span></label>
-          <label class="yn"><input type="radio" name="ferias" value="no"><span>No</span></label>
+          <label class="yn"><input type="radio" name="ferias" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="ferias" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <!-- 5) Rondas -->
-      <div class="label"><label>Rondas <span class="req">*</span></label></div>
+      <div class="label"><label data-i18n="regfull_rounds">Rondas <span class="req">*</span></label></div>
       <div class="field">
         <div class="yesno_line">
-          <label class="yn"><input type="radio" name="rondas" value="si"><span>Si</span></label>
-          <label class="yn"><input type="radio" name="rondas" value="no"><span>No</span></label>
+          <label class="yn"><input type="radio" name="rondas" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="rondas" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <!-- 6) Experiencia Exportadora previa -->
-      <div class="label"><label>Experiencia Exportadora previa <span class="req">*</span></label></div>
+      <div class="label"><label data-i18n="regfull_export_experience">Experiencia Exportadora previa <span class="req">*</span></label></div>
       <div class="field">
         <div class="custom-dropdown">
           <div class="dropdown-selected">
@@ -679,7 +688,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
       <!-- 7) Referencias comerciales -->
-      <div class="label"><label>Referencias comerciales <span class="req">*</span></label></div>
+      <div class="label"><label data-i18n="regfull_commercial_references">Referencias comerciales <span class="req">*</span></label></div>
       <div class="field"><textarea class="ta" rows="4"></textarea></div>
     </div>
   </div>
@@ -700,46 +709,46 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- visual -->
 <div class="datos">
   <div class="datos_header">
-    <h1>5. Información Visual y Promocional</h1>
+    <h1 data-i18n="regfull_section5_title">5. Información Visual y Promocional</h1>
     <img src="img/icons/visual.png">
   </div>
   <div class="form" novalidate>
-    <div class="label"><span>Adjuntar Logo de la Empresa <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_company_logo">Adjuntar Logo de la Empresa <span class="req">*</span></span></div>
     <div class="field visual-row">
       <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)">
         <div class="file-item">
-          <input class="file-ph" placeholder="subir archivo (JPG, PNG, PDF)">
-          <button type="button" class="remove" aria-label="Eliminar" hidden>&times;</button>
+          <input class="file-ph" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
+          <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
         </div>
       </div>
-      <button type="button" class="add_more">agregar más</button>
+      <button type="button" class="add_more" data-i18n="regfull_add_more">agregar más</button>
     </div>
-    <div class="label"><span>Adjuntar Fotos de los Procesos/Servicios <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_process_photos">Adjuntar Fotos de los Procesos/Servicios <span class="req">*</span></span></div>
     <div class="field visual-row">
       <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)">
         <div class="file-item">
-          <input class="file-ph" placeholder="subir archivo (JPG, PNG, PDF)">
-          <button type="button" class="remove" aria-label="Eliminar" hidden>&times;</button>
+          <input class="file-ph" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
+          <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
         </div>
       </div>
-      <button type="button" class="add_more">agregar más</button>
+      <button type="button" class="add_more" data-i18n="regfull_add_more">agregar más</button>
     </div>
-    <div class="label"><span>Adjuntar Catálogo Digital (si existe)</span></div>
+    <div class="label"><span data-i18n="regfull_digital_catalog">Adjuntar Catálogo Digital (si existe)</span></div>
     <div class="field visual-row">
       <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)">
         <div class="file-item">
-          <input class="file-ph" placeholder="subir archivo (JPG, PNG, PDF)">
-          <button type="button" class="remove" aria-label="Eliminar" hidden>&times;</button>
+          <input class="file-ph" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
+          <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
         </div>
       </div>
-      <button type="button" class="add_more">agregar más</button>
+      <button type="button" class="add_more" data-i18n="regfull_add_more">agregar más</button>
     </div>
-    <div class="label"><span>Adjuntar Video Institucional (si existe)</span></div>
+    <div class="label"><span data-i18n="regfull_institutional_video">Adjuntar Video Institucional (si existe)</span></div>
     <div class="field visual-row">
       <div class="files-list" data-ph="subir archivo (MP4, MKV, AVI)">
         <div class="file-item">
-          <input class="file-ph" placeholder="subir archivo (MP4, MKV, AVI)">
-          <button type="button" class="remove" aria-label="Eliminar" hidden>&times;</button>
+          <input class="file-ph" data-i18n-placeholder="regfull_upload_video" placeholder="subir archivo (MP4, MKV, AVI)">
+          <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
         </div>
       </div>
     </div>
@@ -795,26 +804,26 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- logistica -->
 <div class="datos">
   <div class="datos_header">
-    <h1>6. Logística y Distribución</h1>
+    <h1 data-i18n="regfull_section6_title">6. Logística y Distribución</h1>
     <img src="img/icons/logistica.png">
   </div>
   <div class="form" novalidate>
-    <div class="label"><span>Capacidad de Exportación Inmediata <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_export_capacity">Capacidad de Exportación Inmediata <span class="req">*</span></span></div>
     <div class="field logi-right">
       <div class="cap-row">
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="capacidad_exportacion" value="si"><span>Si</span></label>
-          <label class="yn"><input type="radio" name="capacidad_exportacion" value="no"><span>No</span></label>
+          <label class="yn"><input type="radio" name="capacidad_exportacion" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="capacidad_exportacion" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
-        <label class="lbl plazo-lbl">Plazo estimado <span class="req">*</span></label>
-        <input class="fld plazo" placeholder="meses">
+        <label class="lbl plazo-lbl" data-i18n="regfull_estimated_term">Plazo estimado <span class="req">*</span></label>
+        <input class="fld plazo" data-i18n-placeholder="regfull_months" placeholder="meses">
       </div>
     </div>
-    <div class="label"><span>Infraestructura Logística Disponible <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_logistics_infrastructure">Infraestructura Logística Disponible <span class="req">*</span></span></div>
     <div class="field">
-      <input type="search" placeholder="ejemplo: frigoríficos, transporte propio, alianzas logísticas, etc.">
+      <input type="search" data-i18n-placeholder="regfull_logistics_placeholder" placeholder="ejemplo: frigoríficos, transporte propio, alianzas logísticas, etc.">
     </div>
-    <div class="label"><span>Puertos/Aeropuertos de Salida habituales o posibles <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_ports_airports">Puertos/Aeropuertos de Salida habituales o posibles <span class="req">*</span></span></div>
     <div class="field"><textarea class="ta" rows="4"></textarea></div>
   </div>
 </div>
@@ -826,43 +835,43 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- expectivas -->
 <div class="datos">
   <div class="datos_header">
-    <h1>7. Necesidades y Expectativas</h1>
+    <h1 data-i18n="regfull_section7_title">7. Necesidades y Expectativas</h1>
     <img src="img/icons/expectivas.png">
   </div>
   <div class="form" novalidate>
     <div class="needs-blk">
       <div class="label">
-        <span>Principales Necesidades para mejorar capacidad exportadora <span class="req">*</span></span>
+        <span data-i18n="regfull_export_needs">Principales Necesidades para mejorar capacidad exportadora <span class="req">*</span></span>
       </div>
       <div class="field">
         <div class="needs-grid">
-          <label class="chk"><input type="checkbox"><span>Capacitación</span></label>
-          <label class="chk"><input type="checkbox"><span>Acceso a ferias</span></label>
-          <label class="chk"><input type="checkbox"><span>Certificaciones</span></label>
-          <label class="chk"><input type="checkbox"><span>Financiamiento</span></label>
-          <label class="chk"><input type="checkbox"><span>Socios comerciales</span></label>
+          <label class="chk"><input type="checkbox"><span data-i18n="regfull_training">Capacitación</span></label>
+          <label class="chk"><input type="checkbox"><span data-i18n="regfull_fair_access">Acceso a ferias</span></label>
+          <label class="chk"><input type="checkbox"><span data-i18n="regfull_certifications_need">Certificaciones</span></label>
+          <label class="chk"><input type="checkbox"><span data-i18n="regfull_financing">Financiamiento</span></label>
+          <label class="chk"><input type="checkbox"><span data-i18n="regfull_commercial_partners">Socios comerciales</span></label>
           <div class="other">
-            <label class="chk"><input type="checkbox" class="otros-cb"><span>Otros</span></label>
+            <label class="chk"><input type="checkbox" class="otros-cb"><span data-i18n="regfull_others">Otros</span></label>
             <input class="fld otros-inp" type="text" placeholder="" disabled>
           </div>
         </div>
       </div>
       <div class="label">
-        <label>Interés en Participar de Misiones Comerciales/Ferias Internacionales <span class="req">*</span></label>
+        <label data-i18n="regfull_interest_participate">Interés en Participar de Misiones Comerciales/Ferias Internacionales <span class="req">*</span></label>
       </div>
       <div class="field">
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="interes_participar" value="si"><span>Si</span></label>
-          <label class="yn"><input type="radio" name="interes_participar" value="no"><span>No</span></label>
+          <label class="yn"><input type="radio" name="interes_participar" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="interes_participar" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <div class="label">
-        <label>Disponibilidad para Capacitaciones y Asistencia Técnica <span class="req">*</span></label>
+        <label data-i18n="regfull_training_availability">Disponibilidad para Capacitaciones y Asistencia Técnica <span class="req">*</span></label>
       </div>
       <div class="field">
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="disponibilidad_capacitaciones" value="si"><span>Si</span></label>
-          <label class="yn"><input type="radio" name="disponibilidad_capacitaciones" value="no"><span>No</span></label>
+          <label class="yn"><input type="radio" name="disponibilidad_capacitaciones" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="disponibilidad_capacitaciones" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
     </div>
@@ -884,36 +893,36 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- validacion -->
 <div class="datos">
   <div class="datos_header">
-    <h1>8. Validación y Consentimiento</h1>
+    <h1 data-i18n="regfull_section8_title">8. Validación y Consentimiento</h1>
     <img src="img/icons/validacion.png">
   </div>
   <div class="form" novalidate>
     <div class="consent-blk">
       <div class="consent-row">
-        <div class="consent-text">
+        <div class="consent-text" data-i18n="regfull_authorization_platform">
           Autorización para Difundir la Información Cargada en la Plataforma Provincial <span class="req">*</span>
         </div>
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="autorizacion_difundir" value="si"><span>Si</span></label>
-          <label class="yn"><input type="radio" name="autorizacion_difundir" value="no"><span>No</span></label>
+          <label class="yn"><input type="radio" name="autorizacion_difundir" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="autorizacion_difundir" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <div class="consent-row">
-        <div class="consent-text">
+        <div class="consent-text" data-i18n="regfull_authorization_publication">
           Autorizo la Publicación de mi Información para Promoción Exportadora <span class="req">*</span>
         </div>
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="autorizacion_publicacion" value="si"><span>Si</span></label>
-          <label class="yn"><input type="radio" name="autorizacion_publicacion" value="no"><span>No</span></label>
+          <label class="yn"><input type="radio" name="autorizacion_publicacion" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="autorizacion_publicacion" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <div class="consent-row">
-        <div class="consent-text">
+        <div class="consent-text" data-i18n="regfull_accept_contact">
           Acepto ser Contactado por Organismos de Promoción y Compradores Internacionales <span class="req">*</span>
         </div>
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="acepto_contacto" value="si"><span>Si</span></label>
-          <label class="yn"><input type="radio" name="acepto_contacto" value="no"><span>No</span></label>
+          <label class="yn"><input type="radio" name="acepto_contacto" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="acepto_contacto" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
     </div>
@@ -922,7 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- Submit Button -->
 <div style="text-align: center; margin: 40px 0;">
-  <button type="button" class="btn btn-save-register" id="btnSaveRegister">Guardar y registrarse</button>
+  <button type="button" class="btn btn-save-register" id="btnSaveRegister" data-i18n="regfull_save_register">Guardar y registrarse</button>
 </div>
 
 <script>
@@ -1007,5 +1016,40 @@ function initRadioGroups() {
 
 // Initialize radio groups when DOM is loaded
 document.addEventListener('DOMContentLoaded', initRadioGroups);
+</script>
+<script src="/js/i18n.js?v=1.0.2"></script>
+<script>
+function toggleRegfullLangMenu() {
+  const menu = document.getElementById('regfull_lang_menu');
+  menu.classList.toggle('hidden');
+}
+document.addEventListener('DOMContentLoaded', () => {
+  initLang('regfull');
+  // Обновляем ID для current-lang на странице regfull
+  const currentLangEl = document.getElementById('regfull-current-lang');
+  if (currentLangEl) {
+    const storedLang = localStorage.getItem('lang') || 'es';
+    currentLangEl.textContent = storedLang.toUpperCase();
+  }
+});
+// Закрытие меню по клику вне
+document.addEventListener('click', function (e) {
+  const langBox = document.querySelector('.regfull-lang');
+  const menu = document.getElementById('regfull_lang_menu');
+  if (langBox && menu && !langBox.contains(e.target)) {
+    menu.classList.add('hidden');
+  }
+});
+// Переопределяем setLang для обновления regfull-current-lang
+const originalSetLang = window.setLang;
+if (originalSetLang) {
+  window.setLang = async function(page, lang) {
+    await originalSetLang(page, lang);
+    const regfullCurrentLang = document.getElementById('regfull-current-lang');
+    if (regfullCurrentLang) {
+      regfullCurrentLang.textContent = lang.toUpperCase();
+    }
+  };
+}
 </script>
 <!-- validacion -->
