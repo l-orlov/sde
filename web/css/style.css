@@ -1852,8 +1852,66 @@ to {
 .home-header-icons {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 12px 0;
   position: relative;
+}
+
+.home-lang {
+  background: white;
+  border-radius: 20px;
+  padding: 8px 12px;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #000;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.home-lang:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.home-lang img {
+  width: 18px;
+  height: auto;
+}
+
+.home_lang_menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: white;
+  color: #31414E;
+  border-radius: 6px;
+  padding: 4px 0;
+  list-style: none;
+  font-size: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 99;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.home_lang_menu li {
+  padding: 6px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-shadow: none;
+}
+
+.home_lang_menu li:hover {
+  background: #f0f0f0;
+}
+
+.home_lang_menu.hidden {
+  display: none;
 }
 
 .home-icon-btn {
@@ -1884,7 +1942,7 @@ to {
   width: 30px;
   height: 30px;
   border: 2px solid #EE3124;
-  margin-right: -8px;
+  margin-right: -12px;
   margin-top: 14px;
   z-index: 2;
   position: relative;

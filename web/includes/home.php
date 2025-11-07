@@ -31,8 +31,17 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
         <img src="img/logo.png" alt="Santiago del Estero" class="home-logo-image">
       </div>
       <div class="home-header-actions">
-        <button class="btn btn-export-tariffs">Ver aranceles de exportación</button>
+        <button data-i18n="btn_export_tariffs" class="btn btn-export-tariffs">Ver aranceles de exportación</button>
         <div class="home-header-icons">
+          <div class="home-lang" onclick="toggleHomeLangMenu()">
+            <img src="img/icons/lang.png" alt="Language">
+            <span id="home-current-lang">Es</span>
+            <ul id="home_lang_menu" class="home_lang_menu hidden">
+              <li onclick="setLang('home', 'es')">Español</li>
+              <li onclick="setLang('home', 'en')">English</li>
+              <li onclick="setLang('home', 'ru')">Русский</li>
+            </ul>
+          </div>
           <div onclick="location.href='?page=regfull';" class="home-icon-btn home-notification-btn">
             <img src="img/icons/massage_icon.png" alt="Notifications" class="home-icon-image">
           </div>
@@ -51,7 +60,7 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
       <div class="home-profile-form">
         <div class="home-avatar-upload">
           <div class="home-avatar-placeholder">
-            <span class="home-avatar-text">Agregar<br>logotipo</span>
+            <span data-i18n-html="home_avatar_text" class="home-avatar-text">Agregar<br>logotipo</span>
             <div class="home-avatar-camera">
               <img src="img/icons/edit_icon.png" alt="Edit">
             </div>
@@ -60,47 +69,48 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
         
         <div class="home-form-fields">
           <div class="home-form-field">
-            <label class="home-form-label">Apellido:</label>
+            <label data-i18n="home_form_lastname" class="home-form-label">Apellido:</label>
             <input type="text" class="home-form-input" id="profile-lastname" value="<?= $lastname ?>">
           </div>
           
           <div class="home-form-field">
-            <label class="home-form-label">Nombre:</label>
+            <label data-i18n="home_form_firstname" class="home-form-label">Nombre:</label>
             <input type="text" class="home-form-input" id="profile-firstname" value="<?= $firstname ?>">
           </div>
           
           <div class="home-form-field">
-            <label class="home-form-label">Nombre de la empresa:</label>
+            <label data-i18n="home_form_company" class="home-form-label">Nombre de la empresa:</label>
             <input type="text" class="home-form-input" id="profile-company" value="<?= $companyName ?>">
           </div>
           
           <div class="home-form-field">
-            <label class="home-form-label">Correo electrónico:</label>
+            <label data-i18n="home_form_email" class="home-form-label">Correo electrónico:</label>
             <input type="email" class="home-form-input" id="profile-email" value="<?= $email ?>">
           </div>
           
           <div class="home-form-field">
-            <label class="home-form-label">Número de WhatsApp:</label>
+            <label data-i18n="home_form_phone" class="home-form-label">Número de WhatsApp:</label>
             <input type="tel" class="home-form-input" id="profile-phone" value="<?= $phone ?>">
           </div>
           
           <div class="home-form-field">
-            <label class="home-form-label">Contraseña:</label>
+            <label data-i18n="home_form_password" class="home-form-label">Contraseña:</label>
             <div class="home-form-password">
-              <input type="password" class="home-form-input" id="profile-password" placeholder="Nueva contraseña">
-              <button class="home-form-change-btn">Cambiar</button>
+              <input type="password" class="home-form-input" id="profile-password" data-i18n-placeholder="home_form_password_placeholder">
+              <button data-i18n="btn_change_password" class="home-form-change-btn">Cambiar</button>
             </div>
           </div>
         </div>
         
         <div class="home-profile-buttons">
-          <button class="btn btn-save-profile">Guardar cambios</button>
-          <button class="btn btn-logout">Cerrar sesión</button>
+          <button data-i18n="btn_save_profile" class="btn btn-save-profile">Guardar cambios</button>
+          <button data-i18n="btn_logout" class="btn btn-logout">Cerrar sesión</button>
+          <span data-i18n="logout_confirm" style="display: none;">¿Está seguro de que desea cerrar sesión?</span>
         </div>
       </div>
       
       <div class="home-profile-action">
-        <button onclick="location.href='?page=regfull';" class="btn btn-edit-form">Editar formulario: agregar nuevos productos y servicios</button>
+        <button data-i18n="btn_edit_form" onclick="location.href='?page=regfull';" class="btn btn-edit-form">Editar formulario: agregar nuevos productos y servicios</button>
       </div>
     </aside>
 
@@ -109,9 +119,9 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
       <!-- Products Section -->
       <section class="home-section home-products-section">
         <div class="home-section-header">
-          <h2 class="home-section-title">Información sobre Productos y Servicios <span class="home-section-count" data-total="25" data-visible="4">4/25</span></h2>
+          <h2 class="home-section-title"><span data-i18n="home_section_title">Información sobre Productos y Servicios</span> <span class="home-section-count" data-total="25" data-visible="4">4/25</span></h2>
           <div class="home-search-box">
-            <input type="search" class="home-search-input" placeholder="Buscar...">
+            <input type="search" class="home-search-input" data-i18n-placeholder="home_search_placeholder">
             <svg class="home-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.35-4.35"></path>
@@ -125,7 +135,7 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
               <img src="img/productos/foto1.jpg" alt="Queso de cabra madurado">
             </div>
             <div class="home-product-info">
-              <div class="home-product-name">Queso de cabra madurado</div>
+              <div data-i18n="product_goat_cheese" class="home-product-name">Queso de cabra madurado</div>
               <div class="home-product-code">0406.90.20</div>
             </div>
           </div>
@@ -135,7 +145,7 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
               <img src="img/productos/foto2.jpg" alt="Miel natural">
             </div>
             <div class="home-product-info">
-              <div class="home-product-name">Miel natural</div>
+              <div data-i18n="product_natural_honey" class="home-product-name">Miel natural</div>
               <div class="home-product-code">0409.00.00</div>
             </div>
           </div>
@@ -145,7 +155,7 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
               <img src="img/productos/foto3.jpg" alt="Aceite de oliva">
             </div>
             <div class="home-product-info">
-              <div class="home-product-name">Aceite de oliva</div>
+              <div data-i18n="product_olive_oil" class="home-product-name">Aceite de oliva</div>
               <div class="home-product-code">1509.10.00</div>
             </div>
           </div>
@@ -155,7 +165,7 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
               <img src="img/productos/foto4.png" alt="Yerba mate">
             </div>
             <div class="home-product-info">
-              <div class="home-product-name">Yerba mate</div>
+              <div data-i18n="product_yerba_mate" class="home-product-name">Yerba mate</div>
               <div class="home-product-code">0903.00.10</div>
             </div>
           </div>
@@ -165,7 +175,7 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
               <img src="img/productos/foto5.jpg" alt="Mermelada de durazno natural">
             </div>
             <div class="home-product-info">
-              <div class="home-product-name">Mermelada de durazno natural</div>
+              <div data-i18n="product_peach_jam" class="home-product-name">Mermelada de durazno natural</div>
               <div class="home-product-code">2007.99.10</div>
             </div>
           </div>
@@ -175,7 +185,7 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
               <img src="img/productos/foto6.jpg" alt="Dulce de leche artesanal">
             </div>
             <div class="home-product-info">
-              <div class="home-product-name">Dulce de leche artesanal</div>
+              <div data-i18n="product_dulce_leche" class="home-product-name">Dulce de leche artesanal</div>
               <div class="home-product-code">1901.90.90</div>
             </div>
           </div>
@@ -192,7 +202,7 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
               <img src="<?php echo $imagePath; ?>" alt="Producto <?php echo $i; ?>">
             </div>
             <div class="home-product-info">
-              <div class="home-product-name">Producto <?php echo $i; ?></div>
+              <div data-i18n="product_generic" class="home-product-name">Producto <?php echo $i; ?></div>
               <div class="home-product-code">0000.00.00</div>
             </div>
           </div>
@@ -200,17 +210,17 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
         </div>
         
         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-          <button class="btn btn-show-more" id="showMoreProducts">Mostrar más</button>
-          <button class="btn btn-show-less" id="showLessProducts" style="display: none;">Ocultar</button>
+          <button data-i18n="btn_show_more" class="btn btn-show-more" id="showMoreProducts">Mostrar más</button>
+          <button data-i18n="btn_hide" class="btn btn-show-less" id="showLessProducts" style="display: none;">Ocultar</button>
         </div>
       </section>
 
       <!-- Presentations Section -->
       <section class="home-section">
         <div class="home-section-header">
-          <h2 class="home-section-title">Presentaciones generadas de productos y servicios <span class="home-section-count">4/4</span></h2>
+          <h2 data-i18n="home_presentations_title" class="home-section-title">Presentaciones generadas de productos y servicios <span class="home-section-count">4/4</span></h2>
           <div class="home-search-box">
-            <input type="search" class="home-search-input" placeholder="Buscar...">
+            <input type="search" class="home-search-input" data-i18n-placeholder="home_search_placeholder_presentations">
             <svg class="home-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.35-4.35"></path>
@@ -227,8 +237,8 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
               </div>
             </div>
             <div class="home-presentation-content">
-              <div class="home-presentation-name">Queso de cabra madurado</div>
-              <button class="btn btn-download-pdf">Descargar PDF</button>
+              <div data-i18n="product_goat_cheese" class="home-presentation-name">Queso de cabra madurado</div>
+              <button data-i18n="btn_download_pdf" class="btn btn-download-pdf">Descargar PDF</button>
             </div>
           </div>
           
@@ -240,8 +250,8 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
               </div>
             </div>
             <div class="home-presentation-content">
-              <div class="home-presentation-name">Miel natural</div>
-              <button class="btn btn-download-pdf">Descargar PDF</button>
+              <div data-i18n="product_natural_honey" class="home-presentation-name">Miel natural</div>
+              <button data-i18n="btn_download_pdf" class="btn btn-download-pdf">Descargar PDF</button>
             </div>
           </div>
           
@@ -253,8 +263,8 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
               </div>
             </div>
             <div class="home-presentation-content">
-              <div class="home-presentation-name">Mermelada de durazno natural</div>
-              <button class="btn btn-download-pdf">Descargar PDF</button>
+              <div data-i18n="product_peach_jam" class="home-presentation-name">Mermelada de durazno natural</div>
+              <button data-i18n="btn_download_pdf" class="btn btn-download-pdf">Descargar PDF</button>
             </div>
           </div>
           
@@ -266,15 +276,15 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
               </div>
             </div>
             <div class="home-presentation-content">
-              <div class="home-presentation-name">Dulce de leche artesanal</div>
-              <button class="btn btn-download-pdf">Descargar PDF</button>
+              <div data-i18n="product_dulce_leche" class="home-presentation-name">Dulce de leche artesanal</div>
+              <button data-i18n="btn_download_pdf" class="btn btn-download-pdf">Descargar PDF</button>
             </div>
           </div>
         </div>
         
         <div class="home-presentations-actions">
-          <button class="btn btn-show-more-outline">Mostrar más</button>
-          <button class="btn btn-generate-ai">Generar IA-presentación</button>
+          <button data-i18n="btn_show_more" class="btn btn-show-more-outline">Mostrar más</button>
+          <button data-i18n="btn_generate_ai" class="btn btn-generate-ai">Generar IA-presentación</button>
         </div>
       </section>
     </div>
@@ -443,11 +453,46 @@ document.addEventListener('DOMContentLoaded', function() {
   const logoutBtn = document.querySelector('.btn-logout');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function() {
-      if (confirm('¿Está seguro de que desea cerrar sesión?')) {
+      const confirmEl = document.querySelector('[data-i18n="logout_confirm"]');
+      const confirmText = confirmEl ? confirmEl.textContent : '¿Está seguro de que desea cerrar sesión?';
+      if (confirm(confirmText)) {
         window.location.href = '?page=logout';
       }
     });
   }
 });
 </script>
-
+<script src="/js/i18n.js?v=1.0.2"></script>
+<script>
+function toggleHomeLangMenu() {
+  const menu = document.getElementById('home_lang_menu');
+  menu.classList.toggle('hidden');
+}
+document.addEventListener('DOMContentLoaded', () => {
+  initLang('home');
+  // Обновляем ID для current-lang на главной странице
+  const currentLangEl = document.getElementById('home-current-lang');
+  if (currentLangEl) {
+    const storedLang = localStorage.getItem('lang') || 'es';
+    currentLangEl.textContent = storedLang.toUpperCase();
+  }
+});
+// Переопределяем setLang для обновления home-current-lang
+const originalSetLang = window.setLang;
+if (originalSetLang) {
+  window.setLang = async function(page, lang) {
+    await originalSetLang(page, lang);
+    const homeCurrentLang = document.getElementById('home-current-lang');
+    if (homeCurrentLang) {
+      homeCurrentLang.textContent = lang.toUpperCase();
+    }
+  };
+}
+document.addEventListener('click', function (e) {
+  const langBox = document.querySelector('.home-lang');
+  const menu = document.getElementById('home_lang_menu');
+  if (!langBox.contains(e.target)) {
+    menu.classList.add('hidden');
+  }
+});
+</script>

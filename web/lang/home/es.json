@@ -1,4 +1,32 @@
 {
-  
+  "btn_export_tariffs": "Ver aranceles de exportación",
+  "home_avatar_text": "Agregar<br>logotipo",
+  "home_form_lastname": "Apellido:",
+  "home_form_firstname": "Nombre:",
+  "home_form_company": "Nombre de la empresa:",
+  "home_form_email": "Correo electrónico:",
+  "home_form_phone": "Número de WhatsApp:",
+  "home_form_password": "Contraseña:",
+  "home_form_password_placeholder": "Nueva contraseña",
+  "btn_change_password": "Cambiar",
+  "btn_edit_form": "Editar formulario: agregar nuevos productos y servicios",
+  "btn_save_profile": "Guardar cambios",
+  "btn_logout": "Cerrar sesión",
+  "logout_confirm": "¿Está seguro de que desea cerrar sesión?",
+  "home_section_title": "Información sobre Productos y Servicios",
+  "home_search_placeholder": "Buscar productos...",
+  "home_search_placeholder_presentations": "Buscar...",
+  "btn_show_more": "Mostrar más",
+  "btn_hide": "Ocultar",
+  "home_presentations_title": "Presentaciones generadas de productos y servicios",
+  "btn_download_pdf": "Descargar PDF",
+  "btn_generate_ai": "Generar IA-presentación",
+  "product_goat_cheese": "Queso de cabra madurado",
+  "product_natural_honey": "Miel natural",
+  "product_olive_oil": "Aceite de oliva",
+  "product_yerba_mate": "Yerba mate",
+  "product_peach_jam": "Mermelada de durazno natural",
+  "product_dulce_leche": "Dulce de leche artesanal",
+  "product_generic": "Producto"
 }
 
