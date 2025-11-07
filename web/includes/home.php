@@ -1,6 +1,4 @@
 <?
-// Загружаем данные пользователя из базы данных
-// session_start() и DBconnect() уже вызваны в index.php
 $userData = null;
 if (isset($_SESSION['uid'])) {
     $userId = intval($_SESSION['uid']);
@@ -14,8 +12,6 @@ if (isset($_SESSION['uid'])) {
     }
     mysqli_stmt_close($stmt);
 }
-
-// Если нет данных пользователя, редирект на логин
 if (!$userData) {
     header('Location: ?page=login');
     exit();
@@ -25,7 +21,6 @@ $lastname = htmlspecialchars($userData['last_name'] ?? '');
 $firstname = htmlspecialchars($userData['first_name'] ?? '');
 $email = htmlspecialchars($userData['email'] ?? '');
 $phone = htmlspecialchars($userData['phone'] ?? '');
-// Проверяем наличие колонки company_name (может отсутствовать в старых версиях таблицы)
 $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['company_name']) : '';
 ?>
 <div class="home-container">
@@ -38,7 +33,7 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
       <div class="home-header-actions">
         <button class="btn btn-export-tariffs">Ver aranceles de exportación</button>
         <div class="home-header-icons">
-          <div class="home-icon-btn home-notification-btn">
+          <div onclick="location.href='?page=regfull';" class="home-icon-btn home-notification-btn">
             <img src="img/icons/massage_icon.png" alt="Notifications" class="home-icon-image">
           </div>
           <div class="home-icon-btn home-profile-btn">
