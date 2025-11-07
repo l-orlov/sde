@@ -8,7 +8,7 @@ async function setLang(page, lang) {
   localStorage.setItem('lang', lang);
 
   try {
-    const url = `/lang/${page}/${lang}.json`;
+    const url = `lang/${page}/${lang}.json`;
     const res = await fetch(url);
 
     if (!res.ok) {
