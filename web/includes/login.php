@@ -54,7 +54,7 @@ if (isset($_GET['logout']) && $_GET['logout'] == '1') {
 		</div>
 	</div>
 </div>
-<script src="/js/i18n.js?v=1.0.2"></script>
+<script src="js/i18n.js?v=1.0.2"></script>
 <script>
 function toggleLangMenu() {
   const menu = document.getElementById('login_lang_menu');

@@ -1017,7 +1017,7 @@ function initRadioGroups() {
 // Initialize radio groups when DOM is loaded
 document.addEventListener('DOMContentLoaded', initRadioGroups);
 </script>
-<script src="/js/i18n.js?v=1.0.2"></script>
+<script src="js/i18n.js?v=1.0.2"></script>
 <script>
 function toggleRegfullLangMenu() {
   const menu = document.getElementById('regfull_lang_menu');
