@@ -27,7 +27,7 @@
         <ul id="landing_header_lang_menu" class="landing_header_lang_menu hidden">
             <li onclick="setLang('landing', 'es')">Español</li>
             <li onclick="setLang('landing', 'en')">English</li>
-            <li onclick="setLang('landing', 'ru')">Русский</li>
+            <!-- <li onclick="setLang('landing', 'ru')">Русский</li> -->
         </ul>
     </div>
     <div class="hero-content">

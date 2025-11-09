@@ -10,7 +10,7 @@
 			<ul id="login_lang_menu" class="login_lang_menu hidden">
 				<li onclick="setLang('regnew', 'es')">Español</li>
 				<li onclick="setLang('regnew', 'en')">English</li>
-				<li onclick="setLang('regnew', 'ru')">Русский</li>
+				<!-- <li onclick="setLang('regnew', 'ru')">Русский</li> -->
 			</ul>
 		</div>
         <div class="login_tit" data-i18n="register_title">REGISTRO DE DATOS</div>

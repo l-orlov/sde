@@ -5,7 +5,7 @@
   <ul id="regfull_lang_menu" class="regfull_lang_menu hidden">
     <li onclick="setLang('regfull', 'es')">Español</li>
     <li onclick="setLang('regfull', 'en')">English</li>
-    <li onclick="setLang('regfull', 'ru')">Русский</li>
+    <!-- <li onclick="setLang('regfull', 'ru')">Русский</li> -->
   </ul>
 </div>
 <div class="datos">

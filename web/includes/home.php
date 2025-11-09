@@ -39,7 +39,7 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
             <ul id="home_lang_menu" class="home_lang_menu hidden">
               <li onclick="setLang('home', 'es')">Español</li>
               <li onclick="setLang('home', 'en')">English</li>
-              <li onclick="setLang('home', 'ru')">Русский</li>
+              <!-- <li onclick="setLang('home', 'ru')">Русский</li> -->
             </ul>
           </div>
           <div onclick="location.href='?page=regfull';" class="home-icon-btn home-notification-btn">

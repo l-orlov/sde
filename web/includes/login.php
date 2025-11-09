@@ -17,7 +17,7 @@ if (isset($_GET['logout']) && $_GET['logout'] == '1') {
 				<ul id="login_lang_menu" class="login_lang_menu hidden">
 					<li onclick="setLang('login', 'es')">Español</li>
 					<li onclick="setLang('login', 'en')">English</li>
-					<li onclick="setLang('login', 'ru')">Русский</li>
+					<!-- <li onclick="setLang('login', 'ru')">Русский</li> -->
 				</ul>
 			</div>
 			<div class="login_tit" data-i18n="login_title">LOG-IN</div>
