@@ -940,6 +940,9 @@ document.addEventListener('DOMContentLoaded', () => {
 <div style="text-align: center; margin: 40px 0;">
   <button type="button" class="btn btn-save-register" id="btnSaveRegister" data-i18n="regfull_save_register">Guardar y registrarse</button>
   <div id="regfull_message" style="margin-top: 15px; display: none;"></div>
+  <div style="margin-top: 10px;">
+    <button type="button" id="btnFillTestData" style="padding: 5px 10px; font-size: 12px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer;">🧪 Заполнить тестовыми данными</button>
+  </div>
 </div>
 
 <script>
@@ -2187,6 +2190,162 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
   }
   
+  // Функция для заполнения формы тестовыми данными
+  function fillTestData() {
+    console.log('🧪 Заполняем форму тестовыми данными...');
+    
+    // Текстовые поля - заполняем "a" или "1"
+    const textFields = {
+      'name': 'a',
+      'tax_id': '1',
+      'legal_name': 'a',
+      'start_date': '01/01/2001',
+      'website': 'http://a',
+      'street_legal': 'a',
+      'street_number_legal': '1',
+      'postal_code_legal': '1',
+      'floor_legal': '1',
+      'apartment_legal': 'a',
+      'street_admin': 'a',
+      'street_number_admin': '1',
+      'postal_code_admin': '1',
+      'floor_admin': '1',
+      'apartment_admin': 'a',
+      'contact_person': 'a',
+      'contact_position': 'a',
+      'contact_email': 'a@gmail.com',
+      'contact_area_code': '1',
+      'contact_phone': '1',
+      'main_product': 'a',
+      'tariff_code': '1',
+      'product_description': 'a',
+      'volume_amount': '1',
+      'annual_export': '1',
+      'certifications': 'a',
+      'export_2022': '1',
+      'export_2023': '1',
+      'export_2024': '1',
+      'company_history': 'a',
+      'awards_detail': 'a',
+      'commercial_references': 'a',
+      'estimated_term': '1',
+      'logistics_infrastructure': 'a',
+      'ports_airports': 'a',
+      'other_differentiation': 'a',
+      'other_needs': 'a'
+    };
+    
+    // Заполняем текстовые поля
+    Object.keys(textFields).forEach(name => {
+      const field = document.querySelector(`[name="${name}"]`);
+      if (field && field.type !== 'file') {
+        field.value = textFields[name];
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    
+    // Заполняем dropdown'ы - выбираем первую непустую опцию
+    document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+      const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+      if (hiddenInput && hiddenInput.name) {
+        const options = dropdown.querySelectorAll('.dropdown-option');
+        for (let option of options) {
+          const value = option.dataset.value;
+          if (value && value !== '' && value !== '…') {
+            hiddenInput.value = value;
+            const selectedText = dropdown.querySelector('.selected-text');
+            if (selectedText) {
+              selectedText.textContent = option.textContent;
+            }
+            option.classList.add('selected');
+            hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+            break;
+          }
+        }
+      }
+    });
+    
+    // Заполняем радио-кнопки - выбираем первую опцию "si" или первую доступную
+    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+      const name = radio.name;
+      if (name) {
+        const group = document.querySelectorAll(`input[type="radio"][name="${name}"]`);
+        // Ищем "si" сначала
+        let targetRadio = Array.from(group).find(r => r.value === 'si');
+        if (!targetRadio) {
+          // Если нет "si", берем первую
+          targetRadio = group[0];
+        }
+        if (targetRadio) {
+          targetRadio.checked = true;
+          targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+    });
+    
+    // Заполняем чекбоксы - отмечаем несколько
+    document.querySelectorAll('input[type="checkbox"]').forEach((checkbox, idx) => {
+      // Отмечаем каждый второй чекбокс для разнообразия
+      if (idx % 2 === 0) {
+        checkbox.checked = true;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+    
+    // Заполняем социальные сети
+    const socialWrapper = document.getElementById('social-wrapper');
+    if (socialWrapper) {
+      const firstRow = socialWrapper.querySelector('.social_row');
+      if (firstRow) {
+        const urlInput = firstRow.querySelector('input[name="social_url[]"]');
+        if (urlInput) {
+          urlInput.value = 'http://a';
+        }
+        // Выбираем первую соцсеть в dropdown
+        const hiddenInput = firstRow.querySelector('input.net');
+        if (hiddenInput) {
+          const dropdown = hiddenInput.closest('.custom-dropdown');
+          if (dropdown) {
+            const options = dropdown.querySelectorAll('.dropdown-option');
+            for (let option of options) {
+              const value = option.dataset.value;
+              if (value && value !== '' && value !== '…') {
+                hiddenInput.value = value;
+                const selectedText = dropdown.querySelector('.selected-text');
+                if (selectedText) {
+                  selectedText.textContent = option.textContent;
+                }
+                option.classList.add('selected');
+                hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Заполняем массивы полей (если есть)
+    document.querySelectorAll('input[name*="[]"]').forEach(field => {
+      if (field.type !== 'file' && !field.hidden) {
+        if (field.name.includes('social_url')) {
+          field.value = 'http://a';
+        } else if (field.name.includes('secondary_products') || field.name.includes('tariff_code_sec') || field.name.includes('product_description_sec')) {
+          field.value = 'a';
+        } else if (field.name.includes('volume_amount_sec') || field.name.includes('annual_export_sec')) {
+          field.value = '1';
+        } else {
+          field.value = 'a';
+        }
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    
+    // Сохраняем заполненные данные
+    quickSave();
+    console.log('✅ Форма заполнена тестовыми данными');
+  }
+  
   // Восстанавливаем данные при загрузке страницы
   document.addEventListener('DOMContentLoaded', () => {
     console.log('📋 Проверяем сохраненные данные...');
@@ -2202,11 +2361,26 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       console.log('ℹ️ Нет сохраненных данных в localStorage');
     }
     
+    // Кнопка для заполнения тестовыми данными
+    const btnFillTest = document.getElementById('btnFillTestData');
+    if (btnFillTest) {
+      btnFillTest.addEventListener('click', () => {
+        fillTestData();
+      });
+    }
+    
     // Ждем достаточно долго, чтобы все скрипты инициализировались
     // Включая кастомные dropdown'ы и динамические элементы
     setTimeout(() => {
-      console.log('🔄 Начинаем восстановление данных...');
-      restoreFormData();
+      if (saved) {
+        // Если есть сохраненные данные - восстанавливаем их
+        console.log('🔄 Начинаем восстановление данных...');
+        restoreFormData();
+      } else {
+        // Если нет сохраненных данных - заполняем тестовыми
+        console.log('🧪 Нет сохраненных данных, заполняем тестовыми...');
+        fillTestData();
+      }
     }, 1000); // Увеличено до 1 секунды
     
     // Автосохранение при изменении полей (без debounce, как просили)
