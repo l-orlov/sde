@@ -962,10 +962,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
       
-      // Сохраняем скрытые поля (dropdown'ы)
+      // Сохраняем скрытые поля (dropdown'ы) с текстом
       document.querySelectorAll('input[type="hidden"]').forEach(field => {
         if (field.name) {
           formData[field.name] = field.value;
+          // Сохраняем также визуальный текст dropdown'а
+          const dropdown = field.closest('.custom-dropdown');
+          if (dropdown) {
+            const selectedText = dropdown.querySelector('.selected-text');
+            if (selectedText && selectedText.textContent && selectedText.textContent !== '…') {
+              formData[field.name + '_text'] = selectedText.textContent;
+            }
+          }
         }
       });
       
@@ -1848,22 +1856,30 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   // Функция для восстановления данных формы
   function restoreFormData() {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return;
+    if (!saved) {
+      console.log('ℹ️ Нет данных для восстановления');
+      return;
+    }
     
     try {
       const formData = JSON.parse(saved);
       let restoredCount = 0;
+      console.log('📦 Восстанавливаем', Object.keys(formData).length, 'полей');
       
       // Восстанавливаем текстовые поля - только по name/id (простая логика)
       Object.keys(formData).forEach(key => {
         // Пропускаем служебные ключи
-        if (key.startsWith('_') || key.endsWith('_sel')) return;
+        if (key.startsWith('_') || key.endsWith('_sel') || key.endsWith('_text')) return;
         
         // Ищем поле только по name или id
         let field = null;
         if (key.includes('[') || key.includes(']')) {
           // Для массивов используем точное совпадение name
-          field = document.querySelector(`[name="${key}"]`);
+          // Но для восстановления берем первый элемент массива
+          const fields = document.querySelectorAll(`[name="${key}"]`);
+          if (fields.length > 0) {
+            field = fields[0]; // Берем первое поле для массивов
+          }
         } else {
           // Для обычных полей ищем по name или id
           field = document.querySelector(`[name="${key}"], #${key}`);
@@ -1876,33 +1892,46 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
           if (savedValue !== undefined && savedValue !== null && savedValue !== '') {
             field.value = savedValue;
             restoredCount++;
+            console.log(`✅ Восстановлено поле "${key}":`, savedValue);
           }
+        } else if (!field) {
+          // Логируем, если поле не найдено (для отладки)
+          // console.log(`⚠️ Поле "${key}" не найдено на странице`);
         }
       });
       
       // Восстанавливаем скрытые поля (dropdown'ы)
       document.querySelectorAll('input[type="hidden"]').forEach(field => {
         if (field.name && formData[field.name]) {
-          field.value = formData[field.name];
-          // Обновляем визуальное отображение dropdown'а
-          const dropdown = field.closest('.custom-dropdown');
-          if (dropdown) {
-            const selectedText = dropdown.querySelector('.selected-text');
-            if (formData[field.name + '_text']) {
-              // Используем сохраненный текст
-              selectedText.textContent = formData[field.name + '_text'];
-            } else {
-              // Пробуем найти опцию по значению
-              const option = dropdown.querySelector(`[data-value="${formData[field.name]}"]`);
-              if (selectedText && option) {
-                selectedText.textContent = option.textContent;
-                option.classList.add('selected');
+          const savedValue = formData[field.name];
+          // Пропускаем пустые значения и значения по умолчанию
+          if (savedValue && savedValue !== '' && savedValue !== '…') {
+            field.value = savedValue;
+            // Обновляем визуальное отображение dropdown'а
+            const dropdown = field.closest('.custom-dropdown');
+            if (dropdown) {
+              const selectedText = dropdown.querySelector('.selected-text');
+              if (selectedText) {
+                if (formData[field.name + '_text']) {
+                  // Используем сохраненный текст
+                  selectedText.textContent = formData[field.name + '_text'];
+                } else {
+                  // Пробуем найти опцию по значению
+                  const option = dropdown.querySelector(`[data-value="${savedValue}"]`);
+                  if (option) {
+                    selectedText.textContent = option.textContent;
+                    option.classList.add('selected');
+                  }
+                }
               }
+              // Триггерим событие change для инициализации
+              setTimeout(() => {
+                field.dispatchEvent(new Event('change', { bubbles: true }));
+              }, 100);
             }
-            // Триггерим событие change для инициализации
-            field.dispatchEvent(new Event('change', { bubbles: true }));
+            restoredCount++;
+            console.log(`✅ Восстановлен dropdown "${field.name}":`, savedValue);
           }
-          restoredCount++;
         }
       });
       
@@ -1964,7 +1993,14 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
         }
       });
       
-      console.log('Form data restored:', restoredCount, 'fields');
+      console.log('✅ Восстановлено полей:', restoredCount);
+      const totalFields = Object.keys(formData).filter(k => !k.startsWith('_') && !k.endsWith('_sel') && !k.endsWith('_text')).length;
+      console.log('📊 Всего полей в сохраненных данных:', totalFields);
+      
+      if (restoredCount === 0 && totalFields > 0) {
+        console.warn('⚠️ Данные есть в localStorage, но ничего не восстановлено!');
+        console.log('📋 Ключи в сохраненных данных:', Object.keys(formData).filter(k => !k.startsWith('_') && !k.endsWith('_sel') && !k.endsWith('_text')));
+      }
       
       // Восстанавливаем динамически добавленные элементы
       // Это будет сделано после инициализации соответствующих скриптов
@@ -2104,12 +2140,96 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     }
   }
   
+  // Функция для быстрого сохранения данных (без валидации)
+  function quickSave() {
+    const formData = {};
+    
+    // Сохраняем текстовые поля
+    document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], textarea').forEach(field => {
+      if (field.type !== 'file' && !field.hidden && field.name && field.value.trim()) {
+        formData[field.name] = field.value.trim();
+      }
+    });
+    
+    // Сохраняем скрытые поля (dropdown'ы) с текстом
+    document.querySelectorAll('input[type="hidden"]').forEach(field => {
+      if (field.name) {
+        formData[field.name] = field.value;
+        const dropdown = field.closest('.custom-dropdown');
+        if (dropdown) {
+          const selectedText = dropdown.querySelector('.selected-text');
+          if (selectedText && selectedText.textContent && selectedText.textContent !== '…') {
+            formData[field.name + '_text'] = selectedText.textContent;
+          }
+        }
+      }
+    });
+    
+    // Сохраняем радио-кнопки
+    document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+      if (radio.name) {
+        formData[radio.name] = radio.value;
+      }
+    });
+    
+    // Сохраняем чекбоксы
+    const checkboxValues = {};
+    document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+      if (checkbox.name) {
+        if (!checkboxValues[checkbox.name]) {
+          checkboxValues[checkbox.name] = [];
+        }
+        checkboxValues[checkbox.name].push(checkbox.value || 'checked');
+      }
+    });
+    Object.assign(formData, checkboxValues);
+    
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+  }
+  
   // Восстанавливаем данные при загрузке страницы
   document.addEventListener('DOMContentLoaded', () => {
-    // Ждем немного, чтобы все скрипты инициализировались
+    console.log('📋 Проверяем сохраненные данные...');
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        console.log('✅ Найдены сохраненные данные:', Object.keys(data).filter(k => !k.startsWith('_') && !k.endsWith('_sel') && !k.endsWith('_text')).length, 'полей');
+      } catch (e) {
+        console.error('❌ Ошибка парсинга сохраненных данных:', e);
+      }
+    } else {
+      console.log('ℹ️ Нет сохраненных данных в localStorage');
+    }
+    
+    // Ждем достаточно долго, чтобы все скрипты инициализировались
+    // Включая кастомные dropdown'ы и динамические элементы
     setTimeout(() => {
+      console.log('🔄 Начинаем восстановление данных...');
       restoreFormData();
-    }, 300);
+    }, 1000); // Увеличено до 1 секунды
+    
+    // Автосохранение при изменении полей (без debounce, как просили)
+    const form = document.querySelector('.form') || document;
+    
+    // Сохраняем при изменении текстовых полей
+    form.addEventListener('input', (e) => {
+      if (e.target.type !== 'file' && !e.target.hidden && e.target.name) {
+        quickSave();
+      }
+    });
+    
+    // Сохраняем при изменении dropdown'ов
+    form.addEventListener('change', (e) => {
+      if (e.target.type === 'hidden' || e.target.type === 'radio' || e.target.type === 'checkbox') {
+        quickSave();
+      }
+    });
+    
+    // Сохраняем перед закрытием страницы
+    window.addEventListener('beforeunload', () => {
+      quickSave();
+    });
   });
   
   // Очистка сохраненных данных при успешной отправке формы
