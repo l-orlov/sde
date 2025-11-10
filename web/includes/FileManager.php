@@ -34,13 +34,16 @@ class FileManager {
         // Валидация
         $this->validateFile($file);
         
-        // Генерируем путь для файла
-        $path = $this->generatePath($userId, $productId ?? 0, $file, $fileType);
+        // Сжимаем файл перед сохранением
+        $compressedFile = $this->compressFile($file);
+        
+        // Генерируем путь для файла (используем оригинальное расширение)
+        $path = $this->generatePath($userId, $productId ?? 0, $compressedFile, $fileType);
         
         // Сохраняем файл
-        $savedPath = $this->storage->save($file, $path, [
-            'mime_type' => $file['type'],
-            'size' => $file['size'],
+        $savedPath = $this->storage->save($compressedFile, $path, [
+            'mime_type' => $compressedFile['type'],
+            'size' => $compressedFile['size'],
         ]);
         
         // Получаем тип хранилища из конфига
@@ -59,10 +62,10 @@ class FileManager {
             $stmt->bind_param("issssis",
                 $userId,
                 $savedPath,
-                $file['name'],
+                $compressedFile['name'],
                 $fileType,
-                $file['type'],
-                $file['size'],
+                $compressedFile['type'],
+                $compressedFile['size'],
                 $storageType
             );
         } else {
@@ -76,10 +79,10 @@ class FileManager {
                 $productId,
                 $userId,
                 $savedPath,
-                $file['name'],
+                $compressedFile['name'],
                 $fileType,
-                $file['type'],
-                $file['size'],
+                $compressedFile['type'],
+                $compressedFile['size'],
                 $storageType
             );
         }
@@ -87,7 +90,16 @@ class FileManager {
         if (!$stmt->execute()) {
             // Если не удалось сохранить в БД, удаляем файл
             $this->storage->delete($savedPath);
+            // Удаляем временный файл после сжатия, если он был создан
+            if ($compressedFile['tmp_name'] !== $file['tmp_name'] && file_exists($compressedFile['tmp_name'])) {
+                unlink($compressedFile['tmp_name']);
+            }
             throw new Exception("Failed to save file metadata: " . $this->db->error);
+        }
+        
+        // Удаляем временный файл после сжатия, если он был создан
+        if ($compressedFile['tmp_name'] !== $file['tmp_name'] && file_exists($compressedFile['tmp_name'])) {
+            unlink($compressedFile['tmp_name']);
         }
         
         return $this->db->insert_id;
@@ -294,10 +306,20 @@ class FileManager {
             throw new Exception($errors[$file['error']] ?? 'Unknown upload error');
         }
         
-        // Проверка размера (максимум 10MB)
-        $maxSize = 10 * 1024 * 1024; // 10MB
+        // Проверка размера (максимум зависит от типа файла)
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+        
+        // Для видео разрешаем больший размер (будет сжат)
+        if (strpos($mimeType, 'video/') === 0) {
+            $maxSize = 200 * 1024 * 1024; // 200MB для видео (до сжатия)
+        } else {
+            $maxSize = 10 * 1024 * 1024; // 10MB для остальных файлов
+        }
+        
         if ($file['size'] > $maxSize) {
-            throw new Exception("File size exceeds maximum allowed size (10MB)");
+            throw new Exception("File size exceeds maximum allowed size (" . ($maxSize / 1024 / 1024) . "MB)");
         }
         
         // Проверка типа файла
@@ -307,15 +329,271 @@ class FileManager {
             'image/gif',
             'image/webp',
             'application/pdf',
+            'video/mp4',
+            'video/x-matroska',
+            'video/x-msvideo',
         ];
+        
+        if (!in_array($mimeType, $allowedTypes)) {
+            throw new Exception("File type not allowed: " . $mimeType);
+        }
+    }
+    
+    /**
+     * Сжимает файл (изображение или видео)
+     * 
+     * @param array $file Массив из $_FILES
+     * @return array Массив файла (может быть изменен после сжатия)
+     */
+    private function compressFile($file): array {
+        $config = require __DIR__ . '/config/config.php';
+        $compressionConfig = $config['compression'] ?? [];
         
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mimeType = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
         
-        if (!in_array($mimeType, $allowedTypes)) {
-            throw new Exception("File type not allowed: " . $mimeType);
+        // Сжатие изображений
+        if (strpos($mimeType, 'image/') === 0) {
+            if (isset($compressionConfig['images']['enabled']) && $compressionConfig['images']['enabled']) {
+                return $this->compressImage($file, $mimeType, $compressionConfig['images']);
+            }
         }
+        
+        // Сжатие видео
+        if (strpos($mimeType, 'video/') === 0) {
+            if (isset($compressionConfig['videos']['enabled']) && $compressionConfig['videos']['enabled']) {
+                return $this->compressVideo($file, $mimeType, $compressionConfig['videos']);
+            }
+        }
+        
+        // Если сжатие отключено или тип не поддерживается, возвращаем оригинал
+        return $file;
+    }
+    
+    /**
+     * Сжимает изображение
+     * 
+     * @param array $file Массив из $_FILES
+     * @param string $mimeType MIME тип изображения
+     * @param array $config Настройки сжатия
+     * @return array Массив файла после сжатия
+     */
+    private function compressImage($file, $mimeType, $config): array {
+        if (!extension_loaded('gd')) {
+            error_log("GD extension not loaded, skipping image compression");
+            return $file;
+        }
+        
+        $maxWidth = $config['max_width'] ?? 1920;
+        $maxHeight = $config['max_height'] ?? 1920;
+        $quality = $config['quality'] ?? 85;
+        
+        // Загружаем изображение
+        $sourceImage = null;
+        switch ($mimeType) {
+            case 'image/jpeg':
+                $sourceImage = imagecreatefromjpeg($file['tmp_name']);
+                break;
+            case 'image/png':
+                $sourceImage = imagecreatefrompng($file['tmp_name']);
+                break;
+            case 'image/gif':
+                $sourceImage = imagecreatefromgif($file['tmp_name']);
+                break;
+            case 'image/webp':
+                if (function_exists('imagecreatefromwebp')) {
+                    $sourceImage = imagecreatefromwebp($file['tmp_name']);
+                }
+                break;
+        }
+        
+        if (!$sourceImage) {
+            return $file;
+        }
+        
+        $originalWidth = imagesx($sourceImage);
+        $originalHeight = imagesy($sourceImage);
+        
+        // Вычисляем новые размеры с сохранением пропорций
+        $ratio = min($maxWidth / $originalWidth, $maxHeight / $originalHeight);
+        $newWidth = (int)($originalWidth * $ratio);
+        $newHeight = (int)($originalHeight * $ratio);
+        
+        // Если изображение уже меньше максимального размера, не сжимаем
+        if ($originalWidth <= $maxWidth && $originalHeight <= $maxHeight) {
+            imagedestroy($sourceImage);
+            return $file;
+        }
+        
+        // Создаем новое изображение
+        $newImage = imagecreatetruecolor($newWidth, $newHeight);
+        
+        // Для PNG сохраняем прозрачность
+        if ($mimeType === 'image/png') {
+            imagealphablending($newImage, false);
+            imagesavealpha($newImage, true);
+            $transparent = imagecolorallocatealpha($newImage, 255, 255, 255, 127);
+            imagefilledrectangle($newImage, 0, 0, $newWidth, $newHeight, $transparent);
+        }
+        
+        // Масштабируем изображение
+        imagecopyresampled($newImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight);
+        
+        // Сохраняем в временный файл
+        $tempFile = tempnam(sys_get_temp_dir(), 'compressed_');
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        
+        $saved = false;
+        switch ($mimeType) {
+            case 'image/jpeg':
+                $saved = imagejpeg($newImage, $tempFile, $quality);
+                $mimeType = 'image/jpeg';
+                $extension = 'jpg';
+                break;
+            case 'image/png':
+                $pngCompression = $config['png_compression'] ?? 6;
+                $saved = imagepng($newImage, $tempFile, $pngCompression);
+                $mimeType = 'image/png';
+                $extension = 'png';
+                break;
+            case 'image/gif':
+                $saved = imagegif($newImage, $tempFile);
+                $mimeType = 'image/gif';
+                $extension = 'gif';
+                break;
+            case 'image/webp':
+                if (function_exists('imagewebp')) {
+                    $saved = imagewebp($newImage, $tempFile, $quality);
+                    $mimeType = 'image/webp';
+                    $extension = 'webp';
+                }
+                break;
+        }
+        
+        imagedestroy($sourceImage);
+        imagedestroy($newImage);
+        
+        if (!$saved) {
+            unlink($tempFile);
+            return $file;
+        }
+        
+        // Обновляем информацию о файле
+        $newFileName = pathinfo($file['name'], PATHINFO_FILENAME) . '.' . $extension;
+        $newSize = filesize($tempFile);
+        
+        return [
+            'name' => $newFileName,
+            'type' => $mimeType,
+            'tmp_name' => $tempFile,
+            'error' => UPLOAD_ERR_OK,
+            'size' => $newSize,
+        ];
+    }
+    
+    /**
+     * Сжимает видео (требует ffmpeg)
+     * 
+     * @param array $file Массив из $_FILES
+     * @param string $mimeType MIME тип видео
+     * @param array $config Настройки сжатия
+     * @return array Массив файла после сжатия
+     */
+    private function compressVideo($file, $mimeType, $config): array {
+        // Проверяем наличие ffmpeg
+        $ffmpegPath = $this->findFFmpeg();
+        if (!$ffmpegPath) {
+            error_log("FFmpeg not found, skipping video compression");
+            // Если видео слишком большое, отклоняем его
+            $maxSize = ($config['max_size_mb'] ?? 50) * 1024 * 1024;
+            if ($file['size'] > $maxSize) {
+                throw new Exception("Video file is too large. Please compress it manually or install FFmpeg.");
+            }
+            return $file;
+        }
+        
+        $maxSize = ($config['max_size_mb'] ?? 50) * 1024 * 1024;
+        $maxWidth = $config['max_width'] ?? 1920;
+        $maxHeight = $config['max_height'] ?? 1080;
+        $bitrate = $config['bitrate'] ?? '2000k';
+        
+        // Если видео уже меньше лимита, не сжимаем
+        if ($file['size'] <= $maxSize) {
+            return $file;
+        }
+        
+        // Создаем временный файл для сжатого видео
+        $tempFile = tempnam(sys_get_temp_dir(), 'compressed_video_') . '.mp4';
+        
+        // Команда ffmpeg для сжатия
+        $command = escapeshellarg($ffmpegPath) . ' -i ' . escapeshellarg($file['tmp_name']) . 
+                   ' -vf scale=' . $maxWidth . ':' . $maxHeight . ':force_original_aspect_ratio=decrease' .
+                   ' -b:v ' . escapeshellarg($bitrate) .
+                   ' -c:v libx264 -preset medium -crf 23' .
+                   ' -c:a aac -b:a 128k' .
+                   ' -movflags +faststart' .
+                   ' -y ' . escapeshellarg($tempFile) . ' 2>&1';
+        
+        exec($command, $output, $returnCode);
+        
+        if ($returnCode !== 0 || !file_exists($tempFile)) {
+            error_log("FFmpeg compression failed: " . implode("\n", $output));
+            if (file_exists($tempFile)) {
+                unlink($tempFile);
+            }
+            // Если сжатие не удалось, но файл не слишком большой, возвращаем оригинал
+            if ($file['size'] <= $maxSize * 2) {
+                return $file;
+            }
+            throw new Exception("Failed to compress video. File is too large.");
+        }
+        
+        $newSize = filesize($tempFile);
+        
+        // Если сжатое видео все еще слишком большое, удаляем и возвращаем ошибку
+        if ($newSize > $maxSize) {
+            unlink($tempFile);
+            throw new Exception("Video file is too large even after compression. Maximum size: " . ($maxSize / 1024 / 1024) . "MB");
+        }
+        
+        return [
+            'name' => pathinfo($file['name'], PATHINFO_FILENAME) . '.mp4',
+            'type' => 'video/mp4',
+            'tmp_name' => $tempFile,
+            'error' => UPLOAD_ERR_OK,
+            'size' => $newSize,
+        ];
+    }
+    
+    /**
+     * Ищет путь к ffmpeg
+     * 
+     * @return string|null Путь к ffmpeg или null если не найден
+     */
+    private function findFFmpeg(): ?string {
+        $possiblePaths = [
+            '/usr/bin/ffmpeg',
+            '/usr/local/bin/ffmpeg',
+            'ffmpeg', // В PATH
+        ];
+        
+        foreach ($possiblePaths as $path) {
+            if ($path === 'ffmpeg') {
+                // Проверяем через which/whereis
+                $output = [];
+                exec('which ffmpeg 2>/dev/null', $output);
+                if (!empty($output) && file_exists($output[0])) {
+                    return $output[0];
+                }
+            } else {
+                if (file_exists($path) && is_executable($path)) {
+                    return $path;
+                }
+            }
+        }
+        
+        return null;
     }
     
     /**

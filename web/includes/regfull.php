@@ -950,6 +950,323 @@ document.addEventListener('DOMContentLoaded', () => {
   
   if (btnSave) {
     btnSave.addEventListener('click', async function() {
+      // Валидация обязательных полей
+      const errors = [];
+      
+      // Функция для проверки обязательного поля
+      const checkRequired = (name, label) => {
+        const field = document.querySelector(`[name="${name}"]`);
+        if (!field || !field.value || !field.value.trim()) {
+          errors.push(label);
+          if (field) {
+            field.style.borderColor = '#f44336';
+            field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          return false;
+        }
+        if (field) field.style.borderColor = '';
+        return true;
+      };
+      
+      // Функция для проверки dropdown (hidden input)
+      const checkDropdown = (name, label) => {
+        const field = document.querySelector(`[name="${name}"]`);
+        if (!field || !field.value || field.value === '' || field.value === '…') {
+          errors.push(label);
+          const dropdown = field?.closest('.custom-dropdown');
+          if (dropdown) {
+            // Используем box-shadow вместо border, чтобы не конфликтовать с существующими стилями
+            dropdown.style.boxShadow = '0 0 0 2px #f44336';
+            dropdown.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          return false;
+        }
+        const dropdown = field?.closest('.custom-dropdown');
+        if (dropdown) dropdown.style.boxShadow = '';
+        return true;
+      };
+      
+      // Валидация секции 1: Datos de la empresa
+      checkRequired('name', 'Nombre de la Empresa');
+      checkRequired('tax_id', 'CUIT / Identificación Fiscal');
+      checkRequired('legal_name', 'Razón social');
+      
+      // Валидация даты (формат dd/mm/yyyy)
+      const startDateField = document.querySelector('[name="start_date"]');
+      if (!startDateField || !startDateField.value || !startDateField.value.trim()) {
+        errors.push('Fecha de Inicio de Actividad');
+        if (startDateField) {
+          startDateField.style.borderColor = '#f44336';
+          startDateField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else {
+        const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
+        if (!datePattern.test(startDateField.value.trim())) {
+          errors.push('Fecha de Inicio de Actividad (formato: dd/mm/yyyy)');
+          startDateField.style.borderColor = '#f44336';
+          startDateField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          startDateField.style.borderColor = '';
+        }
+      }
+      
+      // Domicilio Legal
+      checkRequired('street_legal', 'Calle (Domicilio Legal)');
+      checkRequired('street_number_legal', 'Altura (Domicilio Legal)');
+      checkRequired('postal_code_legal', 'Código Postal (Domicilio Legal)');
+      checkDropdown('locality_legal', 'Localidad (Domicilio Legal)');
+      checkDropdown('department_legal', 'Departamento (Domicilio Legal)');
+      
+      // Dirección administrativa
+      checkRequired('street_admin', 'Calle (Dirección administrativa)');
+      checkRequired('street_number_admin', 'Altura (Dirección administrativa)');
+      checkRequired('postal_code_admin', 'Código Postal (Dirección administrativa)');
+      checkDropdown('locality_admin', 'Localidad (Dirección administrativa)');
+      checkDropdown('department_admin', 'Departamento (Dirección administrativa)');
+      
+      // Persona de Contacto
+      checkRequired('contact_person', 'Persona de Contacto');
+      checkRequired('contact_position', 'Cargo de Persona de contacto');
+      
+      // Валидация email
+      const contactEmail = document.querySelector('[name="contact_email"]');
+      if (!contactEmail || !contactEmail.value || !contactEmail.value.trim()) {
+        errors.push('E-mail');
+        if (contactEmail) {
+          contactEmail.style.borderColor = '#f44336';
+          contactEmail.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else {
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(contactEmail.value.trim())) {
+          errors.push('E-mail (formato inválido)');
+          contactEmail.style.borderColor = '#f44336';
+          contactEmail.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          contactEmail.style.borderColor = '';
+        }
+      }
+      
+      // Валидация телефона (проверяем оба поля: area code и phone)
+      const contactAreaCode = document.querySelector('[name="contact_area_code"]');
+      const contactPhone = document.querySelector('[name="contact_phone"]');
+      if (!contactAreaCode || !contactAreaCode.value || !contactAreaCode.value.trim() ||
+          !contactPhone || !contactPhone.value || !contactPhone.value.trim()) {
+        errors.push('Teléfono (código de área y número)');
+        if (contactAreaCode) {
+          contactAreaCode.style.borderColor = '#f44336';
+        }
+        if (contactPhone) {
+          contactPhone.style.borderColor = '#f44336';
+          contactPhone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else {
+        if (contactAreaCode) contactAreaCode.style.borderColor = '';
+        if (contactPhone) contactPhone.style.borderColor = '';
+      }
+      
+      // Валидация секции 2: Clasificación
+      checkDropdown('organization_type', 'Tipo de Organización');
+      checkDropdown('main_activity', 'Actividad Principal');
+      
+      // Валидация секции 3: Productos
+      checkRequired('main_product', 'Producto o servicio principal');
+      checkRequired('tariff_code', 'Código Arancelario');
+      checkRequired('product_description', 'Descripción del producto');
+      checkDropdown('volume_unit', 'Unidad de Volumen');
+      checkRequired('volume_amount', 'Cantidad de Volumen');
+      checkRequired('annual_export', 'Exportación Anual (USD)');
+      
+      // Проверка файла продукта
+      const productPhoto = document.querySelector('input[name="product_photo"]');
+      if (!productPhoto || !productPhoto.files || productPhoto.files.length === 0) {
+        errors.push('Foto del Producto principal');
+        if (productPhoto) {
+          productPhoto.style.borderColor = '#f44336';
+          productPhoto.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else if (productPhoto) {
+        productPhoto.style.borderColor = '';
+      }
+      
+      // Валидация других обязательных полей
+      checkRequired('certifications', 'Certificaciones');
+      checkRequired('export_2022', 'Exportación 2022');
+      checkRequired('export_2023', 'Exportación 2023');
+      checkRequired('export_2024', 'Exportación 2024');
+      checkDropdown('target_markets', 'Mercados de Interés');
+      
+      // Валидация секции 4: Competitividad
+      checkRequired('company_history', 'Historia de la Empresa');
+      const awards = document.querySelector('input[name="awards"]:checked');
+      if (!awards) {
+        errors.push('Premios');
+      }
+      const fairs = document.querySelector('input[name="fairs"]:checked');
+      if (!fairs) {
+        errors.push('Ferias');
+      }
+      const rounds = document.querySelector('input[name="rounds"]:checked');
+      if (!rounds) {
+        errors.push('Rondas');
+      }
+      checkDropdown('export_experience', 'Experiencia Exportadora');
+      checkRequired('commercial_references', 'Referencias comerciales');
+      
+      // Валидация секции 5: Visual
+      const companyLogo = document.querySelector('input[name="company_logo[]"]');
+      if (!companyLogo || !companyLogo.files || companyLogo.files.length === 0) {
+        errors.push('Logo de la Empresa');
+        if (companyLogo) {
+          companyLogo.style.borderColor = '#f44336';
+          companyLogo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else if (companyLogo) {
+        companyLogo.style.borderColor = '';
+      }
+      
+      const processPhotos = document.querySelector('input[name="process_photos[]"]');
+      if (!processPhotos || !processPhotos.files || processPhotos.files.length === 0) {
+        errors.push('Fotos de los Procesos/Servicios');
+        if (processPhotos) {
+          processPhotos.style.borderColor = '#f44336';
+          processPhotos.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else if (processPhotos) {
+        processPhotos.style.borderColor = '';
+      }
+      
+      // Валидация секции 6: Logística
+      const exportCapacity = document.querySelector('input[name="export_capacity"]:checked');
+      if (!exportCapacity) {
+        errors.push('Capacidad de Exportación Inmediata');
+      } else if (exportCapacity.value === 'si') {
+        checkRequired('estimated_term', 'Plazo estimado');
+      }
+      checkRequired('logistics_infrastructure', 'Infraestructura Logística');
+      checkRequired('ports_airports', 'Puertos/Aeropuertos');
+      
+      // Валидация секции 7: Necesidades
+      const interestParticipate = document.querySelector('input[name="interest_participate"]:checked');
+      if (!interestParticipate) {
+        errors.push('Interés en Participar de Misiones Comerciales');
+      }
+      const trainingAvailability = document.querySelector('input[name="training_availability"]:checked');
+      if (!trainingAvailability) {
+        errors.push('Disponibilidad para Capacitaciones');
+      }
+      
+      // Валидация секции 8: Validación
+      const authorizationPublish = document.querySelector('input[name="authorization_publish"]:checked');
+      if (!authorizationPublish) {
+        errors.push('Autorización para Difundir la Información');
+      }
+      const authorizationPublication = document.querySelector('input[name="authorization_publication"]:checked');
+      if (!authorizationPublication) {
+        errors.push('Autorización de Publicación');
+      }
+      const acceptContact = document.querySelector('input[name="accept_contact"]:checked');
+      if (!acceptContact) {
+        errors.push('Acepto ser Contactado');
+      }
+      
+      // Если есть ошибки, показываем их и не отправляем форму
+      if (errors.length > 0) {
+        msgEl.className = 'err';
+        msgEl.textContent = 'Por favor, complete los campos obligatorios';
+        msgEl.style.display = 'block';
+        msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      
+      // Очищаем все красные границы перед отправкой
+      document.querySelectorAll('input, textarea, select').forEach(field => {
+        field.style.borderColor = '';
+      });
+      document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+        dropdown.style.boxShadow = '';
+      });
+      
+      // Сохраняем данные в localStorage перед отправкой
+      const STORAGE_KEY = 'regfull_form_data';
+      const formData = {};
+      
+      // Сохраняем текстовые поля (только с name и не пустые)
+      document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], textarea').forEach(field => {
+        if (field.type !== 'file' && !field.hidden && field.name && field.value.trim()) {
+          formData[field.name] = field.value.trim();
+        }
+      });
+      
+      // Сохраняем скрытые поля (dropdown'ы)
+      document.querySelectorAll('input[type="hidden"]').forEach(field => {
+        if (field.name) {
+          formData[field.name] = field.value;
+        }
+      });
+      
+      // Сохраняем радио-кнопки
+      document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+        if (radio.name) {
+          formData[radio.name] = radio.value;
+        }
+      });
+      
+      // Сохраняем чекбоксы
+      const checkboxValues = {};
+      document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+        if (checkbox.name) {
+          if (!checkboxValues[checkbox.name]) {
+            checkboxValues[checkbox.name] = [];
+          }
+          checkboxValues[checkbox.name].push(checkbox.value || 'checked');
+        }
+      });
+      Object.assign(formData, checkboxValues);
+      
+      // Сохраняем состояние динамических элементов
+      const secList = document.querySelector('.sec-list');
+      if (secList && secList.children.length > 0) {
+        formData['_sec_items_count'] = secList.children.length;
+        secList.querySelectorAll('.sec_item').forEach((item, idx) => {
+          item.querySelectorAll('input[type="text"], input[type="search"]').forEach((input, inputIdx) => {
+            if (input.value) {
+              formData[`_sec_${idx}_input_${inputIdx}`] = input.value;
+            }
+          });
+          const dropdown = item.querySelector('.custom-dropdown input[type="hidden"]');
+          if (dropdown && dropdown.value) {
+            formData[`_sec_${idx}_dropdown`] = dropdown.value;
+          }
+        });
+      }
+      
+      const actList = document.querySelector('.act-list');
+      if (actList && actList.children.length > 0) {
+        formData['_act_items_count'] = actList.children.length;
+        actList.querySelectorAll('.act-row').forEach((row, idx) => {
+          const dropdown = row.querySelector('.custom-dropdown input[type="hidden"]');
+          if (dropdown && dropdown.value) {
+            formData[`_act_${idx}_value`] = dropdown.value;
+          }
+        });
+      }
+      
+      const socialRows = document.querySelectorAll('.social_row');
+      if (socialRows.length > 0) {
+        formData['_social_rows_count'] = socialRows.length;
+        socialRows.forEach((row, idx) => {
+          const tipo = row.querySelector('input.net')?.value || '';
+          const url = row.querySelector('input[name="social_url[]"]')?.value || '';
+          const other = row.querySelector('input.net-other')?.value || '';
+          formData[`_social_${idx}_tipo`] = tipo;
+          formData[`_social_${idx}_url`] = url;
+          formData[`_social_${idx}_other`] = other;
+        });
+      }
+      
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+      
       // Блокируем кнопку
       btnSave.disabled = true;
       btnSave.textContent = 'Guardando...';
@@ -959,15 +1276,15 @@ document.addEventListener('DOMContentLoaded', () => {
       
       try {
         // Собираем все данные формы через FormData (современный стандарт)
-        const formData = new FormData();
+        const formDataToSend = new FormData();
         
         // Вспомогательная функция для добавления значений в FormData
         const appendToFormData = (name, value) => {
           // FormData автоматически обрабатывает массивы, если имя заканчивается на []
           if (name.endsWith('[]')) {
-            formData.append(name, value);
+            formDataToSend.append(name, value);
           } else {
-            formData.append(name, value);
+            formDataToSend.append(name, value);
           }
         };
         
@@ -988,7 +1305,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Собираем радио-кнопки (только выбранные)
         document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
           if (radio.name) {
-            formData.append(radio.name, radio.value);
+            formDataToSend.append(radio.name, radio.value);
           }
         });
         
@@ -1006,7 +1323,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (fileInput.files && fileInput.files.length > 0) {
             // Для множественных файлов добавляем каждый
             for (let i = 0; i < fileInput.files.length; i++) {
-              formData.append(fileInput.name, fileInput.files[i]);
+              formDataToSend.append(fileInput.name, fileInput.files[i]);
             }
           }
         });
@@ -1014,7 +1331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Отправляем данные через fetch API с FormData
         const response = await fetch('includes/regfull_js.php', {
           method: 'POST',
-          body: formData
+          body: formDataToSend
           // Не устанавливаем Content-Type - браузер сам установит multipart/form-data с boundary
         });
         
@@ -1042,12 +1359,8 @@ document.addEventListener('DOMContentLoaded', () => {
           msgEl.textContent = result.res || 'Datos guardados correctamente';
           msgEl.style.display = 'block';
           
-          // Очищаем localStorage
-          if (typeof clearRegfullFormData === 'function') {
-            clearRegfullFormData();
-          } else {
-            localStorage.removeItem('regfull_form_data');
-          }
+          // Очищаем localStorage при успешной отправке
+          localStorage.removeItem('regfull_form_data');
           
           // Перенаправляем на главную через 2 секунды
           setTimeout(() => {
@@ -1359,55 +1672,25 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       const formData = JSON.parse(saved);
       let restoredCount = 0;
       
-      // Восстанавливаем текстовые поля
+      // Восстанавливаем текстовые поля - только по name/id (простая логика)
       Object.keys(formData).forEach(key => {
-        if (key.startsWith('_') || key.endsWith('_sel')) return; // Пропускаем служебные ключи
+        // Пропускаем служебные ключи
+        if (key.startsWith('_') || key.endsWith('_sel')) return;
         
+        // Ищем поле только по name или id
         let field = null;
-        
-        // Сначала пробуем найти по name/id
         if (key.includes('[') || key.includes(']')) {
-          // Для массивов используем точное совпадение
+          // Для массивов используем точное совпадение name
           field = document.querySelector(`[name="${key}"]`);
         } else {
+          // Для обычных полей ищем по name или id
           field = document.querySelector(`[name="${key}"], #${key}`);
         }
         
-        // Если не найдено, пробуем по селектору
-        if (!field && formData[key + '_sel']) {
-          try {
-            const selector = formData[key + '_sel'];
-            field = document.querySelector(selector);
-            // Если селектор не сработал, пробуем упрощенную версию
-            if (!field && selector.includes('>')) {
-              const simpleSelector = selector.split('>').pop().trim();
-              field = document.querySelector(simpleSelector);
-            }
-          } catch (e) {
-            // Игнорируем ошибки селектора
-          }
-        }
-        
-        // Если все еще не найдено, пробуем найти по структуре
-        if (!field && key.includes('_') && !key.includes('[')) {
-          const parts = key.split('_');
-          if (parts.length >= 2) {
-            const parentClass = parts[0];
-            const index = parseInt(parts[parts.length - 1]);
-            if (!isNaN(index)) {
-              const parent = document.querySelector('.' + parentClass);
-              if (parent) {
-                const fields = parent.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], textarea');
-                if (fields[index]) {
-                  field = fields[index];
-                }
-              }
-            }
-          }
-        }
-        
+        // Восстанавливаем только если поле найдено и это не файл/чекбокс/радио
         if (field && field.type !== 'file' && field.type !== 'checkbox' && field.type !== 'radio' && !field.hidden) {
           const savedValue = formData[key];
+          // Восстанавливаем только если значение не пустое
           if (savedValue !== undefined && savedValue !== null && savedValue !== '') {
             field.value = savedValue;
             restoredCount++;
@@ -1639,39 +1922,12 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     }
   }
   
-  // Debounce функция для оптимизации сохранения
-  let saveTimeout = null;
-  function debouncedSave() {
-    clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(saveFormData, 500); // Сохраняем через 500ms после последнего изменения
-  }
-  
-  // Сохраняем данные при изменении полей
+  // Восстанавливаем данные при загрузке страницы
   document.addEventListener('DOMContentLoaded', () => {
-    // Восстанавливаем данные при загрузке (с небольшой задержкой для инициализации всех скриптов)
+    // Ждем немного, чтобы все скрипты инициализировались
     setTimeout(() => {
       restoreFormData();
-    }, 100);
-    
-    // Сохраняем при изменении любых полей (с debounce)
-    const form = document.querySelector('.form') || document;
-    form.addEventListener('input', debouncedSave);
-    form.addEventListener('change', debouncedSave);
-    
-    // Сохраняем при выборе файлов
-    form.addEventListener('change', (e) => {
-      if (e.target.type === 'file') {
-        debouncedSave();
-      }
-    });
-    
-    // Сохраняем периодически (каждые 10 секунд) на случай, если что-то пропустили
-    setInterval(saveFormData, 10000);
-    
-    // Сохраняем перед закрытием страницы
-    window.addEventListener('beforeunload', () => {
-      saveFormData();
-    });
+    }, 300);
   });
   
   // Очистка сохраненных данных при успешной отправке формы

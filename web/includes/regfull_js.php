@@ -111,7 +111,7 @@ try {
         $query = "INSERT INTO companies (user_id, name, tax_id, legal_name, start_date, website, 
                   organization_type, main_activity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($link, $query);
-        mysqli_stmt_bind_param($stmt, 'isssiss', $userId, $name, $taxId, $legalName, $startDateTimestamp, $website, $organizationType, $mainActivity);
+        mysqli_stmt_bind_param($stmt, 'isssisss', $userId, $name, $taxId, $legalName, $startDateTimestamp, $website, $organizationType, $mainActivity);
     }
     
     if (!mysqli_stmt_execute($stmt)) {
