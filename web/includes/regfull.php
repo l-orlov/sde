@@ -64,15 +64,15 @@
       <div class="label"><span data-i18n="regfull_legal_address">Domicilio Legal <span class="req">*</span></span></div>
       <div class="address_grid">
         <label class="label_span" data-i18n="regfull_street">Calle <span class="req">*</span></label>
-        <input type="search" class="span_right">
+        <input type="search" name="calle_legal" class="span_right">
         <label class="label_span" data-i18n="regfull_number">Altura <span class="req">*</span></label>
-        <input type="search" class="">
+        <input type="search" name="altura_legal" class="">
         <label class="label_span" data-i18n="regfull_postal_code">Código Postal <span class="req">*</span></label>
-        <input type="search" class="">
+        <input type="search" name="codigo_postal_legal" class="">
         <label class="label_span" data-i18n="regfull_floor">Piso</label>
-        <input type="search" class="">
+        <input type="search" name="piso_legal" class="">
         <label class="label_span" data-i18n="regfull_apartment">Departamento</label>
-        <input type="search" class="">
+        <input type="search" name="departamento_apt_legal" class="">
         <label class="label_span" data-i18n="regfull_locality">Localidad <span class="req">*</span></label>
         <div class="span_right">
           <div class="custom-dropdown">
@@ -148,15 +148,15 @@
       <div class="label"><span data-i18n="regfull_admin_address">Dirección administrativa <span class="req">*</span></span></div>
       <div class="address_grid">
         <label class="label_span" data-i18n="regfull_street">Calle <span class="req">*</span></label>
-        <input type="search" class="span_right">
+        <input type="search" name="calle_admin" class="span_right">
         <label class="label_span" data-i18n="regfull_number">Altura <span class="req">*</span></label>
-        <input type="search" class="">
+        <input type="search" name="altura_admin" class="">
         <label class="label_span" data-i18n="regfull_postal_code">Código Postal <span class="req">*</span></label>
-        <input type="search" class="">
+        <input type="search" name="codigo_postal_admin" class="">
         <label class="label_span" data-i18n="regfull_floor">Piso</label>
-        <input type="search" class="">
+        <input type="search" name="piso_admin" class="">
         <label class="label_span" data-i18n="regfull_apartment">Departamento</label>
-        <input type="search" class="">
+        <input type="search" name="departamento_apt_admin" class="">
         <label class="label_span" data-i18n="regfull_locality">Localidad <span class="req">*</span></label>
         <div class="span_right">
           <div class="custom-dropdown">
@@ -231,15 +231,15 @@
     <div class="contacto_datos">
       <div class="label"><span data-i18n="regfull_contact_person">Persona de Contacto <span class="req">*</span></span></div>
       <div class="contacto_grid">
-        <input type="search" class="span_all">
+        <input type="search" name="contacto_persona" class="span_all">
         <label class="label_span" data-i18n="regfull_contact_position">Cargo de Persona de contacto <span class="req">*</span></label>
-        <input type="search">
+        <input type="search" name="contacto_cargo">
         <label class="label_span" data-i18n="regfull_email">E-mail <span class="req">*</span></label>
-        <input type="search" type="email">
+        <input type="email" name="contacto_email">
         <label class="label_span" data-i18n="regfull_phone">Teléfono <span class="req">*</span></label>
         <div class="phone_inline">
-          <input type="search" class="area" data-i18n-placeholder="regfull_area_code" placeholder="Código de área">
-          <input type="search" placeholder="">
+          <input type="search" name="contacto_area" class="area" data-i18n-placeholder="regfull_area_code" placeholder="Código de área">
+          <input type="search" name="contacto_telefono" placeholder="">
         </div>
       </div>
     </div>
@@ -412,11 +412,11 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="form" novalidate>
     <div class="label"><span data-i18n="regfull_main_product">Producto o servicio principal <span class="req">*</span></span></div>
     <div class="producto_grid">
-      <input type="search" class="span_all">
+      <input type="search" name="producto_principal" class="span_all">
       <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario <span class="req">*</span></label>
-      <input type="search">
+      <input type="search" name="codigo_arancelario">
       <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
-      <input type="search" type="email">
+      <input type="search" name="descripcion_producto">
       <label class="label_span" data-i18n="regfull_annual_volume">Volumen de Producción Anual <span class="req">*</span></label>
       <div class="anual_inline">
         <div class="field">
@@ -436,12 +436,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <input type="hidden" name="volumen_unidad" value="">
           </div>
         </div>
-        <input type="search">
+        <input type="search" name="volumen_cantidad">
       </div>
       <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD) <span class="req">*</span></label>
-      <input type="search" type="email">
+      <input type="search" name="exportacion_anual">
       <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto <span class="req">*</span></label>
-      <input class="file-ph" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF) ">
+      <input type="file" class="file-ph" name="product_photo" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF) ">
     </div>
     <div class="label"><span data-i18n="regfull_secondary_products">Lista de Productos/Servicios Secundarios</span></div>
     <div class="producto_sec">
@@ -450,11 +450,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <template class="sec-template">
         <div class="sec_item">
           <div class="producto_grid">
-            <input type="search" class="span_all">
+            <input type="search" name="producto_sec[]" class="span_all">
             <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario <span class="req">*</span></label>
-            <input type="search">
+            <input type="search" name="codigo_arancelario_sec[]">
             <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
-            <input type="search">
+            <input type="search" name="descripcion_producto_sec[]">
             <label class="label_span" data-i18n="regfull_annual_volume">Volumen de Producción Anual <span class="req">*</span></label>
             <div class="anual_inline">
               <div class="field">
@@ -474,12 +474,12 @@ document.addEventListener('DOMContentLoaded', () => {
                   <input type="hidden" name="volumen_unidad_sec[]" value="">
                 </div>
               </div>
-              <input type="search">
+              <input type="search" name="volumen_cantidad_sec[]">
             </div>
             <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD) <span class="req">*</span></label>
-            <input type="search">
+            <input type="search" name="exportacion_anual_sec[]">
             <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto <span class="req">*</span></label>
-            <input class="file-ph" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF) ">
+            <input type="file" class="file-ph" name="product_photo_sec[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF) ">
           </div>
           <div class="sec-actions">
             <button type="button" class="sec-remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">×</button>
@@ -490,18 +490,18 @@ document.addEventListener('DOMContentLoaded', () => {
     <!-- Certificaciones -->
     <div class="label"><span data-i18n="regfull_certifications">Certificaciones <span class="req">*</span></span></div>
     <div class="field">
-      <input type="search" data-i18n-placeholder="regfull_certifications_placeholder" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
+      <input type="search" name="certificaciones" data-i18n-placeholder="regfull_certifications_placeholder" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
     </div>
     <!-- Exportación Anual (USD) -->
     <div class="label"><span data-i18n="regfull_annual_export_title">Exportación Anual (USD)</span></div>
     <div class="field exp_anual">
       <div class="exp_anual_grid">
         <label class="label_span">2022 <span class="req">*</span></label>
-        <input type="search">
+        <input type="search" name="exportacion_2022">
         <label class="label_span">2023 <span class="req">*</span></label>
-        <input type="search">
+        <input type="search" name="exportacion_2023">
         <label class="label_span">2024 <span class="req">*</span></label>
-        <input type="search">
+        <input type="search" name="exportacion_2024">
       </div>
     </div>
     <!-- Mercados Actuales (Continente) -->
@@ -638,20 +638,20 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="chk"><input type="checkbox"><span data-i18n="regfull_competitive_price">Precio competitivo</span></label>
           <div class="other">
             <label class="chk"><input type="checkbox" class="otros_cb"><span data-i18n="regfull_others">Otros</span></label>
-            <input type="search" class="otros_inp" placeholder="" disabled>
+            <input type="search" name="otros_diferenciacion" class="otros_inp" placeholder="" disabled>
           </div>
         </div>
       </div>
       <!-- 2) Historia -->
       <div class="label"><label data-i18n="regfull_company_history">Historia de la Empresa y del Producto <span class="req">*</span></label></div>
-      <div class="field"><textarea class="ta" rows="4"></textarea></div>
+      <div class="field"><textarea name="historia_empresa" class="ta" rows="4"></textarea></div>
       <!-- 3) Premios -->
       <div class="label"><label data-i18n="regfull_awards">Premios <span class="req">*</span></label></div>
       <div class="field">
         <div class="yesno_line with_input">
           <label class="yn"><input type="radio" name="premios" value="si"><span data-i18n="regfull_yes">Si</span></label>
           <label class="yn"><input type="radio" name="premios" value="no"><span data-i18n="regfull_no">No</span></label>
-          <input type="search" class="detail">
+          <input type="search" name="premios_detalle" class="detail">
         </div>
       </div>
       <!-- 4) Ferias -->
@@ -689,7 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <!-- 7) Referencias comerciales -->
       <div class="label"><label data-i18n="regfull_commercial_references">Referencias comerciales <span class="req">*</span></label></div>
-      <div class="field"><textarea class="ta" rows="4"></textarea></div>
+      <div class="field"><textarea name="referencias_comerciales" class="ta" rows="4"></textarea></div>
     </div>
   </div>
 </div>
@@ -715,9 +715,9 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="form" novalidate>
     <div class="label"><span data-i18n="regfull_company_logo">Adjuntar Logo de la Empresa <span class="req">*</span></span></div>
     <div class="field visual-row">
-      <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)">
+      <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)" data-accept="image/jpeg,image/png,application/pdf" data-name="company_logo[]">
         <div class="file-item">
-          <input class="file-ph" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
+          <input type="file" class="file-ph" name="company_logo[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
           <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
         </div>
       </div>
@@ -725,9 +725,9 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
     <div class="label"><span data-i18n="regfull_process_photos">Adjuntar Fotos de los Procesos/Servicios <span class="req">*</span></span></div>
     <div class="field visual-row">
-      <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)">
+      <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)" data-accept="image/jpeg,image/png,application/pdf" data-name="process_photos[]">
         <div class="file-item">
-          <input class="file-ph" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
+          <input type="file" class="file-ph" name="process_photos[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
           <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
         </div>
       </div>
@@ -735,9 +735,9 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
     <div class="label"><span data-i18n="regfull_digital_catalog">Adjuntar Catálogo Digital (si existe)</span></div>
     <div class="field visual-row">
-      <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)">
+      <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)" data-accept="image/jpeg,image/png,application/pdf" data-name="digital_catalog[]">
         <div class="file-item">
-          <input class="file-ph" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
+          <input type="file" class="file-ph" name="digital_catalog[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
           <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
         </div>
       </div>
@@ -745,9 +745,9 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
     <div class="label"><span data-i18n="regfull_institutional_video">Adjuntar Video Institucional (si existe)</span></div>
     <div class="field visual-row">
-      <div class="files-list" data-ph="subir archivo (MP4, MKV, AVI)">
+      <div class="files-list" data-ph="subir archivo (MP4, MKV, AVI)" data-accept="video/mp4,video/x-matroska,video/x-msvideo" data-name="institutional_video">
         <div class="file-item">
-          <input class="file-ph" data-i18n-placeholder="regfull_upload_video" placeholder="subir archivo (MP4, MKV, AVI)">
+          <input type="file" class="file-ph" name="institutional_video" accept="video/mp4,video/x-matroska,video/x-msvideo" data-i18n-placeholder="regfull_upload_video" placeholder="subir archivo (MP4, MKV, AVI)">
           <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
         </div>
       </div>
@@ -779,8 +779,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const item = document.createElement('div');
         item.className = 'file-item';
         const input = document.createElement('input');
+        input.type = 'file';
         input.className = 'file-ph';
         input.placeholder = ph;
+        // Определяем accept в зависимости от типа файлов
+        const acceptAttr = list.getAttribute('data-accept') || 'image/jpeg,image/png,application/pdf';
+        input.accept = acceptAttr;
+        // Определяем name в зависимости от родительского контейнера
+        const nameAttr = list.getAttribute('data-name') || 'file[]';
+        input.name = nameAttr;
         const rm = document.createElement('button');
         rm.type = 'button';
         rm.className = 'remove';
@@ -816,15 +823,15 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="yn"><input type="radio" name="capacidad_exportacion" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
         <label class="lbl plazo-lbl" data-i18n="regfull_estimated_term">Plazo estimado <span class="req">*</span></label>
-        <input class="fld plazo" data-i18n-placeholder="regfull_months" placeholder="meses">
+        <input name="plazo_estimado" class="fld plazo" data-i18n-placeholder="regfull_months" placeholder="meses">
       </div>
     </div>
     <div class="label"><span data-i18n="regfull_logistics_infrastructure">Infraestructura Logística Disponible <span class="req">*</span></span></div>
     <div class="field">
-      <input type="search" data-i18n-placeholder="regfull_logistics_placeholder" placeholder="ejemplo: frigoríficos, transporte propio, alianzas logísticas, etc.">
+      <input type="search" name="infraestructura_logistica" data-i18n-placeholder="regfull_logistics_placeholder" placeholder="ejemplo: frigoríficos, transporte propio, alianzas logísticas, etc.">
     </div>
     <div class="label"><span data-i18n="regfull_ports_airports">Puertos/Aeropuertos de Salida habituales o posibles <span class="req">*</span></span></div>
-    <div class="field"><textarea class="ta" rows="4"></textarea></div>
+    <div class="field"><textarea name="puertos_aeropuertos" class="ta" rows="4"></textarea></div>
   </div>
 </div>
 <script>
@@ -852,7 +859,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="chk"><input type="checkbox"><span data-i18n="regfull_commercial_partners">Socios comerciales</span></label>
           <div class="other">
             <label class="chk"><input type="checkbox" class="otros-cb"><span data-i18n="regfull_others">Otros</span></label>
-            <input class="fld otros-inp" type="text" placeholder="" disabled>
+            <input name="otros_necesidades" class="fld otros-inp" type="text" placeholder="" disabled>
           </div>
         </div>
       </div>
@@ -1017,6 +1024,530 @@ function initRadioGroups() {
 // Initialize radio groups when DOM is loaded
 document.addEventListener('DOMContentLoaded', initRadioGroups);
 </script>
+
+<!-- Auto-save form data to localStorage -->
+<script>
+(function() {
+  const STORAGE_KEY = 'regfull_form_data';
+  
+  // Функция для получения селектора поля
+  function getFieldSelector(field) {
+    const path = [];
+    let element = field;
+    while (element && element !== document.body) {
+      let selector = element.tagName.toLowerCase();
+      if (element.className) {
+        const classes = element.className.split(' ').filter(c => c && !c.startsWith('span_'));
+        if (classes.length > 0) {
+          selector += '.' + classes[0];
+        }
+      }
+      const siblings = Array.from(element.parentElement?.children || []);
+      const index = siblings.indexOf(element);
+      if (index > 0) {
+        selector += `:nth-of-type(${index + 1})`;
+      }
+      path.unshift(selector);
+      element = element.parentElement;
+    }
+    return path.join(' > ');
+  }
+  
+  // Функция для получения уникального ключа для поля
+  function getFieldKey(field) {
+    if (field.name) return field.name;
+    if (field.id) return field.id;
+    
+    // Для полей без name/id используем селектор на основе структуры
+    const parent = field.closest('.address_grid, .contacto_grid, .producto_grid, .address, .contacto_datos');
+    if (parent) {
+      const index = Array.from(parent.querySelectorAll('input, textarea')).indexOf(field);
+      const parentClass = parent.className.split(' ')[0];
+      return `${parentClass}_${index}`;
+    }
+    
+    // Если ничего не подошло, используем случайный ключ
+    return 'field_' + Math.random().toString(36).substr(2, 9);
+  }
+  
+  // Функция для сохранения всех данных формы
+  function saveFormData() {
+    const formData = {};
+    const fieldMap = new Map(); // Для отслеживания уникальности ключей
+    
+    // Сохраняем все текстовые поля (input, textarea) с улучшенной логикой
+    document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], textarea').forEach((field, index) => {
+      if (field.type !== 'file' && !field.hidden) {
+        let key = field.name || field.id;
+        
+        // Если нет name/id, создаем уникальный ключ на основе структуры
+        if (!key) {
+          const parent = field.closest('.address_grid, .contacto_grid, .producto_grid, .address, .contacto_datos, .form, .datos');
+          if (parent) {
+            const parentClass = parent.className.split(' ').find(c => c && !c.includes('datos'));
+            const allFields = parent.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], textarea');
+            const fieldIndex = Array.from(allFields).indexOf(field);
+            key = `${parentClass || 'field'}_${fieldIndex}`;
+          } else {
+            key = `field_${index}`;
+          }
+        }
+        
+        // Если ключ уже используется, добавляем индекс
+        let finalKey = key;
+        let counter = 0;
+        while (fieldMap.has(finalKey)) {
+          finalKey = `${key}_${counter}`;
+          counter++;
+        }
+        fieldMap.set(finalKey, field);
+        
+        formData[finalKey] = field.value;
+        // Сохраняем селектор для надежного восстановления
+        formData[finalKey + '_sel'] = getFieldSelector(field);
+      }
+    });
+    
+    // Сохраняем скрытые поля (hidden inputs из dropdown'ов)
+    document.querySelectorAll('input[type="hidden"]').forEach(field => {
+      if (field.name) {
+        formData[field.name] = field.value;
+        // Также сохраняем визуальное состояние dropdown'а
+        const dropdown = field.closest('.custom-dropdown');
+        if (dropdown) {
+          const selectedText = dropdown.querySelector('.selected-text');
+          if (selectedText) {
+            formData[field.name + '_text'] = selectedText.textContent;
+          }
+        }
+      }
+    });
+    
+    // Сохраняем чекбоксы
+    document.querySelectorAll('input[type="checkbox"]').forEach((checkbox, idx) => {
+      let key = checkbox.name || checkbox.id;
+      if (!key) {
+        // Для чекбоксов без name/id используем позицию
+        const parent = checkbox.closest('.factors_grid, .needs-grid, .compet_blk, .needs-blk');
+        if (parent) {
+          const allCheckboxes = parent.querySelectorAll('input[type="checkbox"]');
+          const index = Array.from(allCheckboxes).indexOf(checkbox);
+          key = `checkbox_${parent.className.split(' ')[0]}_${index}`;
+        } else {
+          key = `checkbox_${idx}`;
+        }
+      }
+      
+      if (checkbox.name) {
+        // Для чекбоксов с name сохраняем массив значений
+        if (!formData[checkbox.name]) {
+          formData[checkbox.name] = [];
+        }
+        if (checkbox.checked) {
+          formData[checkbox.name].push(checkbox.value || 'checked');
+        }
+      } else {
+        formData[key] = checkbox.checked;
+        formData[key + '_sel'] = getFieldSelector(checkbox);
+      }
+    });
+    
+    // Сохраняем радио-кнопки
+    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+      if (radio.name && radio.checked) {
+        formData[radio.name] = radio.value;
+      }
+    });
+    
+    // Сохраняем имена выбранных файлов
+    document.querySelectorAll('input[type="file"]').forEach((fileInput, idx) => {
+      if (fileInput.files && fileInput.files.length > 0) {
+        const fileNames = Array.from(fileInput.files).map(f => f.name);
+        const key = fileInput.name || fileInput.id || `file_${idx}`;
+        formData[key] = fileNames;
+        formData[key + '_sel'] = getFieldSelector(fileInput);
+      }
+    });
+    
+    // Сохраняем состояние динамически добавленных элементов
+    const secList = document.querySelector('.sec-list');
+    if (secList && secList.children.length > 0) {
+      formData['_sec_items_count'] = secList.children.length;
+      // Сохраняем данные каждого элемента
+      secList.querySelectorAll('.sec_item').forEach((item, idx) => {
+        item.querySelectorAll('input[type="text"], input[type="search"]').forEach((input, inputIdx) => {
+          if (input.value) {
+            formData[`_sec_${idx}_input_${inputIdx}`] = input.value;
+          }
+        });
+        // Сохраняем dropdown значения
+        const dropdown = item.querySelector('.custom-dropdown input[type="hidden"]');
+        if (dropdown && dropdown.value) {
+          formData[`_sec_${idx}_dropdown`] = dropdown.value;
+        }
+      });
+    }
+    
+    const actList = document.querySelector('.act-list');
+    if (actList && actList.children.length > 0) {
+      formData['_act_items_count'] = actList.children.length;
+      actList.querySelectorAll('.act-row').forEach((row, idx) => {
+        const dropdown = row.querySelector('.custom-dropdown input[type="hidden"]');
+        if (dropdown && dropdown.value) {
+          formData[`_act_${idx}_value`] = dropdown.value;
+        }
+      });
+    }
+    
+    // Сохраняем состояние социальных сетей
+    const socialRows = document.querySelectorAll('.social_row');
+    if (socialRows.length > 0) {
+      formData['_social_rows_count'] = socialRows.length;
+      socialRows.forEach((row, idx) => {
+        const tipo = row.querySelector('input.net')?.value || '';
+        const url = row.querySelector('input[name="social_url[]"]')?.value || '';
+        const other = row.querySelector('input.net-other')?.value || '';
+        formData[`_social_${idx}_tipo`] = tipo;
+        formData[`_social_${idx}_url`] = url;
+        formData[`_social_${idx}_other`] = other;
+      });
+    }
+    
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+    console.log('Form data saved:', Object.keys(formData).length, 'fields');
+  }
+  
+  // Функция для восстановления данных формы
+  function restoreFormData() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return;
+    
+    try {
+      const formData = JSON.parse(saved);
+      let restoredCount = 0;
+      
+      // Восстанавливаем текстовые поля
+      Object.keys(formData).forEach(key => {
+        if (key.startsWith('_') || key.endsWith('_sel')) return; // Пропускаем служебные ключи
+        
+        let field = null;
+        
+        // Сначала пробуем найти по name/id
+        if (key.includes('[') || key.includes(']')) {
+          // Для массивов используем точное совпадение
+          field = document.querySelector(`[name="${key}"]`);
+        } else {
+          field = document.querySelector(`[name="${key}"], #${key}`);
+        }
+        
+        // Если не найдено, пробуем по селектору
+        if (!field && formData[key + '_sel']) {
+          try {
+            const selector = formData[key + '_sel'];
+            field = document.querySelector(selector);
+            // Если селектор не сработал, пробуем упрощенную версию
+            if (!field && selector.includes('>')) {
+              const simpleSelector = selector.split('>').pop().trim();
+              field = document.querySelector(simpleSelector);
+            }
+          } catch (e) {
+            // Игнорируем ошибки селектора
+          }
+        }
+        
+        // Если все еще не найдено, пробуем найти по структуре
+        if (!field && key.includes('_') && !key.includes('[')) {
+          const parts = key.split('_');
+          if (parts.length >= 2) {
+            const parentClass = parts[0];
+            const index = parseInt(parts[parts.length - 1]);
+            if (!isNaN(index)) {
+              const parent = document.querySelector('.' + parentClass);
+              if (parent) {
+                const fields = parent.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], textarea');
+                if (fields[index]) {
+                  field = fields[index];
+                }
+              }
+            }
+          }
+        }
+        
+        if (field && field.type !== 'file' && field.type !== 'checkbox' && field.type !== 'radio' && !field.hidden) {
+          const savedValue = formData[key];
+          if (savedValue !== undefined && savedValue !== null && savedValue !== '') {
+            field.value = savedValue;
+            restoredCount++;
+          }
+        }
+      });
+      
+      // Восстанавливаем скрытые поля (dropdown'ы)
+      document.querySelectorAll('input[type="hidden"]').forEach(field => {
+        if (field.name && formData[field.name]) {
+          field.value = formData[field.name];
+          // Обновляем визуальное отображение dropdown'а
+          const dropdown = field.closest('.custom-dropdown');
+          if (dropdown) {
+            const selectedText = dropdown.querySelector('.selected-text');
+            if (formData[field.name + '_text']) {
+              // Используем сохраненный текст
+              selectedText.textContent = formData[field.name + '_text'];
+            } else {
+              // Пробуем найти опцию по значению
+              const option = dropdown.querySelector(`[data-value="${formData[field.name]}"]`);
+              if (selectedText && option) {
+                selectedText.textContent = option.textContent;
+                option.classList.add('selected');
+              }
+            }
+            // Триггерим событие change для инициализации
+            field.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          restoredCount++;
+        }
+      });
+      
+      // Восстанавливаем чекбоксы
+      document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        if (checkbox.name) {
+          const savedValues = formData[checkbox.name];
+          if (Array.isArray(savedValues)) {
+            const shouldBeChecked = savedValues.includes(checkbox.value || 'checked');
+            checkbox.checked = shouldBeChecked;
+            if (shouldBeChecked) restoredCount++;
+          }
+        } else {
+          // Для чекбоксов без name ищем по селектору или структуре
+          let key = checkbox.id;
+          if (!key) {
+            const parent = checkbox.closest('.factors_grid, .needs-grid');
+            if (parent) {
+              const allCheckboxes = parent.querySelectorAll('input[type="checkbox"]');
+              const index = Array.from(allCheckboxes).indexOf(checkbox);
+              key = `checkbox_${parent.className.split(' ')[0]}_${index}`;
+            }
+          }
+          if (key && formData[key] !== undefined) {
+            checkbox.checked = formData[key];
+            restoredCount++;
+          }
+        }
+      });
+      
+      // Восстанавливаем радио-кнопки
+      document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        if (radio.name && formData[radio.name] === radio.value) {
+          radio.checked = true;
+          restoredCount++;
+        }
+      });
+      
+      // Для файлов показываем сохраненные имена
+      document.querySelectorAll('input[type="file"]').forEach((fileInput, idx) => {
+        const key = fileInput.name || fileInput.id || `file_${idx}`;
+        if (formData[key] && Array.isArray(formData[key])) {
+          const fileNames = formData[key].join(', ');
+          if (fileNames) {
+            // Удаляем старую подсказку, если есть
+            const oldHint = fileInput.parentNode.querySelector('small[data-file-hint]');
+            if (oldHint) oldHint.remove();
+            
+            // Добавляем подсказку о сохраненных файлах
+            const hint = document.createElement('small');
+            hint.setAttribute('data-file-hint', 'true');
+            hint.style.display = 'block';
+            hint.style.marginTop = '4px';
+            hint.style.color = '#666';
+            hint.textContent = `Guardado: ${fileNames}`;
+            fileInput.parentNode.insertBefore(hint, fileInput.nextSibling);
+            restoredCount++;
+          }
+        }
+      });
+      
+      console.log('Form data restored:', restoredCount, 'fields');
+      
+      // Восстанавливаем динамически добавленные элементы
+      // Это будет сделано после инициализации соответствующих скриптов
+      setTimeout(() => {
+        // Восстанавливаем социальные сети
+        if (formData['_social_rows_count'] && formData['_social_rows_count'] > 1) {
+          const wrapper = document.getElementById('social-wrapper');
+          const addBtn = document.getElementById('add-social');
+          if (wrapper && addBtn) {
+            const currentRows = wrapper.querySelectorAll('.social_row').length;
+            for (let i = currentRows; i < formData['_social_rows_count']; i++) {
+              addBtn.click();
+            }
+            // Восстанавливаем значения после создания строк
+            setTimeout(() => {
+              document.querySelectorAll('.social_row').forEach((row, idx) => {
+                const tipoKey = `_social_${idx}_tipo`;
+                const urlKey = `_social_${idx}_url`;
+                const otherKey = `_social_${idx}_other`;
+                
+                if (formData[tipoKey]) {
+                  const hiddenInput = row.querySelector('input.net');
+                  if (hiddenInput) {
+                    hiddenInput.value = formData[tipoKey];
+                    hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                }
+                if (formData[urlKey]) {
+                  const urlInput = row.querySelector('input[name="social_url[]"]');
+                  if (urlInput) {
+                    urlInput.value = formData[urlKey];
+                  }
+                }
+                if (formData[otherKey]) {
+                  const otherInput = row.querySelector('input.net-other');
+                  if (otherInput) {
+                    otherInput.value = formData[otherKey];
+                    otherInput.hidden = false;
+                  }
+                }
+              });
+            }, 200);
+          }
+        }
+        
+        // Восстанавливаем вторичные продукты
+        if (formData['_sec_items_count'] && formData['_sec_items_count'] > 0) {
+          const secList = document.querySelector('.sec-list');
+          const secAdd = document.querySelector('.sec-add');
+          if (secList && secAdd) {
+            const currentItems = secList.children.length;
+            for (let i = currentItems; i < formData['_sec_items_count']; i++) {
+              secAdd.click();
+            }
+            setTimeout(() => {
+              secList.querySelectorAll('.sec_item').forEach((item, idx) => {
+                // Восстанавливаем текстовые поля
+                item.querySelectorAll('input[type="text"], input[type="search"]').forEach((input, inputIdx) => {
+                  const key = `_sec_${idx}_input_${inputIdx}`;
+                  if (formData[key]) {
+                    input.value = formData[key];
+                  }
+                });
+                // Восстанавливаем dropdown
+                const dropdownKey = `_sec_${idx}_dropdown`;
+                if (formData[dropdownKey]) {
+                  const dropdown = item.querySelector('.custom-dropdown input[type="hidden"]');
+                  if (dropdown) {
+                    dropdown.value = formData[dropdownKey];
+                    const selectedText = dropdown.closest('.custom-dropdown').querySelector('.selected-text');
+                    const option = dropdown.closest('.custom-dropdown').querySelector(`[data-value="${formData[dropdownKey]}"]`);
+                    if (selectedText && option) {
+                      selectedText.textContent = option.textContent;
+                      option.classList.add('selected');
+                    }
+                    dropdown.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                }
+              });
+            }, 200);
+          }
+        }
+        
+        // Восстанавливаем рынки
+        if (formData['_act_items_count'] && formData['_act_items_count'] > 0) {
+          const actList = document.querySelector('.act-list');
+          const actAdd = document.querySelector('.act-add');
+          if (actList && actAdd) {
+            const currentItems = actList.children.length;
+            for (let i = currentItems; i < formData['_act_items_count']; i++) {
+              actAdd.click();
+            }
+            setTimeout(() => {
+              actList.querySelectorAll('.act-row').forEach((row, idx) => {
+                const valueKey = `_act_${idx}_value`;
+                if (formData[valueKey]) {
+                  const dropdown = row.querySelector('.custom-dropdown input[type="hidden"]');
+                  if (dropdown) {
+                    dropdown.value = formData[valueKey];
+                    const selectedText = dropdown.closest('.custom-dropdown').querySelector('.selected-text');
+                    const option = dropdown.closest('.custom-dropdown').querySelector(`[data-value="${formData[valueKey]}"]`);
+                    if (selectedText && option) {
+                      selectedText.textContent = option.textContent;
+                      option.classList.add('selected');
+                    }
+                    dropdown.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                }
+              });
+            }, 200);
+          }
+        }
+      }, 800);
+      
+      // Повторная попытка восстановления через 1.5 секунды (на случай, если скрипты еще не загрузились)
+      setTimeout(() => {
+        // Повторно восстанавливаем dropdown'ы, которые могли не восстановиться
+        document.querySelectorAll('input[type="hidden"]').forEach(field => {
+          if (field.name && formData[field.name] && !field.value) {
+            field.value = formData[field.name];
+            const dropdown = field.closest('.custom-dropdown');
+            if (dropdown) {
+              const selectedText = dropdown.querySelector('.selected-text');
+              const option = dropdown.querySelector(`[data-value="${formData[field.name]}"]`);
+              if (selectedText && option) {
+                selectedText.textContent = option.textContent;
+                option.classList.add('selected');
+              }
+              field.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
+        });
+      }, 1500);
+      
+    } catch (e) {
+      console.error('Error restoring form data:', e);
+    }
+  }
+  
+  // Debounce функция для оптимизации сохранения
+  let saveTimeout = null;
+  function debouncedSave() {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(saveFormData, 500); // Сохраняем через 500ms после последнего изменения
+  }
+  
+  // Сохраняем данные при изменении полей
+  document.addEventListener('DOMContentLoaded', () => {
+    // Восстанавливаем данные при загрузке (с небольшой задержкой для инициализации всех скриптов)
+    setTimeout(() => {
+      restoreFormData();
+    }, 100);
+    
+    // Сохраняем при изменении любых полей (с debounce)
+    const form = document.querySelector('.form') || document;
+    form.addEventListener('input', debouncedSave);
+    form.addEventListener('change', debouncedSave);
+    
+    // Сохраняем при выборе файлов
+    form.addEventListener('change', (e) => {
+      if (e.target.type === 'file') {
+        debouncedSave();
+      }
+    });
+    
+    // Сохраняем периодически (каждые 10 секунд) на случай, если что-то пропустили
+    setInterval(saveFormData, 10000);
+    
+    // Сохраняем перед закрытием страницы
+    window.addEventListener('beforeunload', () => {
+      saveFormData();
+    });
+  });
+  
+  // Очистка сохраненных данных при успешной отправке формы
+  window.clearRegfullFormData = function() {
+    localStorage.removeItem(STORAGE_KEY);
+  };
+})();
+</script>
+
 <script src="js/i18n.js?v=1.0.2"></script>
 <script>
 function toggleRegfullLangMenu() {
