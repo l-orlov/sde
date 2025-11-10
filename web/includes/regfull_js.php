@@ -2,7 +2,17 @@
 session_start();
 set_time_limit(0);
 error_reporting(E_ALL);
-ob_implicit_flush();
+ini_set('display_errors', 0); // Не показываем ошибки в HTML
+ini_set('log_errors', 1); // Логируем ошибки
+
+// Увеличиваем лимиты для загрузки больших файлов
+ini_set('post_max_size', '100M');      // Максимальный размер POST данных
+ini_set('upload_max_filesize', '100M'); // Максимальный размер одного файла
+ini_set('max_file_uploads', '50');      // Максимальное количество файлов
+ini_set('memory_limit', '256M');        // Лимит памяти для обработки файлов
+ini_set('max_execution_time', '300');   // Время выполнения скрипта (5 минут)
+
+ob_start(); // Начинаем буферизацию вывода
 
 include "functions.php";
 require_once __DIR__ . '/FileManager.php';
@@ -11,9 +21,33 @@ DBconnect();
 
 $return = ['res' => '', 'ok' => 0, 'err' => ''];
 
+// Обработчик ошибок для перехвата всех ошибок
+set_error_handler(function($errno, $errstr, $errfile, $errline) use (&$return) {
+    error_log("PHP Error [$errno]: $errstr in $errfile on line $errline");
+    if (ob_get_level()) ob_clean(); // Очищаем буфер вывода
+    $return['err'] = 'Error del servidor. Por favor, intente de nuevo.';
+    $return['ok'] = 0;
+    header('Content-Type: application/json');
+    echo json_encode($return);
+    exit;
+}, E_ALL);
+
+// Обработчик исключений
+set_exception_handler(function($exception) use (&$return) {
+    error_log("Uncaught exception: " . $exception->getMessage());
+    if (ob_get_level()) ob_clean();
+    $return['err'] = 'Error del servidor: ' . $exception->getMessage();
+    $return['ok'] = 0;
+    header('Content-Type: application/json');
+    echo json_encode($return);
+    exit;
+});
+
 // Проверка авторизации
 if (!isset($_SESSION['uid'])) {
+    if (ob_get_level()) ob_clean();
     $return['err'] = 'No autorizado. Por favor, inicie sesión.';
+    header('Content-Type: application/json');
     echo json_encode($return);
     exit;
 }
@@ -535,5 +569,10 @@ try {
     error_log("Error in regfull_js.php: " . $e->getMessage());
 }
 
+// Очищаем буфер вывода перед отправкой JSON
+if (ob_get_level()) {
+    ob_clean();
+}
+header('Content-Type: application/json');
 echo json_encode($return);
 ?>

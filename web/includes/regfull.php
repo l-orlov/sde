@@ -950,6 +950,89 @@ document.addEventListener('DOMContentLoaded', () => {
   
   if (btnSave) {
     btnSave.addEventListener('click', async function() {
+      // СРАЗУ сохраняем данные в localStorage (до валидации и отправки)
+      // Чтобы не потерять данные при ошибках
+      const STORAGE_KEY = 'regfull_form_data';
+      const formData = {};
+      
+      // Сохраняем текстовые поля (только с name и не пустые)
+      document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], textarea').forEach(field => {
+        if (field.type !== 'file' && !field.hidden && field.name && field.value.trim()) {
+          formData[field.name] = field.value.trim();
+        }
+      });
+      
+      // Сохраняем скрытые поля (dropdown'ы)
+      document.querySelectorAll('input[type="hidden"]').forEach(field => {
+        if (field.name) {
+          formData[field.name] = field.value;
+        }
+      });
+      
+      // Сохраняем радио-кнопки
+      document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+        if (radio.name) {
+          formData[radio.name] = radio.value;
+        }
+      });
+      
+      // Сохраняем чекбоксы
+      const checkboxValues = {};
+      document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+        if (checkbox.name) {
+          if (!checkboxValues[checkbox.name]) {
+            checkboxValues[checkbox.name] = [];
+          }
+          checkboxValues[checkbox.name].push(checkbox.value || 'checked');
+        }
+      });
+      Object.assign(formData, checkboxValues);
+      
+      // Сохраняем состояние динамических элементов
+      const secList = document.querySelector('.sec-list');
+      if (secList && secList.children.length > 0) {
+        formData['_sec_items_count'] = secList.children.length;
+        secList.querySelectorAll('.sec_item').forEach((item, idx) => {
+          item.querySelectorAll('input[type="text"], input[type="search"]').forEach((input, inputIdx) => {
+            if (input.value) {
+              formData[`_sec_${idx}_input_${inputIdx}`] = input.value;
+            }
+          });
+          const dropdown = item.querySelector('.custom-dropdown input[type="hidden"]');
+          if (dropdown && dropdown.value) {
+            formData[`_sec_${idx}_dropdown`] = dropdown.value;
+          }
+        });
+      }
+      
+      const actList = document.querySelector('.act-list');
+      if (actList && actList.children.length > 0) {
+        formData['_act_items_count'] = actList.children.length;
+        actList.querySelectorAll('.act-row').forEach((row, idx) => {
+          const dropdown = row.querySelector('.custom-dropdown input[type="hidden"]');
+          if (dropdown && dropdown.value) {
+            formData[`_act_${idx}_value`] = dropdown.value;
+          }
+        });
+      }
+      
+      const socialRows = document.querySelectorAll('.social_row');
+      if (socialRows.length > 0) {
+        formData['_social_rows_count'] = socialRows.length;
+        socialRows.forEach((row, idx) => {
+          const tipo = row.querySelector('input.net')?.value || '';
+          const url = row.querySelector('input[name="social_url[]"]')?.value || '';
+          const other = row.querySelector('input.net-other')?.value || '';
+          formData[`_social_${idx}_tipo`] = tipo;
+          formData[`_social_${idx}_url`] = url;
+          formData[`_social_${idx}_other`] = other;
+        });
+      }
+      
+      // Сохраняем в localStorage СРАЗУ
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+      console.log('💾 Данные сохранены в localStorage');
+      
       // Валидация обязательных полей
       const errors = [];
       
@@ -1187,89 +1270,119 @@ document.addEventListener('DOMContentLoaded', () => {
         dropdown.style.boxShadow = '';
       });
       
-      // Сохраняем данные в localStorage перед отправкой
-      const STORAGE_KEY = 'regfull_form_data';
-      const formData = {};
+      // Проверяем размер файлов перед отправкой
+      let totalSize = 0;
+      const maxSize = 50 * 1024 * 1024; // 50MB максимум
+      const fileInputs = document.querySelectorAll('input[type="file"]');
+      const largeFiles = [];
       
-      // Сохраняем текстовые поля (только с name и не пустые)
-      document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], textarea').forEach(field => {
-        if (field.type !== 'file' && !field.hidden && field.name && field.value.trim()) {
-          formData[field.name] = field.value.trim();
-        }
-      });
-      
-      // Сохраняем скрытые поля (dropdown'ы)
-      document.querySelectorAll('input[type="hidden"]').forEach(field => {
-        if (field.name) {
-          formData[field.name] = field.value;
-        }
-      });
-      
-      // Сохраняем радио-кнопки
-      document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
-        if (radio.name) {
-          formData[radio.name] = radio.value;
-        }
-      });
-      
-      // Сохраняем чекбоксы
-      const checkboxValues = {};
-      document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-        if (checkbox.name) {
-          if (!checkboxValues[checkbox.name]) {
-            checkboxValues[checkbox.name] = [];
-          }
-          checkboxValues[checkbox.name].push(checkbox.value || 'checked');
-        }
-      });
-      Object.assign(formData, checkboxValues);
-      
-      // Сохраняем состояние динамических элементов
-      const secList = document.querySelector('.sec-list');
-      if (secList && secList.children.length > 0) {
-        formData['_sec_items_count'] = secList.children.length;
-        secList.querySelectorAll('.sec_item').forEach((item, idx) => {
-          item.querySelectorAll('input[type="text"], input[type="search"]').forEach((input, inputIdx) => {
-            if (input.value) {
-              formData[`_sec_${idx}_input_${inputIdx}`] = input.value;
+      fileInputs.forEach(fileInput => {
+        if (fileInput.files && fileInput.files.length > 0) {
+          for (let i = 0; i < fileInput.files.length; i++) {
+            const file = fileInput.files[i];
+            totalSize += file.size;
+            if (file.size > 10 * 1024 * 1024) { // Файлы больше 10MB
+              largeFiles.push(`${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
             }
-          });
-          const dropdown = item.querySelector('.custom-dropdown input[type="hidden"]');
-          if (dropdown && dropdown.value) {
-            formData[`_sec_${idx}_dropdown`] = dropdown.value;
           }
-        });
+        }
+      });
+      
+      console.log('📦 Общий размер файлов:', (totalSize / 1024 / 1024).toFixed(2), 'MB');
+      if (largeFiles.length > 0) {
+        console.warn('⚠️ Большие файлы:', largeFiles);
       }
       
-      const actList = document.querySelector('.act-list');
-      if (actList && actList.children.length > 0) {
-        formData['_act_items_count'] = actList.children.length;
-        actList.querySelectorAll('.act-row').forEach((row, idx) => {
-          const dropdown = row.querySelector('.custom-dropdown input[type="hidden"]');
-          if (dropdown && dropdown.value) {
-            formData[`_act_${idx}_value`] = dropdown.value;
+      if (totalSize > maxSize) {
+        msgEl.className = 'err';
+        msgEl.textContent = `El tamaño total de los archivos es demasiado grande (${(totalSize / 1024 / 1024).toFixed(2)} MB). Máximo permitido: ${(maxSize / 1024 / 1024).toFixed(2)} MB`;
+        msgEl.style.display = 'block';
+        msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      
+      // Данные уже сохранены в localStorage в начале функции
+      
+      // Функция для сжатия изображения на клиенте
+      const compressImage = (file, maxWidth = 1920, maxHeight = 1080, quality = 0.8) => {
+        return new Promise((resolve, reject) => {
+          // Если файл не изображение или PDF, возвращаем как есть
+          if (!file.type.startsWith('image/') || file.type === 'application/pdf') {
+            resolve(file);
+            return;
           }
+          
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let width = img.width;
+              let height = img.height;
+              
+              // Вычисляем новые размеры с сохранением пропорций
+              if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width = width * ratio;
+                height = height * ratio;
+              }
+              
+              canvas.width = width;
+              canvas.height = height;
+              
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              
+              // Конвертируем в Blob
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  // Создаем новый File объект с оригинальным именем
+                  const compressedFile = new File([blob], file.name, {
+                    type: file.type,
+                    lastModified: Date.now()
+                  });
+                  console.log(`📸 Изображение сжато: ${(file.size / 1024 / 1024).toFixed(2)} MB → ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+                  resolve(compressedFile);
+                } else {
+                  resolve(file); // Если не удалось сжать, возвращаем оригинал
+                }
+              }, file.type, quality);
+            };
+            img.onerror = () => resolve(file); // Если ошибка, возвращаем оригинал
+            img.src = e.target.result;
+          };
+          reader.onerror = () => resolve(file);
+          reader.readAsDataURL(file);
         });
-      }
+      };
       
-      const socialRows = document.querySelectorAll('.social_row');
-      if (socialRows.length > 0) {
-        formData['_social_rows_count'] = socialRows.length;
-        socialRows.forEach((row, idx) => {
-          const tipo = row.querySelector('input.net')?.value || '';
-          const url = row.querySelector('input[name="social_url[]"]')?.value || '';
-          const other = row.querySelector('input.net-other')?.value || '';
-          formData[`_social_${idx}_tipo`] = tipo;
-          formData[`_social_${idx}_url`] = url;
-          formData[`_social_${idx}_other`] = other;
+      // Функция для обработки видео (проверка размера и предупреждение)
+      const processVideo = (file) => {
+        return new Promise((resolve, reject) => {
+          const maxVideoSize = 50 * 1024 * 1024; // 50MB для видео
+          
+          if (file.size > maxVideoSize) {
+            const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+            console.warn(`⚠️ Видео слишком большое: ${sizeMB} MB`);
+            
+            // Показываем предупреждение пользователю
+            const confirmMsg = `El video "${file.name}" es muy grande (${sizeMB} MB).\n\n` +
+                             `Recomendamos comprimir el video antes de subirlo.\n\n` +
+                             `¿Desea continuar de todos modos?`;
+            
+            if (!confirm(confirmMsg)) {
+              reject(new Error(`Video ${file.name} rechazado por el usuario`));
+              return;
+            }
+          }
+          
+          resolve(file);
         });
-      }
+      };
       
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-      
-      // Блокируем кнопку
+      // Блокируем кнопку и показываем прогресс
       btnSave.disabled = true;
-      btnSave.textContent = 'Guardando...';
+      btnSave.textContent = 'Comprimiendo archivos...';
       msgEl.style.display = 'none';
       msgEl.className = '';
       msgEl.textContent = '';
@@ -1277,6 +1390,59 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         // Собираем все данные формы через FormData (современный стандарт)
         const formDataToSend = new FormData();
+        
+        // Сначала обрабатываем и сжимаем файлы
+        console.log('🔄 Начинаем обработку файлов...');
+        const fileInputs = document.querySelectorAll('input[type="file"]');
+        const filePromises = [];
+        
+        for (const fileInput of fileInputs) {
+          if (fileInput.files && fileInput.files.length > 0) {
+            for (let i = 0; i < fileInput.files.length; i++) {
+              const file = fileInput.files[i];
+              
+              if (file.type.startsWith('image/')) {
+                // Сжимаем изображения
+                filePromises.push(
+                  compressImage(file).then(compressedFile => {
+                    formDataToSend.append(fileInput.name, compressedFile);
+                  })
+                );
+              } else if (file.type.startsWith('video/')) {
+                // Обрабатываем видео
+                filePromises.push(
+                  processVideo(file).then(processedFile => {
+                    formDataToSend.append(fileInput.name, processedFile);
+                  }).catch(error => {
+                    console.error('❌ Ошибка обработки видео:', error);
+                    throw error; // Пробрасываем ошибку дальше
+                  })
+                );
+              } else {
+                // PDF и другие файлы отправляем как есть
+                formDataToSend.append(fileInput.name, file);
+              }
+            }
+          }
+        }
+        
+        // Ждем завершения обработки всех файлов
+        try {
+          await Promise.all(filePromises);
+          console.log('✅ Все файлы обработаны');
+        } catch (fileError) {
+          // Если пользователь отклонил большой файл, показываем ошибку
+          btnSave.disabled = false;
+          btnSave.textContent = btnSave.getAttribute('data-i18n') ? btnSave.textContent : 'Guardar y registrarse';
+          msgEl.className = 'err';
+          msgEl.textContent = 'Por favor, comprima los archivos de video grandes antes de subirlos.';
+          msgEl.style.display = 'block';
+          msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+        
+        // Обновляем текст кнопки
+        btnSave.textContent = 'Guardando...';
         
         // Вспомогательная функция для добавления значений в FormData
         const appendToFormData = (name, value) => {
@@ -1318,38 +1484,52 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
         
-        // Собираем файлы (FormData отлично работает с файлами)
-        document.querySelectorAll('input[type="file"]').forEach(fileInput => {
-          if (fileInput.files && fileInput.files.length > 0) {
-            // Для множественных файлов добавляем каждый
-            for (let i = 0; i < fileInput.files.length; i++) {
-              formDataToSend.append(fileInput.name, fileInput.files[i]);
-            }
-          }
-        });
+        // Файлы уже добавлены в formDataToSend после сжатия выше
         
         // Отправляем данные через fetch API с FormData
+        console.log('📤 Отправка формы...');
+        console.log('📊 Размер FormData:', formDataToSend);
+        
         const response = await fetch('includes/regfull_js.php', {
           method: 'POST',
           body: formDataToSend
           // Не устанавливаем Content-Type - браузер сам установит multipart/form-data с boundary
         });
         
+        console.log('📥 Получен ответ от сервера');
+        console.log('📊 Статус:', response.status, response.statusText);
+        console.log('📊 Content-Type:', response.headers.get('content-type'));
+        
         // Проверяем статус ответа
         if (!response.ok) {
+          console.error('❌ HTTP ошибка:', response.status, response.statusText);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         // Парсим JSON с обработкой ошибок
         let result;
+        let responseText = '';
         try {
-          const text = await response.text();
-          if (!text) {
+          responseText = await response.text();
+          console.log('📄 Ответ сервера (первые 500 символов):', responseText.substring(0, 500));
+          
+          if (!responseText) {
+            console.error('❌ Пустой ответ от сервера');
             throw new Error('Empty response from server');
           }
-          result = JSON.parse(text);
+          
+          // Проверяем, что ответ начинается с JSON (не HTML)
+          if (responseText.trim().startsWith('<')) {
+            console.error('❌ Сервер вернул HTML вместо JSON');
+            console.error('📄 Полный ответ:', responseText);
+            throw new Error('Server returned HTML instead of JSON. Check server logs.');
+          }
+          
+          result = JSON.parse(responseText);
+          console.log('✅ JSON успешно распарсен:', result);
         } catch (parseError) {
-          console.error('JSON parse error:', parseError);
+          console.error('❌ Ошибка парсинга JSON:', parseError);
+          console.error('📄 Текст ответа:', responseText);
           throw new Error('Invalid server response. Please try again.');
         }
         
@@ -1367,7 +1547,8 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = '?page=home';
           }, 2000);
         } else {
-          // Ошибка
+          // Ошибка - данные уже сохранены в localStorage в начале функции
+          console.log('❌ Ошибка на сервере, но данные сохранены в localStorage');
           msgEl.className = 'err';
           msgEl.textContent = result.err || 'Error al guardar los datos';
           msgEl.style.display = 'block';
@@ -1375,7 +1556,8 @@ document.addEventListener('DOMContentLoaded', () => {
           btnSave.textContent = btnSave.getAttribute('data-i18n') ? btnSave.textContent : 'Guardar y registrarse';
         }
       } catch (error) {
-        console.error('Error:', error);
+        // Ошибка - данные уже сохранены в localStorage в начале функции
+        console.error('❌ Ошибка при отправке, но данные сохранены в localStorage:', error);
         msgEl.className = 'err';
         msgEl.textContent = 'Error de conexión. Intente de nuevo.';
         msgEl.style.display = 'block';
