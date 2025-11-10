@@ -59,12 +59,14 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
     <aside class="home-sidebar">
       <div class="home-profile-form">
         <div class="home-avatar-upload">
-          <div class="home-avatar-placeholder">
-            <span data-i18n-html="home_avatar_text" class="home-avatar-text">Agregar<br>logotipo</span>
+          <div class="home-avatar-placeholder" id="home-avatar-placeholder" style="cursor: pointer;">
+            <img id="home-avatar-image" src="" alt="Logo" style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+            <span data-i18n-html="home_avatar_text" class="home-avatar-text" id="home-avatar-text">Agregar<br>logotipo</span>
             <div class="home-avatar-camera">
               <img src="img/icons/edit_icon.png" alt="Edit">
             </div>
           </div>
+          <input type="file" id="home-logo-input" accept="image/jpeg,image/png,image/jpg" style="display: none;">
         </div>
         
         <div class="home-form-fields">
@@ -460,6 +462,147 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+  
+  // Logo upload handler
+  const avatarPlaceholder = document.getElementById('home-avatar-placeholder');
+  const logoInput = document.getElementById('home-logo-input');
+  const avatarImage = document.getElementById('home-avatar-image');
+  const avatarText = document.getElementById('home-avatar-text');
+  
+  if (avatarPlaceholder && logoInput) {
+    // Клик на аватар открывает диалог выбора файла
+    avatarPlaceholder.addEventListener('click', function() {
+      logoInput.click();
+    });
+    
+    // Обработка выбора файла
+    logoInput.addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      // Проверяем тип файла
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor, seleccione un archivo de imagen (JPG, PNG)');
+        return;
+      }
+      
+      // Проверяем размер (максимум 10MB до сжатия)
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert(`El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(2)} MB). Máximo permitido: 10 MB`);
+        return;
+      }
+      
+      // Функция для сжатия изображения
+      const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.85) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let width = img.width;
+              let height = img.height;
+              
+              // Вычисляем новые размеры с сохранением пропорций
+              if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width = width * ratio;
+                height = height * ratio;
+              }
+              
+              canvas.width = width;
+              canvas.height = height;
+              
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              
+              // Конвертируем в Blob
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  const compressedFile = new File([blob], file.name, {
+                    type: file.type,
+                    lastModified: Date.now()
+                  });
+                  console.log(`📸 Logo comprimido: ${(file.size / 1024 / 1024).toFixed(2)} MB → ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+                  resolve(compressedFile);
+                } else {
+                  resolve(file);
+                }
+              }, file.type, quality);
+            };
+            img.onerror = () => reject(new Error('Error al cargar la imagen'));
+            img.src = e.target.result;
+          };
+          reader.onerror = () => reject(new Error('Error al leer el archivo'));
+          reader.readAsDataURL(file);
+        });
+      };
+      
+      try {
+        // Показываем превью сразу
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          avatarImage.src = e.target.result;
+          avatarImage.style.display = 'block';
+          avatarText.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+        
+        // Сжимаем изображение
+        const compressedFile = await compressImage(file);
+        
+        // Отправляем на сервер
+        const formData = new FormData();
+        formData.append('logo', compressedFile);
+        
+        console.log('📤 Enviando logo al servidor...');
+        
+        const response = await fetch('includes/home_upload_logo_js.php', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('📥 Respuesta del servidor:', result);
+        
+        if (result.ok === 1) {
+          // Обновляем изображение с URL с сервера (если есть)
+          if (result.url) {
+            avatarImage.src = result.url;
+          }
+          console.log('✅ Logo guardado correctamente');
+        } else {
+          throw new Error(result.err || 'Error al guardar el logo');
+        }
+      } catch (error) {
+        console.error('❌ Error al subir el logo:', error);
+        alert('Error al subir el logo. Por favor, intente de nuevo.');
+        // Восстанавливаем состояние
+        avatarImage.style.display = 'none';
+        avatarText.style.display = 'block';
+        logoInput.value = '';
+      }
+    });
+  }
+  
+  // Загружаем существующий логотип при загрузке страницы
+  fetch('includes/home_get_logo_js.php')
+    .then(response => response.json())
+    .then(data => {
+      if (data.ok === 1 && data.url) {
+        avatarImage.src = data.url;
+        avatarImage.style.display = 'block';
+        avatarText.style.display = 'none';
+      }
+    })
+    .catch(error => {
+      console.log('ℹ️ No hay logo guardado o error al cargar:', error);
+    });
 });
 </script>
 <script src="js/i18n.js?v=1.0.2"></script>
