@@ -15,20 +15,20 @@
   </div>
   <div class="form" novalidate>
     <!-- Nombre -->
-    <div class="label"><label for="nombre" data-i18n="regfull_company_name">Nombre de la Empresa/Emprendimiento <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="nombre" name="nombre" required></div>
+    <div class="label"><label for="name" data-i18n="regfull_company_name">Nombre de la Empresa/Emprendimiento <span class="req">*</span></label></div>
+    <div class="field"><input type="search" id="name" name="name" required></div>
     <!-- CUIT -->
-    <div class="label"><label for="cuit" data-i18n="regfull_cuit">CUIT / Identificación Fiscal <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="cuit" name="cuit" data-i18n-placeholder="regfull_cuit_placeholder" placeholder="XX-XXXXXXXX-X" required></div>
+    <div class="label"><label for="tax_id" data-i18n="regfull_cuit">CUIT / Identificación Fiscal <span class="req">*</span></label></div>
+    <div class="field"><input type="search" id="tax_id" name="tax_id" data-i18n-placeholder="regfull_cuit_placeholder" placeholder="XX-XXXXXXXX-X" required></div>
     <!-- Razón social -->
-    <div class="label"><label for="razon" data-i18n="regfull_razon_social">Razón social <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="razon" name="razon" required></div>
+    <div class="label"><label for="legal_name" data-i18n="regfull_razon_social">Razón social <span class="req">*</span></label></div>
+    <div class="field"><input type="search" id="legal_name" name="legal_name" required></div>
     <!-- Fecha de inicio -->
-    <div class="label"><label for="inicio" data-i18n="regfull_start_date">Fecha de Inicio de Actividad <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="inicio" name="inicio" data-i18n-placeholder="regfull_date_placeholder" placeholder="dd/mm/aaaa" inputmode="numeric" required></div>
+    <div class="label"><label for="start_date" data-i18n="regfull_start_date">Fecha de Inicio de Actividad <span class="req">*</span></label></div>
+    <div class="field"><input type="search" id="start_date" name="start_date" data-i18n-placeholder="regfull_date_placeholder" placeholder="dd/mm/aaaa" inputmode="numeric" required></div>
     <!-- Página web -->
-    <div class="label"><label for="web" data-i18n="regfull_website">Página web (si aplica)</label></div>
-    <div class="field"><input type="search" id="web" name="web" type="url" data-i18n-placeholder="regfull_website_placeholder" placeholder="http://…"></div>
+    <div class="label"><label for="website" data-i18n="regfull_website">Página web (si aplica)</label></div>
+    <div class="field"><input type="search" id="website" name="website" type="url" data-i18n-placeholder="regfull_website_placeholder" placeholder="http://…"></div>
     <!-- Redes sociales -->
     <div class="label"><span data-i18n="regfull_social_networks">Redes sociales:</span></div>
     <div class="field" id="social-wrapper">
@@ -48,10 +48,10 @@
             <div class="dropdown-option" data-value="YouTube">YouTube</div>
             <div class="dropdown-option" data-value="Otra">Otra</div>
           </div>
-          <input type="hidden" class="net" name="social_tipo[]" value="">
+          <input type="hidden" class="net" name="social_network_type[]" value="">
         </div>
         <input class="net-other" type="text" data-i18n-placeholder="regfull_social_enter_network" placeholder="Ingresa la red…" hidden>
-        <input class="net-final" type="hidden" name="social_tipo[]">
+        <input class="net-final" type="hidden" name="social_network_type[]">
         <div class="inline">
           <input name="social_url[]" type="url" data-i18n-placeholder="regfull_website_placeholder" placeholder="http://…">
           <button type="button" class="remove" hidden>&times;</button>
@@ -64,15 +64,15 @@
       <div class="label"><span data-i18n="regfull_legal_address">Domicilio Legal <span class="req">*</span></span></div>
       <div class="address_grid">
         <label class="label_span" data-i18n="regfull_street">Calle <span class="req">*</span></label>
-        <input type="search" name="calle_legal" class="span_right">
+        <input type="search" name="street_legal" class="span_right">
         <label class="label_span" data-i18n="regfull_number">Altura <span class="req">*</span></label>
-        <input type="search" name="altura_legal" class="">
+        <input type="search" name="street_number_legal" class="">
         <label class="label_span" data-i18n="regfull_postal_code">Código Postal <span class="req">*</span></label>
-        <input type="search" name="codigo_postal_legal" class="">
+        <input type="search" name="postal_code_legal" class="">
         <label class="label_span" data-i18n="regfull_floor">Piso</label>
-        <input type="search" name="piso_legal" class="">
+        <input type="search" name="floor_legal" class="">
         <label class="label_span" data-i18n="regfull_apartment">Departamento</label>
-        <input type="search" name="departamento_apt_legal" class="">
+        <input type="search" name="apartment_legal" class="">
         <label class="label_span" data-i18n="regfull_locality">Localidad <span class="req">*</span></label>
         <div class="span_right">
           <div class="custom-dropdown">
@@ -98,7 +98,7 @@
               <div class="dropdown-option" data-value="Bandera">Bandera</div>
               <div class="dropdown-option" data-value="Monte Quemado y Sumampa">Monte Quemado y Sumampa</div>
             </div>
-            <input type="hidden" name="localidad_legal" value="">
+            <input type="hidden" name="locality_legal" value="">
           </div>
         </div>
         <label class="label_span" data-i18n="regfull_department">Departamento <span class="req">*</span></label>
@@ -138,7 +138,7 @@
               <div class="dropdown-option" data-value="Sarmiento">Sarmiento</div>
               <div class="dropdown-option" data-value="Silípica">Silípica</div>
             </div>
-            <input type="hidden" name="departamento_legal" value="">
+            <input type="hidden" name="department_legal" value="">
           </div>
         </div>
       </div>
@@ -148,15 +148,15 @@
       <div class="label"><span data-i18n="regfull_admin_address">Dirección administrativa <span class="req">*</span></span></div>
       <div class="address_grid">
         <label class="label_span" data-i18n="regfull_street">Calle <span class="req">*</span></label>
-        <input type="search" name="calle_admin" class="span_right">
+        <input type="search" name="street_admin" class="span_right">
         <label class="label_span" data-i18n="regfull_number">Altura <span class="req">*</span></label>
-        <input type="search" name="altura_admin" class="">
+        <input type="search" name="street_number_admin" class="">
         <label class="label_span" data-i18n="regfull_postal_code">Código Postal <span class="req">*</span></label>
-        <input type="search" name="codigo_postal_admin" class="">
+        <input type="search" name="postal_code_admin" class="">
         <label class="label_span" data-i18n="regfull_floor">Piso</label>
-        <input type="search" name="piso_admin" class="">
+        <input type="search" name="floor_admin" class="">
         <label class="label_span" data-i18n="regfull_apartment">Departamento</label>
-        <input type="search" name="departamento_apt_admin" class="">
+        <input type="search" name="apartment_admin" class="">
         <label class="label_span" data-i18n="regfull_locality">Localidad <span class="req">*</span></label>
         <div class="span_right">
           <div class="custom-dropdown">
@@ -182,7 +182,7 @@
               <div class="dropdown-option" data-value="Bandera">Bandera</div>
               <div class="dropdown-option" data-value="Monte Quemado y Sumampa">Monte Quemado y Sumampa</div>
             </div>
-            <input type="hidden" name="localidad_admin" value="">
+            <input type="hidden" name="locality_admin" value="">
           </div>
         </div>
         <label class="label_span" data-i18n="regfull_department">Departamento <span class="req">*</span></label>
@@ -222,7 +222,7 @@
               <div class="dropdown-option" data-value="Sarmiento">Sarmiento</div>
               <div class="dropdown-option" data-value="Silípica">Silípica</div>
             </div>
-            <input type="hidden" name="departamento_admin" value="">
+            <input type="hidden" name="department_admin" value="">
           </div>
         </div>
       </div>
@@ -231,15 +231,15 @@
     <div class="contacto_datos">
       <div class="label"><span data-i18n="regfull_contact_person">Persona de Contacto <span class="req">*</span></span></div>
       <div class="contacto_grid">
-        <input type="search" name="contacto_persona" class="span_all">
+        <input type="search" name="contact_person" class="span_all">
         <label class="label_span" data-i18n="regfull_contact_position">Cargo de Persona de contacto <span class="req">*</span></label>
-        <input type="search" name="contacto_cargo">
+        <input type="search" name="contact_position">
         <label class="label_span" data-i18n="regfull_email">E-mail <span class="req">*</span></label>
-        <input type="email" name="contacto_email">
+        <input type="email" name="contact_email">
         <label class="label_span" data-i18n="regfull_phone">Teléfono <span class="req">*</span></label>
         <div class="phone_inline">
-          <input type="search" name="contacto_area" class="area" data-i18n-placeholder="regfull_area_code" placeholder="Código de área">
-          <input type="search" name="contacto_telefono" placeholder="">
+          <input type="search" name="contact_area_code" class="area" data-i18n-placeholder="regfull_area_code" placeholder="Código de área">
+          <input type="search" name="contact_phone" placeholder="">
         </div>
       </div>
     </div>
@@ -269,7 +269,7 @@
           <div class="dropdown-option" data-value="Consorcio">Consorcio</div>
           <div class="dropdown-option" data-value="Otros (especificar)">Otros (especificar)</div>
         </div>
-        <input type="hidden" name="tipo_organizacion" value="">
+        <input type="hidden" name="organization_type" value="">
       </div>
     </div>
     <div class="label"><label data-i18n="regfull_main_activity">Actividad Principal <span class="req">*</span></label></div>
@@ -288,7 +288,7 @@
           <div class="dropdown-option" data-value="Economía cultural/creativa">Economía cultural/creativa</div>
           <div class="dropdown-option" data-value="Otros (especificar)">Otros (especificar)</div>
         </div>
-        <input type="hidden" name="actividad_principal" value="">
+        <input type="hidden" name="main_activity" value="">
       </div>
     </div>
   </div>
@@ -412,11 +412,11 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="form" novalidate>
     <div class="label"><span data-i18n="regfull_main_product">Producto o servicio principal <span class="req">*</span></span></div>
     <div class="producto_grid">
-      <input type="search" name="producto_principal" class="span_all">
+      <input type="search" name="main_product" class="span_all">
       <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario <span class="req">*</span></label>
-      <input type="search" name="codigo_arancelario">
+      <input type="search" name="tariff_code">
       <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
-      <input type="search" name="descripcion_producto">
+      <input type="search" name="product_description">
       <label class="label_span" data-i18n="regfull_annual_volume">Volumen de Producción Anual <span class="req">*</span></label>
       <div class="anual_inline">
         <div class="field">
@@ -433,13 +433,13 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="dropdown-option" data-value="unidades">unidades</div>
               <div class="dropdown-option" data-value="horas">horas</div>
             </div>
-            <input type="hidden" name="volumen_unidad" value="">
+            <input type="hidden" name="volume_unit" value="">
           </div>
         </div>
-        <input type="search" name="volumen_cantidad">
+        <input type="search" name="volume_amount">
       </div>
       <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD) <span class="req">*</span></label>
-      <input type="search" name="exportacion_anual">
+      <input type="search" name="annual_export">
       <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto <span class="req">*</span></label>
       <input type="file" class="file-ph" name="product_photo" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF) ">
     </div>
@@ -450,11 +450,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <template class="sec-template">
         <div class="sec_item">
           <div class="producto_grid">
-            <input type="search" name="producto_sec[]" class="span_all">
+            <input type="search" name="secondary_products[]" class="span_all">
             <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario <span class="req">*</span></label>
-            <input type="search" name="codigo_arancelario_sec[]">
+            <input type="search" name="tariff_code_sec[]">
             <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
-            <input type="search" name="descripcion_producto_sec[]">
+            <input type="search" name="product_description_sec[]">
             <label class="label_span" data-i18n="regfull_annual_volume">Volumen de Producción Anual <span class="req">*</span></label>
             <div class="anual_inline">
               <div class="field">
@@ -471,13 +471,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="dropdown-option" data-value="unidades">unidades</div>
                     <div class="dropdown-option" data-value="horas">horas</div>
                   </div>
-                  <input type="hidden" name="volumen_unidad_sec[]" value="">
+                  <input type="hidden" name="volume_unit_sec[]" value="">
                 </div>
               </div>
-              <input type="search" name="volumen_cantidad_sec[]">
+              <input type="search" name="volume_amount_sec[]">
             </div>
             <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD) <span class="req">*</span></label>
-            <input type="search" name="exportacion_anual_sec[]">
+            <input type="search" name="annual_export_sec[]">
             <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto <span class="req">*</span></label>
             <input type="file" class="file-ph" name="product_photo_sec[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF) ">
           </div>
@@ -490,18 +490,18 @@ document.addEventListener('DOMContentLoaded', () => {
     <!-- Certificaciones -->
     <div class="label"><span data-i18n="regfull_certifications">Certificaciones <span class="req">*</span></span></div>
     <div class="field">
-      <input type="search" name="certificaciones" data-i18n-placeholder="regfull_certifications_placeholder" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
+      <input type="search" name="certifications" data-i18n-placeholder="regfull_certifications_placeholder" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
     </div>
     <!-- Exportación Anual (USD) -->
     <div class="label"><span data-i18n="regfull_annual_export_title">Exportación Anual (USD)</span></div>
     <div class="field exp_anual">
       <div class="exp_anual_grid">
         <label class="label_span">2022 <span class="req">*</span></label>
-        <input type="search" name="exportacion_2022">
+        <input type="search" name="export_2022">
         <label class="label_span">2023 <span class="req">*</span></label>
-        <input type="search" name="exportacion_2023">
+        <input type="search" name="export_2023">
         <label class="label_span">2024 <span class="req">*</span></label>
-        <input type="search" name="exportacion_2024">
+        <input type="search" name="export_2024">
       </div>
     </div>
     <!-- Mercados Actuales (Continente) -->
@@ -525,7 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="dropdown-option" data-value="África">África</div>
               <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
             </div>
-            <input type="hidden" name="mercados_actuales[]" value="">
+            <input type="hidden" name="current_markets[]" value="">
           </div>
           <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
         </div>
@@ -551,7 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="dropdown-option" data-value="África">África</div>
           <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
         </div>
-        <input type="hidden" name="mercados_interes" value="">
+        <input type="hidden" name="target_markets" value="">
       </div>
     </div>
   </div>
@@ -638,36 +638,36 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="chk"><input type="checkbox"><span data-i18n="regfull_competitive_price">Precio competitivo</span></label>
           <div class="other">
             <label class="chk"><input type="checkbox" class="otros_cb"><span data-i18n="regfull_others">Otros</span></label>
-            <input type="search" name="otros_diferenciacion" class="otros_inp" placeholder="" disabled>
+            <input type="search" name="other_differentiation" class="otros_inp" placeholder="" disabled>
           </div>
         </div>
       </div>
       <!-- 2) Historia -->
       <div class="label"><label data-i18n="regfull_company_history">Historia de la Empresa y del Producto <span class="req">*</span></label></div>
-      <div class="field"><textarea name="historia_empresa" class="ta" rows="4"></textarea></div>
+      <div class="field"><textarea name="company_history" class="ta" rows="4"></textarea></div>
       <!-- 3) Premios -->
       <div class="label"><label data-i18n="regfull_awards">Premios <span class="req">*</span></label></div>
       <div class="field">
         <div class="yesno_line with_input">
-          <label class="yn"><input type="radio" name="premios" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="premios" value="no"><span data-i18n="regfull_no">No</span></label>
-          <input type="search" name="premios_detalle" class="detail">
+          <label class="yn"><input type="radio" name="awards" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="awards" value="no"><span data-i18n="regfull_no">No</span></label>
+          <input type="search" name="awards_detail" class="detail">
         </div>
       </div>
       <!-- 4) Ferias -->
       <div class="label"><label data-i18n="regfull_fairs">Ferias <span class="req">*</span></label></div>
       <div class="field">
         <div class="yesno_line">
-          <label class="yn"><input type="radio" name="ferias" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="ferias" value="no"><span data-i18n="regfull_no">No</span></label>
+          <label class="yn"><input type="radio" name="fairs" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="fairs" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <!-- 5) Rondas -->
       <div class="label"><label data-i18n="regfull_rounds">Rondas <span class="req">*</span></label></div>
       <div class="field">
         <div class="yesno_line">
-          <label class="yn"><input type="radio" name="rondas" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="rondas" value="no"><span data-i18n="regfull_no">No</span></label>
+          <label class="yn"><input type="radio" name="rounds" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="rounds" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <!-- 6) Experiencia Exportadora previa -->
@@ -684,12 +684,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="dropdown-option" data-value="Hemos exportado ocasionalmente">Hemos exportado ocasionalmente</div>
             <div class="dropdown-option" data-value="Nunca exportamos">Nunca exportamos</div>
           </div>
-          <input type="hidden" name="experiencia_exportadora" value="">
+          <input type="hidden" name="export_experience" value="">
         </div>
       </div>
       <!-- 7) Referencias comerciales -->
       <div class="label"><label data-i18n="regfull_commercial_references">Referencias comerciales <span class="req">*</span></label></div>
-      <div class="field"><textarea name="referencias_comerciales" class="ta" rows="4"></textarea></div>
+      <div class="field"><textarea name="commercial_references" class="ta" rows="4"></textarea></div>
     </div>
   </div>
 </div>
@@ -819,19 +819,19 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="field logi-right">
       <div class="cap-row">
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="capacidad_exportacion" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="capacidad_exportacion" value="no"><span data-i18n="regfull_no">No</span></label>
+          <label class="yn"><input type="radio" name="export_capacity" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="export_capacity" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
         <label class="lbl plazo-lbl" data-i18n="regfull_estimated_term">Plazo estimado <span class="req">*</span></label>
-        <input name="plazo_estimado" class="fld plazo" data-i18n-placeholder="regfull_months" placeholder="meses">
+        <input name="estimated_term" class="fld plazo" data-i18n-placeholder="regfull_months" placeholder="meses">
       </div>
     </div>
     <div class="label"><span data-i18n="regfull_logistics_infrastructure">Infraestructura Logística Disponible <span class="req">*</span></span></div>
     <div class="field">
-      <input type="search" name="infraestructura_logistica" data-i18n-placeholder="regfull_logistics_placeholder" placeholder="ejemplo: frigoríficos, transporte propio, alianzas logísticas, etc.">
+      <input type="search" name="logistics_infrastructure" data-i18n-placeholder="regfull_logistics_placeholder" placeholder="ejemplo: frigoríficos, transporte propio, alianzas logísticas, etc.">
     </div>
     <div class="label"><span data-i18n="regfull_ports_airports">Puertos/Aeropuertos de Salida habituales o posibles <span class="req">*</span></span></div>
-    <div class="field"><textarea name="puertos_aeropuertos" class="ta" rows="4"></textarea></div>
+    <div class="field"><textarea name="ports_airports" class="ta" rows="4"></textarea></div>
   </div>
 </div>
 <script>
@@ -859,7 +859,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="chk"><input type="checkbox"><span data-i18n="regfull_commercial_partners">Socios comerciales</span></label>
           <div class="other">
             <label class="chk"><input type="checkbox" class="otros-cb"><span data-i18n="regfull_others">Otros</span></label>
-            <input name="otros_necesidades" class="fld otros-inp" type="text" placeholder="" disabled>
+            <input name="other_needs" class="fld otros-inp" type="text" placeholder="" disabled>
           </div>
         </div>
       </div>
@@ -868,8 +868,8 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="field">
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="interes_participar" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="interes_participar" value="no"><span data-i18n="regfull_no">No</span></label>
+          <label class="yn"><input type="radio" name="interest_participate" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="interest_participate" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <div class="label">
@@ -877,8 +877,8 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="field">
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="disponibilidad_capacitaciones" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="disponibilidad_capacitaciones" value="no"><span data-i18n="regfull_no">No</span></label>
+          <label class="yn"><input type="radio" name="training_availability" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="training_availability" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
     </div>
@@ -910,8 +910,8 @@ document.addEventListener('DOMContentLoaded', () => {
           Autorización para Difundir la Información Cargada en la Plataforma Provincial <span class="req">*</span>
         </div>
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="autorizacion_difundir" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="autorizacion_difundir" value="no"><span data-i18n="regfull_no">No</span></label>
+          <label class="yn"><input type="radio" name="authorization_publish" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="authorization_publish" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <div class="consent-row">
@@ -919,8 +919,8 @@ document.addEventListener('DOMContentLoaded', () => {
           Autorizo la Publicación de mi Información para Promoción Exportadora <span class="req">*</span>
         </div>
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="autorizacion_publicacion" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="autorizacion_publicacion" value="no"><span data-i18n="regfull_no">No</span></label>
+          <label class="yn"><input type="radio" name="authorization_publication" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="authorization_publication" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <div class="consent-row">
@@ -928,8 +928,8 @@ document.addEventListener('DOMContentLoaded', () => {
           Acepto ser Contactado por Organismos de Promoción y Compradores Internacionales <span class="req">*</span>
         </div>
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="acepto_contacto" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="acepto_contacto" value="no"><span data-i18n="regfull_no">No</span></label>
+          <label class="yn"><input type="radio" name="accept_contact" value="si"><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="accept_contact" value="no"><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
     </div>
@@ -939,7 +939,140 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- Submit Button -->
 <div style="text-align: center; margin: 40px 0;">
   <button type="button" class="btn btn-save-register" id="btnSaveRegister" data-i18n="regfull_save_register">Guardar y registrarse</button>
+  <div id="regfull_message" style="margin-top: 15px; display: none;"></div>
 </div>
+
+<script>
+// Обработчик отправки формы
+document.addEventListener('DOMContentLoaded', () => {
+  const btnSave = document.getElementById('btnSaveRegister');
+  const msgEl = document.getElementById('regfull_message');
+  
+  if (btnSave) {
+    btnSave.addEventListener('click', async function() {
+      // Блокируем кнопку
+      btnSave.disabled = true;
+      btnSave.textContent = 'Guardando...';
+      msgEl.style.display = 'none';
+      msgEl.className = '';
+      msgEl.textContent = '';
+      
+      try {
+        // Собираем все данные формы через FormData (современный стандарт)
+        const formData = new FormData();
+        
+        // Вспомогательная функция для добавления значений в FormData
+        const appendToFormData = (name, value) => {
+          // FormData автоматически обрабатывает массивы, если имя заканчивается на []
+          if (name.endsWith('[]')) {
+            formData.append(name, value);
+          } else {
+            formData.append(name, value);
+          }
+        };
+        
+        // Собираем текстовые поля
+        document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], textarea').forEach(field => {
+          if (field.type !== 'file' && !field.hidden && field.name && field.value) {
+            appendToFormData(field.name, field.value);
+          }
+        });
+        
+        // Собираем скрытые поля (dropdown'ы)
+        document.querySelectorAll('input[type="hidden"]').forEach(field => {
+          if (field.name && field.value) {
+            appendToFormData(field.name, field.value);
+          }
+        });
+        
+        // Собираем радио-кнопки (только выбранные)
+        document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+          if (radio.name) {
+            formData.append(radio.name, radio.value);
+          }
+        });
+        
+        // Собираем чекбоксы (только отмеченные)
+        document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+          if (checkbox.name) {
+            // Для чекбоксов используем значение или 'checked'
+            const value = checkbox.value || 'checked';
+            appendToFormData(checkbox.name, value);
+          }
+        });
+        
+        // Собираем файлы (FormData отлично работает с файлами)
+        document.querySelectorAll('input[type="file"]').forEach(fileInput => {
+          if (fileInput.files && fileInput.files.length > 0) {
+            // Для множественных файлов добавляем каждый
+            for (let i = 0; i < fileInput.files.length; i++) {
+              formData.append(fileInput.name, fileInput.files[i]);
+            }
+          }
+        });
+        
+        // Отправляем данные через fetch API с FormData
+        const response = await fetch('includes/regfull_js.php', {
+          method: 'POST',
+          body: formData
+          // Не устанавливаем Content-Type - браузер сам установит multipart/form-data с boundary
+        });
+        
+        // Проверяем статус ответа
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // Парсим JSON с обработкой ошибок
+        let result;
+        try {
+          const text = await response.text();
+          if (!text) {
+            throw new Error('Empty response from server');
+          }
+          result = JSON.parse(text);
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          throw new Error('Invalid server response. Please try again.');
+        }
+        
+        if (result.ok === 1) {
+          // Успешно сохранено
+          msgEl.className = 'success';
+          msgEl.textContent = result.res || 'Datos guardados correctamente';
+          msgEl.style.display = 'block';
+          
+          // Очищаем localStorage
+          if (typeof clearRegfullFormData === 'function') {
+            clearRegfullFormData();
+          } else {
+            localStorage.removeItem('regfull_form_data');
+          }
+          
+          // Перенаправляем на главную через 2 секунды
+          setTimeout(() => {
+            window.location.href = '?page=home';
+          }, 2000);
+        } else {
+          // Ошибка
+          msgEl.className = 'err';
+          msgEl.textContent = result.err || 'Error al guardar los datos';
+          msgEl.style.display = 'block';
+          btnSave.disabled = false;
+          btnSave.textContent = btnSave.getAttribute('data-i18n') ? btnSave.textContent : 'Guardar y registrarse';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        msgEl.className = 'err';
+        msgEl.textContent = 'Error de conexión. Intente de nuevo.';
+        msgEl.style.display = 'block';
+        btnSave.disabled = false;
+        btnSave.textContent = btnSave.getAttribute('data-i18n') ? btnSave.textContent : 'Guardar y registrarse';
+      }
+    });
+  }
+});
+</script>
 
 <script>
 // Radio button logic is now handled by global functions
