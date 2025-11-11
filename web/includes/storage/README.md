@@ -73,7 +73,7 @@ $storage->delete($path);
     
     'local' => [
         'base_path' => __DIR__ . '/../../uploads',
-        'base_url' => '/uploads',
+        'base_url' => 'uploads',
     ],
     
     'minio' => [
