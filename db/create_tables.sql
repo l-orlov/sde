@@ -147,6 +147,9 @@ CREATE TABLE files (
     -- Тип хранилища (для совместимости)
     storage_type VARCHAR(20)    NOT NULL DEFAULT 'local',
     
+    -- Временный файл (загружен, но еще не сохранен в форме)
+    is_temporary TINYINT(1)     NOT NULL DEFAULT 0,
+    
     created_at  INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),
 
     PRIMARY KEY (`id`),

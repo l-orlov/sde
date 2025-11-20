@@ -449,6 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <button type="button" class="add_more sec-add" data-i18n="regfull_add_more">agregar más</button>
       <template class="sec-template">
         <div class="sec_item">
+          <input type="hidden" name="product_id_sec[]" value="">
           <div class="producto_grid">
             <input type="search" name="secondary_products[]" class="span_all">
             <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario <span class="req">*</span></label>
@@ -938,7 +939,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- Submit Button -->
 <div style="text-align: center; margin: 40px 0;">
-  <button type="button" class="btn btn-save-register" id="btnSaveRegister" data-i18n="regfull_save_register">Guardar y registrarse</button>
+  <button type="button" class="btn btn-save-register" id="btnSaveRegister" data-i18n="regfull_save_register">Guardar</button>
   <div id="regfull_message" style="margin-top: 15px; display: none;"></div>
   <div style="margin-top: 10px;">
     <button type="button" id="btnFillTestData" style="padding: 5px 10px; font-size: 12px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer;">🧪 Заполнить тестовыми данными</button>
@@ -1377,7 +1378,7 @@ document.addEventListener('DOMContentLoaded', () => {
           await Promise.all(filePromises);
         } catch (fileError) {
           btnSave.disabled = false;
-          btnSave.textContent = btnSave.getAttribute('data-i18n') ? btnSave.textContent : 'Guardar y registrarse';
+          btnSave.textContent = btnSave.getAttribute('data-i18n') ? btnSave.textContent : 'Guardar';
           msgEl.className = 'err';
           msgEl.textContent = 'Por favor, comprima los archivos de video grandes antes de subirlos.';
           msgEl.style.display = 'block';
@@ -1413,6 +1414,40 @@ document.addEventListener('DOMContentLoaded', () => {
           if (checkbox.name) {
             const value = checkbox.value || 'checked';
             appendToFormData(checkbox.name, value);
+          }
+        });
+        
+        const fileState = window.getFileState ? window.getFileState() : { existingFiles: {}, newFiles: {} };
+        
+        Object.keys(fileState.newFiles).forEach(fileKey => {
+          const newFile = fileState.newFiles[fileKey];
+          if (newFile.product_id) {
+            appendToFormData('new_file_' + fileKey, newFile.temp_id);
+            appendToFormData('new_file_product_id_' + fileKey, newFile.product_id);
+          } else {
+            appendToFormData('new_file_' + fileKey, newFile.temp_id);
+          }
+        });
+        
+        Object.keys(fileState.existingFiles).forEach(fileType => {
+          const existing = fileState.existingFiles[fileType];
+          if (fileType === 'product_photo_sec' && typeof existing === 'object' && !Array.isArray(existing)) {
+            Object.keys(existing).forEach(productId => {
+              const files = existing[productId];
+              if (Array.isArray(files) && files.length > 0) {
+                files.forEach(file => {
+                  appendToFormData('existing_file_' + fileType + '_' + productId + '[]', file.id);
+                });
+              }
+            });
+          } else if (existing && (Array.isArray(existing) ? existing.length > 0 : existing)) {
+            if (Array.isArray(existing)) {
+              existing.forEach((file, index) => {
+                appendToFormData('existing_file_' + fileType + '[]', file.id);
+              });
+            } else {
+              appendToFormData('existing_file_' + fileType, existing.id);
+            }
           }
         });
         
@@ -1458,14 +1493,14 @@ document.addEventListener('DOMContentLoaded', () => {
           msgEl.textContent = result.err || 'Error al guardar los datos';
           msgEl.style.display = 'block';
           btnSave.disabled = false;
-          btnSave.textContent = btnSave.getAttribute('data-i18n') ? btnSave.textContent : 'Guardar y registrarse';
+          btnSave.textContent = btnSave.getAttribute('data-i18n') ? btnSave.textContent : 'Guardar';
         }
       } catch (error) {
         msgEl.className = 'err';
         msgEl.textContent = 'Error de conexión. Intente de nuevo.';
         msgEl.style.display = 'block';
         btnSave.disabled = false;
-        btnSave.textContent = btnSave.getAttribute('data-i18n') ? btnSave.textContent : 'Guardar y registrarse';
+        btnSave.textContent = btnSave.getAttribute('data-i18n') ? btnSave.textContent : 'Guardar';
       }
     });
   }
@@ -2190,6 +2225,226 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   
   window.clearRegfullFormData = function() {
     localStorage.removeItem(STORAGE_KEY);
+  };
+})();
+</script>
+
+<script>
+// Управление файлами: загрузка при выборе и отображение существующих
+(function() {
+  const fileState = {
+    existingFiles: {},
+    newFiles: {}
+  };
+  
+  function getFileTypeFromInput(input) {
+    const name = input.name;
+    if (name === 'product_photo') return 'product_photo';
+    if (name === 'product_photo_sec[]') return 'product_photo_sec';
+    if (name === 'company_logo[]') return 'logo';
+    if (name === 'process_photos[]') return 'process_photo';
+    if (name === 'digital_catalog[]') return 'digital_catalog';
+    if (name === 'institutional_video') return 'institutional_video';
+    return null;
+  }
+  
+  function getProductIdFromInput(input) {
+    const secItem = input.closest('.sec_item');
+    if (secItem) {
+      const hiddenInput = secItem.querySelector('input[type="hidden"][name="product_id_sec[]"]');
+      return hiddenInput ? hiddenInput.value : null;
+    }
+    return null;
+  }
+  
+  async function uploadFile(file, input) {
+    const fileType = getFileTypeFromInput(input);
+    if (!fileType) return;
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('file_type', fileType);
+    
+    const productId = getProductIdFromInput(input);
+    if (productId) {
+      formData.append('product_id', productId);
+    }
+    
+    try {
+      const response = await fetch('includes/regfull_upload_file_js.php', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const result = await response.json();
+      
+      if (result.ok === 1) {
+        const fileKey = productId ? `${fileType}_${productId}` : fileType;
+        fileState.newFiles[fileKey] = {
+          temp_id: result.file_id,
+          url: result.url,
+          name: result.name,
+          product_id: productId
+        };
+        
+        displayFilePreview(input, result.url, result.name, true);
+        hideExistingFile(input, fileType, productId);
+      } else {
+        alert('Error al cargar el archivo: ' + (result.err || 'Error desconocido'));
+      }
+    } catch (error) {
+      alert('Error al cargar el archivo: ' + error.message);
+    }
+  }
+  
+  function displayFilePreview(input, url, name, isNew) {
+    const container = input.closest('.file-item') || input.closest('.producto_grid') || input.parentElement;
+    const preview = document.createElement('div');
+    preview.className = 'file-preview' + (isNew ? ' new-file' : ' existing-file');
+    
+    const isVideo = name.toLowerCase().match(/\.(mp4|mkv|avi|mov|webm)$/i) || url.toLowerCase().match(/\.(mp4|mkv|avi|mov|webm)$/i);
+    
+    let previewContent = '';
+    if (isVideo) {
+      previewContent = `
+        <video src="${url}" controls preload="metadata" style="max-width: 200px; max-height: 150px; margin-right: 10px; display: block;">
+          Tu navegador no soporta la reproducción de video.
+        </video>
+        <span style="display: block; margin-top: 5px;">${name}</span>
+      `;
+    } else {
+      previewContent = `
+        <img src="${url}" alt="${name}" style="max-width: 100px; max-height: 100px; margin-right: 10px; display: block;">
+        <span style="display: block; margin-top: 5px;">${name}</span>
+      `;
+    }
+    
+    preview.innerHTML = previewContent;
+    preview.style.marginTop = '10px';
+    preview.style.marginBottom = '10px';
+    
+    const existingPreview = container.querySelector('.file-preview');
+    if (existingPreview) {
+      existingPreview.remove();
+    }
+    
+    if (input.nextSibling) {
+      container.insertBefore(preview, input.nextSibling);
+    } else {
+      container.appendChild(preview);
+    }
+  }
+  
+  function hideExistingFile(input, fileType, productId) {
+    let existing = fileState.existingFiles[fileType];
+    if (productId && existing && existing[productId]) {
+      existing = existing[productId];
+    }
+    if (existing && (Array.isArray(existing) ? existing.length > 0 : existing)) {
+      const container = input.closest('.file-item') || input.parentElement;
+      const existingPreview = container.querySelector('.existing-file');
+      if (existingPreview) {
+        existingPreview.style.display = 'none';
+      }
+    }
+  }
+  
+  async function loadExistingFiles() {
+    try {
+      const response = await fetch('includes/regfull_get_files_js.php');
+      const result = await response.json();
+      
+      if (result.ok === 1 && result.files) {
+        fileState.existingFiles = result.files;
+        displayExistingFiles();
+      }
+    } catch (error) {
+      // Ошибка загрузки файлов - не критично
+    }
+  }
+  
+  function displayExistingFiles() {
+    const files = fileState.existingFiles;
+    
+    // Product photo (main)
+    if (files.product_photo && Array.isArray(files.product_photo) && files.product_photo.length > 0) {
+      const input = document.querySelector('input[name="product_photo"]');
+      if (input) {
+        const file = files.product_photo[0];
+        displayFilePreview(input, file.url, file.name, false);
+      }
+    }
+    
+    // Company logo
+    if (files.logo && Array.isArray(files.logo) && files.logo.length > 0) {
+      const input = document.querySelector('input[name="company_logo[]"]');
+      if (input) {
+        const file = files.logo[0];
+        displayFilePreview(input, file.url, file.name, false);
+      }
+    }
+    
+    // Process photos
+    if (files.process_photo && Array.isArray(files.process_photo) && files.process_photo.length > 0) {
+      files.process_photo.forEach((file, index) => {
+        const inputs = document.querySelectorAll('input[name="process_photos[]"]');
+        if (inputs[index]) {
+          displayFilePreview(inputs[index], file.url, file.name, false);
+        }
+      });
+    }
+    
+    // Digital catalog
+    if (files.digital_catalog && Array.isArray(files.digital_catalog) && files.digital_catalog.length > 0) {
+      const input = document.querySelector('input[name="digital_catalog[]"]');
+      if (input) {
+        const file = files.digital_catalog[0];
+        displayFilePreview(input, file.url, file.name, false);
+      }
+    }
+    
+    // Institutional video
+    if (files.institutional_video && Array.isArray(files.institutional_video) && files.institutional_video.length > 0) {
+      const input = document.querySelector('input[name="institutional_video"]');
+      if (input) {
+        const file = files.institutional_video[0];
+        displayFilePreview(input, file.url, file.name, false);
+      }
+    }
+    
+    // Secondary product photos
+    if (files.product_photo_sec) {
+      Object.keys(files.product_photo_sec).forEach(productId => {
+        const photos = files.product_photo_sec[productId];
+        photos.forEach((file, index) => {
+          const secItem = document.querySelector(`input[type="hidden"][name="product_id_sec[]"][value="${productId}"]`)?.closest('.sec_item');
+          if (secItem) {
+            const input = secItem.querySelector('input[name="product_photo_sec[]"]');
+            if (input && index === 0) {
+              displayFilePreview(input, file.url, file.name, false);
+            }
+          }
+        });
+      });
+    }
+  }
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      loadExistingFiles();
+    }, 500);
+    
+    document.querySelectorAll('input[type="file"]').forEach(input => {
+      input.addEventListener('change', function() {
+        if (this.files && this.files.length > 0) {
+          uploadFile(this.files[0], this);
+        }
+      });
+    });
+  });
+  
+  window.getFileState = function() {
+    return fileState;
   };
 })();
 </script>

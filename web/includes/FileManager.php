@@ -27,10 +27,11 @@ class FileManager {
      * @param int|null $productId ID товара (может быть null для файлов компании)
      * @param int $userId ID пользователя
      * @param string $fileType Тип файла ('product_photo', 'logo', 'process_photo', etc.)
+     * @param bool $isTemporary Временный файл (загружен, но еще не сохранен в форме)
      * @return int ID созданной записи в БД
      * @throws Exception При ошибке
      */
-    public function upload($file, $productId, $userId, $fileType = 'product_photo'): int {
+    public function upload($file, $productId, $userId, $fileType = 'product_photo', $isTemporary = false): int {
         // Валидация
         $this->validateFile($file);
         
@@ -50,32 +51,33 @@ class FileManager {
         $config = require __DIR__ . '/config/config.php';
         $storageType = $config['storage']['type'] ?? 'local';
         
-        // Сохраняем метаданные в БД
-        // Для nullable product_id используем условный запрос
+        $isTemporaryInt = $isTemporary ? 1 : 0;
+        
         if ($productId === null) {
             $stmt = $this->db->prepare("
                 INSERT INTO files (
                     product_id, user_id, file_path, file_name, 
-                    file_type, mime_type, file_size, storage_type, created_at
-                ) VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())
+                    file_type, mime_type, file_size, storage_type, is_temporary, created_at
+                ) VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())
             ");
-            $stmt->bind_param("issssis",
+            $stmt->bind_param("issssisi",
                 $userId,
                 $savedPath,
                 $compressedFile['name'],
                 $fileType,
                 $compressedFile['type'],
                 $compressedFile['size'],
-                $storageType
+                $storageType,
+                $isTemporaryInt
             );
         } else {
             $stmt = $this->db->prepare("
                 INSERT INTO files (
                     product_id, user_id, file_path, file_name, 
-                    file_type, mime_type, file_size, storage_type, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())
+                    file_type, mime_type, file_size, storage_type, is_temporary, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())
             ");
-            $stmt->bind_param("iissssis",
+            $stmt->bind_param("iissssisi",
                 $productId,
                 $userId,
                 $savedPath,
@@ -83,7 +85,8 @@ class FileManager {
                 $fileType,
                 $compressedFile['type'],
                 $compressedFile['size'],
-                $storageType
+                $storageType,
+                $isTemporaryInt
             );
         }
         

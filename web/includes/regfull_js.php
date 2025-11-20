@@ -373,139 +373,64 @@ try {
     mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
     
-    // ========== 8. ЗАГРУЗКА ФАЙЛОВ ==========
+    // ========== 8. ОБРАБОТКА ФАЙЛОВ (ЗАМЕНА И СОХРАНЕНИЕ) ==========
     
-    $uploadedFiles = [];
-    
-    if (isset($_FILES['product_photo']) && $_FILES['product_photo']['error'] === UPLOAD_ERR_OK) {
-        try {
-            $query = "SELECT id FROM products WHERE company_id = ? AND is_main = TRUE LIMIT 1";
-            $stmt = mysqli_prepare($link, $query);
-            mysqli_stmt_bind_param($stmt, 'i', $companyId);
-            mysqli_stmt_execute($stmt);
-            $result = mysqli_stmt_get_result($stmt);
-            $product = mysqli_fetch_assoc($result);
-            mysqli_stmt_close($stmt);
+    foreach ($input as $key => $value) {
+        if (strpos($key, 'new_file_') === 0) {
+            $fileKey = substr($key, 9);
+            $newFileId = intval($value);
             
-            if ($product) {
-                $fileId = $fileManager->upload($_FILES['product_photo'], $product['id'], $userId, 'product_photo');
-                $uploadedFiles[] = $fileId;
+            $productIdKey = 'new_file_product_id_' . $fileKey;
+            $productId = isset($input[$productIdKey]) ? intval($input[$productIdKey]) : null;
+            
+            $existingFileKey = 'existing_file_' . $fileKey;
+            if (strpos($fileKey, 'product_photo_sec_') === 0) {
+                $productIdFromKey = intval(substr($fileKey, 18));
+                $existingFileKey = 'existing_file_' . $fileKey;
             }
-        } catch (Exception $e) {
-            error_log("Error uploading product photo: " . $e->getMessage());
-        }
-    }
-    
-    if (isset($_FILES['product_photo_sec']) && is_array($_FILES['product_photo_sec']['name'])) {
-        $query = "SELECT id FROM products WHERE company_id = ? AND is_main = FALSE ORDER BY id";
-        $stmt = mysqli_prepare($link, $query);
-        mysqli_stmt_bind_param($stmt, 'i', $companyId);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-        $products = [];
-        while ($row = mysqli_fetch_assoc($result)) {
-            $products[] = $row['id'];
-        }
-        mysqli_stmt_close($stmt);
-        
-        $count = count($_FILES['product_photo_sec']['name']);
-        for ($i = 0; $i < $count && $i < count($products); $i++) {
-            if ($_FILES['product_photo_sec']['error'][$i] === UPLOAD_ERR_OK) {
-                try {
-                    $file = [
-                        'name' => $_FILES['product_photo_sec']['name'][$i],
-                        'type' => $_FILES['product_photo_sec']['type'][$i],
-                        'tmp_name' => $_FILES['product_photo_sec']['tmp_name'][$i],
-                        'error' => $_FILES['product_photo_sec']['error'][$i],
-                        'size' => $_FILES['product_photo_sec']['size'][$i],
-                    ];
-                    $fileId = $fileManager->upload($file, $products[$i], $userId, 'product_photo');
-                    $uploadedFiles[] = $fileId;
-                } catch (Exception $e) {
-                    error_log("Error uploading secondary product photo: " . $e->getMessage());
+            
+            $existingFileIds = [];
+            if (isset($input[$existingFileKey])) {
+                if (is_array($input[$existingFileKey])) {
+                    $existingFileIds = array_map('intval', $input[$existingFileKey]);
+                } else {
+                    $existingFileIds = [intval($input[$existingFileKey])];
                 }
             }
-        }
-    }
-    
-    if (isset($_FILES['company_logo']) && is_array($_FILES['company_logo']['name'])) {
-        $count = count($_FILES['company_logo']['name']);
-        for ($i = 0; $i < $count; $i++) {
-            if ($_FILES['company_logo']['error'][$i] === UPLOAD_ERR_OK) {
+            
+            foreach ($existingFileIds as $oldFileId) {
                 try {
-                    $file = [
-                        'name' => $_FILES['company_logo']['name'][$i],
-                        'type' => $_FILES['company_logo']['type'][$i],
-                        'tmp_name' => $_FILES['company_logo']['tmp_name'][$i],
-                        'error' => $_FILES['company_logo']['error'][$i],
-                        'size' => $_FILES['company_logo']['size'][$i],
-                    ];
-                    $fileId = $fileManager->upload($file, null, $userId, 'logo');
-                    $uploadedFiles[] = $fileId;
+                    $fileManager->delete($oldFileId, $userId);
                 } catch (Exception $e) {
-                    error_log("Error uploading company logo: " . $e->getMessage());
+                    error_log("Error deleting old file {$oldFileId}: " . $e->getMessage());
                 }
             }
-        }
-    }
-    
-    if (isset($_FILES['process_photos']) && is_array($_FILES['process_photos']['name'])) {
-        $count = count($_FILES['process_photos']['name']);
-        for ($i = 0; $i < $count; $i++) {
-            if ($_FILES['process_photos']['error'][$i] === UPLOAD_ERR_OK) {
-                try {
-                    $file = [
-                        'name' => $_FILES['process_photos']['name'][$i],
-                        'type' => $_FILES['process_photos']['type'][$i],
-                        'tmp_name' => $_FILES['process_photos']['tmp_name'][$i],
-                        'error' => $_FILES['process_photos']['error'][$i],
-                        'size' => $_FILES['process_photos']['size'][$i],
-                    ];
-                    $fileId = $fileManager->upload($file, null, $userId, 'process_photo');
-                    $uploadedFiles[] = $fileId;
-                } catch (Exception $e) {
-                    error_log("Error uploading process photo: " . $e->getMessage());
-                }
+            
+            if ($productId) {
+                $query = "UPDATE files SET is_temporary = 0, product_id = ? WHERE id = ? AND user_id = ?";
+                $stmt = mysqli_prepare($link, $query);
+                mysqli_stmt_bind_param($stmt, 'iii', $productId, $newFileId, $userId);
+            } else {
+                $query = "UPDATE files SET is_temporary = 0 WHERE id = ? AND user_id = ?";
+                $stmt = mysqli_prepare($link, $query);
+                mysqli_stmt_bind_param($stmt, 'ii', $newFileId, $userId);
             }
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
         }
     }
     
-    if (isset($_FILES['digital_catalog']) && is_array($_FILES['digital_catalog']['name'])) {
-        $count = count($_FILES['digital_catalog']['name']);
-        for ($i = 0; $i < $count; $i++) {
-            if ($_FILES['digital_catalog']['error'][$i] === UPLOAD_ERR_OK) {
-                try {
-                    $file = [
-                        'name' => $_FILES['digital_catalog']['name'][$i],
-                        'type' => $_FILES['digital_catalog']['type'][$i],
-                        'tmp_name' => $_FILES['digital_catalog']['tmp_name'][$i],
-                        'error' => $_FILES['digital_catalog']['error'][$i],
-                        'size' => $_FILES['digital_catalog']['size'][$i],
-                    ];
-                    $fileId = $fileManager->upload($file, null, $userId, 'catalog');
-                    $uploadedFiles[] = $fileId;
-                } catch (Exception $e) {
-                    error_log("Error uploading catalog: " . $e->getMessage());
-                }
-            }
-        }
-    }
-    
-    if (isset($_FILES['institutional_video']) && $_FILES['institutional_video']['error'] === UPLOAD_ERR_OK) {
-        try {
-            $fileId = $fileManager->upload($_FILES['institutional_video'], null, $userId, 'video');
-            $uploadedFiles[] = $fileId;
-        } catch (Exception $e) {
-            error_log("Error uploading video: " . $e->getMessage());
-        }
-    }
+    $query = "DELETE FROM files WHERE user_id = ? AND is_temporary = 1";
+    $stmt = mysqli_prepare($link, $query);
+    mysqli_stmt_bind_param($stmt, 'i', $userId);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
     
     mysqli_commit($link);
     
     $return['ok'] = 1;
     $return['res'] = 'Datos guardados correctamente';
     $return['company_id'] = $companyId;
-    $return['uploaded_files'] = count($uploadedFiles);
     
 } catch (Exception $e) {
     mysqli_rollback($link);
