@@ -111,7 +111,7 @@ try {
                   website = ?, organization_type = ?, main_activity = ?, updated_at = UNIX_TIMESTAMP() 
                   WHERE id = ?";
         $stmt = mysqli_prepare($link, $query);
-        mysqli_stmt_bind_param($stmt, 'sssissi', $name, $taxId, $legalName, $startDateTimestamp, $website, $organizationType, $mainActivity, $companyId);
+        mysqli_stmt_bind_param($stmt, 'sssissis', $name, $taxId, $legalName, $startDateTimestamp, $website, $organizationType, $mainActivity, $companyId);
     } else {
         $query = "INSERT INTO companies (user_id, name, tax_id, legal_name, start_date, website, 
                   organization_type, main_activity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -420,11 +420,25 @@ try {
         }
     }
     
-    $query = "DELETE FROM files WHERE user_id = ? AND is_temporary = 1";
+    $query = "SELECT id FROM files WHERE user_id = ? AND is_temporary = 1";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $userId);
     mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    
+    $temporaryFileIds = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $temporaryFileIds[] = $row['id'];
+    }
     mysqli_stmt_close($stmt);
+    
+    foreach ($temporaryFileIds as $fileId) {
+        try {
+            $fileManager->delete($fileId, $userId);
+        } catch (Exception $e) {
+            error_log("Error deleting temporary file {$fileId}: " . $e->getMessage());
+        }
+    }
     
     mysqli_commit($link);
     

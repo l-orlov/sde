@@ -1067,6 +1067,64 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
       };
       
+      const checkFile = (inputName, fileType, label) => {
+        const input = document.querySelector(`input[name="${inputName}"]`);
+        const fileState = window.getFileState ? window.getFileState() : { existingFiles: {}, newFiles: {} };
+        
+        let hasFile = false;
+        
+        if (input && input.files && input.files.length > 0) {
+          hasFile = true;
+        }
+        
+        if (!hasFile) {
+          const existingFiles = fileState.existingFiles[fileType];
+          if (existingFiles) {
+            if (Array.isArray(existingFiles) && existingFiles.length > 0) {
+              hasFile = true;
+            } else if (typeof existingFiles === 'object' && !Array.isArray(existingFiles)) {
+              const hasAnyFile = Object.keys(existingFiles).some(key => {
+                const files = existingFiles[key];
+                return Array.isArray(files) && files.length > 0;
+              });
+              if (hasAnyFile) hasFile = true;
+            }
+          }
+        }
+        
+        if (!hasFile) {
+          const newFiles = fileState.newFiles;
+          for (const key in newFiles) {
+            if (key === fileType || key.startsWith(fileType + '_')) {
+              hasFile = true;
+              break;
+            }
+          }
+        }
+        
+        if (!hasFile && input) {
+          const container = input.closest('.file-item') || input.closest('.producto_grid') || input.parentElement;
+          const preview = container?.querySelector('.file-preview');
+          if (preview) {
+            hasFile = true;
+          }
+        }
+        
+        if (!hasFile) {
+          errors.push(label);
+          if (input) {
+            input.style.borderColor = '#f44336';
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          return false;
+        }
+        
+        if (input) {
+          input.style.borderColor = '';
+        }
+        return true;
+      };
+      
       checkRequired('name', 'Nombre de la Empresa');
       checkRequired('tax_id', 'CUIT / Identificación Fiscal');
       checkRequired('legal_name', 'Razón social');
@@ -1149,16 +1207,7 @@ document.addEventListener('DOMContentLoaded', () => {
       checkRequired('volume_amount', 'Cantidad de Volumen');
       checkRequired('annual_export', 'Exportación Anual (USD)');
       
-      const productPhoto = document.querySelector('input[name="product_photo"]');
-      if (!productPhoto || !productPhoto.files || productPhoto.files.length === 0) {
-        errors.push('Foto del Producto principal');
-        if (productPhoto) {
-          productPhoto.style.borderColor = '#f44336';
-          productPhoto.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      } else if (productPhoto) {
-        productPhoto.style.borderColor = '';
-      }
+      checkFile('product_photo', 'product_photo', 'Foto del Producto principal');
       
       checkRequired('certifications', 'Certificaciones');
       checkRequired('export_2022', 'Exportación 2022');
@@ -1182,27 +1231,9 @@ document.addEventListener('DOMContentLoaded', () => {
       checkDropdown('export_experience', 'Experiencia Exportadora');
       checkRequired('commercial_references', 'Referencias comerciales');
       
-      const companyLogo = document.querySelector('input[name="company_logo[]"]');
-      if (!companyLogo || !companyLogo.files || companyLogo.files.length === 0) {
-        errors.push('Logo de la Empresa');
-        if (companyLogo) {
-          companyLogo.style.borderColor = '#f44336';
-          companyLogo.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      } else if (companyLogo) {
-        companyLogo.style.borderColor = '';
-      }
+      checkFile('company_logo[]', 'logo', 'Logo de la Empresa');
       
-      const processPhotos = document.querySelector('input[name="process_photos[]"]');
-      if (!processPhotos || !processPhotos.files || processPhotos.files.length === 0) {
-        errors.push('Fotos de los Procesos/Servicios');
-        if (processPhotos) {
-          processPhotos.style.borderColor = '#f44336';
-          processPhotos.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      } else if (processPhotos) {
-        processPhotos.style.borderColor = '';
-      }
+      checkFile('process_photos[]', 'process_photo', 'Fotos de los Procesos/Servicios');
       
       const exportCapacity = document.querySelector('input[name="export_capacity"]:checked');
       if (!exportCapacity) {
