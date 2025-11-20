@@ -595,23 +595,28 @@ textarea::placeholder{font-size: 14px;}}
   display:grid;
   gap:8px;
 }
-.files-list{ display:grid; gap:8px; }
+.files-list{ display:grid; grid-template-columns: 1fr; gap:8px; }
 .files-list .file-item{
   display:flex;
-  align-items:center;
+  flex-wrap:wrap;
+  align-items:flex-start;
   gap:8px;
   margin:8px 0;
   min-width:0;
+  position:relative;
 }
 .files-list .file-item .file-ph{
   flex:1 1 auto;
   min-width:0;
   width:auto;
 }
+.files-list .file-item .file-preview{
+  width:100%;
+  flex-basis:100%;
+}
 .files-list .file-item .remove{
   flex:0 0 28px;
   width:28px; height:28px;
-  margin-left:8px;
   border:2px solid #0082C6;
   border-radius:7px;
   padding:0;
