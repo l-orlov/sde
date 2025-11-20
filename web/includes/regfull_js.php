@@ -2,17 +2,15 @@
 session_start();
 set_time_limit(0);
 error_reporting(E_ALL);
-ini_set('display_errors', 0); // Не показываем ошибки в HTML
-ini_set('log_errors', 1); // Логируем ошибки
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('post_max_size', '100M');
+ini_set('upload_max_filesize', '100M');
+ini_set('max_file_uploads', '50');
+ini_set('memory_limit', '256M');
+ini_set('max_execution_time', '300');
 
-// Увеличиваем лимиты для загрузки больших файлов
-ini_set('post_max_size', '100M');      // Максимальный размер POST данных
-ini_set('upload_max_filesize', '100M'); // Максимальный размер одного файла
-ini_set('max_file_uploads', '50');      // Максимальное количество файлов
-ini_set('memory_limit', '256M');        // Лимит памяти для обработки файлов
-ini_set('max_execution_time', '300');   // Время выполнения скрипта (5 минут)
-
-ob_start(); // Начинаем буферизацию вывода
+ob_start();
 
 include "functions.php";
 require_once __DIR__ . '/FileManager.php';
@@ -21,10 +19,9 @@ DBconnect();
 
 $return = ['res' => '', 'ok' => 0, 'err' => ''];
 
-// Обработчик ошибок для перехвата всех ошибок
 set_error_handler(function($errno, $errstr, $errfile, $errline) use (&$return) {
     error_log("PHP Error [$errno]: $errstr in $errfile on line $errline");
-    if (ob_get_level()) ob_clean(); // Очищаем буфер вывода
+    if (ob_get_level()) ob_clean();
     $return['err'] = 'Error del servidor. Por favor, intente de nuevo.';
     $return['ok'] = 0;
     header('Content-Type: application/json');
@@ -32,7 +29,6 @@ set_error_handler(function($errno, $errstr, $errfile, $errline) use (&$return) {
     exit;
 }, E_ALL);
 
-// Обработчик исключений
 set_exception_handler(function($exception) use (&$return) {
     error_log("Uncaught exception: " . $exception->getMessage());
     if (ob_get_level()) ob_clean();
@@ -42,8 +38,6 @@ set_exception_handler(function($exception) use (&$return) {
     echo json_encode($return);
     exit;
 });
-
-// Проверка авторизации
 if (!isset($_SESSION['uid'])) {
     if (ob_get_level()) ob_clean();
     $return['err'] = 'No autorizado. Por favor, inicie sesión.';
@@ -54,26 +48,15 @@ if (!isset($_SESSION['uid'])) {
 
 $userId = intval($_SESSION['uid']);
 $fileManager = new FileManager();
-
-// Получаем данные из POST (FormData)
-// FormData автоматически парсится PHP в $_POST и $_FILES
 $input = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // PHP автоматически обрабатывает FormData:
-    // - Обычные поля → $_POST['key'] = 'value'
-    // - Массивы (name="key[]") → $_POST['key'] = ['value1', 'value2']
-    // - Файлы → $_FILES['key']
-    
     foreach ($_POST as $key => $value) {
-        // Убираем [] из ключей для удобства работы
         $cleanKey = str_replace('[]', '', $key);
         
         if (is_array($value)) {
-            // Если это массив, сохраняем как массив
             $input[$cleanKey] = $value;
         } else {
-            // Если это не массив, но ключ был с [], создаем массив
             if (strpos($key, '[]') !== false) {
                 if (!isset($input[$cleanKey])) {
                     $input[$cleanKey] = [];
@@ -92,11 +75,9 @@ if (empty($input) && empty($_FILES)) {
     exit;
 }
 
-// Начинаем транзакцию
 mysqli_begin_transaction($link);
 
 try {
-    // Проверяем, есть ли уже компания у пользователя
     $query = "SELECT id FROM companies WHERE user_id = ?";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $userId);
@@ -108,8 +89,6 @@ try {
     $companyId = $company ? $company['id'] : null;
     
     // ========== 1. СОХРАНЕНИЕ ДАННЫХ КОМПАНИИ ==========
-    
-    // Подготовка данных компании
     $name = isset($input['name']) ? htmlspecialchars(trim($input['name'])) : '';
     $taxId = isset($input['tax_id']) ? htmlspecialchars(trim($input['tax_id'])) : '';
     $legalName = isset($input['legal_name']) ? htmlspecialchars(trim($input['legal_name'])) : '';
@@ -118,30 +97,22 @@ try {
     $organizationType = isset($input['organization_type']) ? htmlspecialchars(trim($input['organization_type'])) : '';
     $mainActivity = isset($input['main_activity']) ? htmlspecialchars(trim($input['main_activity'])) : '';
     
-    // Преобразуем дату из формата dd/mm/yyyy в UNIX timestamp
     $startDateTimestamp = null;
     if ($startDate) {
-        $parts = explode('/', $startDate);
-        if (count($parts) === 3) {
-            // Создаем объект DateTime из dd/mm/yyyy
-            $dateObj = DateTime::createFromFormat('d/m/Y', $startDate);
-            if ($dateObj) {
-                // Устанавливаем время на начало дня (00:00:00)
-                $dateObj->setTime(0, 0, 0);
-                $startDateTimestamp = $dateObj->getTimestamp();
-            }
+        $dateObj = DateTime::createFromFormat('d/m/Y', $startDate);
+        if ($dateObj) {
+            $dateObj->setTime(0, 0, 0);
+            $startDateTimestamp = $dateObj->getTimestamp();
         }
     }
     
     if ($companyId) {
-        // Обновляем существующую компанию
         $query = "UPDATE companies SET name = ?, tax_id = ?, legal_name = ?, start_date = ?, 
                   website = ?, organization_type = ?, main_activity = ?, updated_at = UNIX_TIMESTAMP() 
                   WHERE id = ?";
         $stmt = mysqli_prepare($link, $query);
         mysqli_stmt_bind_param($stmt, 'sssissi', $name, $taxId, $legalName, $startDateTimestamp, $website, $organizationType, $mainActivity, $companyId);
     } else {
-        // Создаем новую компанию
         $query = "INSERT INTO companies (user_id, name, tax_id, legal_name, start_date, website, 
                   organization_type, main_activity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($link, $query);
@@ -159,14 +130,12 @@ try {
     
     // ========== 2. АДРЕСА ==========
     
-    // Удаляем старые адреса
     $query = "DELETE FROM company_addresses WHERE company_id = ?";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $companyId);
     mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
     
-    // Сохраняем юридический адрес
     if (isset($input['street_legal']) && !empty($input['street_legal'])) {
         $query = "INSERT INTO company_addresses (company_id, type, street, street_number, postal_code, floor, 
                   apartment, locality, department) VALUES (?, 'legal', ?, ?, ?, ?, ?, ?, ?)";
@@ -183,7 +152,6 @@ try {
         mysqli_stmt_close($stmt);
     }
     
-    // Сохраняем административный адрес
     if (isset($input['street_admin']) && !empty($input['street_admin'])) {
         $query = "INSERT INTO company_addresses (company_id, type, street, street_number, postal_code, floor, 
                   apartment, locality, department) VALUES (?, 'admin', ?, ?, ?, ?, ?, ?, ?)";
@@ -202,7 +170,6 @@ try {
     
     // ========== 3. КОНТАКТНОЕ ЛИЦО ==========
     
-    // Удаляем старые контакты
     $query = "DELETE FROM company_contacts WHERE company_id = ?";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $companyId);
@@ -225,7 +192,6 @@ try {
     
     // ========== 4. СОЦИАЛЬНЫЕ СЕТИ ==========
     
-    // Удаляем старые соцсети
     $query = "DELETE FROM company_social_networks WHERE company_id = ?";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $companyId);
@@ -253,14 +219,12 @@ try {
     
     // ========== 5. ПРОДУКТЫ ==========
     
-    // Удаляем старые продукты
     $query = "DELETE FROM products WHERE company_id = ?";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $companyId);
     mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
     
-    // Сохраняем основной продукт
     if (isset($input['main_product']) && !empty($input['main_product'])) {
         $query = "INSERT INTO products (company_id, user_id, is_main, name, tariff_code, description, 
                   volume_unit, volume_amount, annual_export, certifications) 
@@ -279,7 +243,6 @@ try {
         mysqli_stmt_close($stmt);
     }
     
-    // Сохраняем вторичные продукты
     if (isset($input['secondary_products']) && is_array($input['secondary_products'])) {
         $query = "INSERT INTO products (company_id, user_id, is_main, name, tariff_code, description, 
                   volume_unit, volume_amount, annual_export) 
@@ -311,7 +274,6 @@ try {
     
     // ========== 6. ИСТОРИЯ ЭКСПОРТА ==========
     
-    // Удаляем старую историю
     $query = "DELETE FROM company_export_history WHERE company_id = ?";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $companyId);
@@ -365,23 +327,17 @@ try {
         ],
     ];
     
-    // Собираем факторы дифференциации из чекбоксов
-    // Ищем все чекбоксы с факторами (они могут быть без name, нужно искать по структуре)
     $diffFactors = [];
-    // Проверяем, есть ли в POST данные о факторах
     if (isset($input['differentiation_factors']) && is_array($input['differentiation_factors'])) {
         $diffFactors = $input['differentiation_factors'];
     }
     $jsonData['differentiation_factors'] = $diffFactors;
     
-    // Собираем потребности из чекбоксов
     $needs = [];
     if (isset($input['needs']) && is_array($input['needs'])) {
         $needs = $input['needs'];
     }
     $jsonData['needs'] = $needs;
-    
-    // Кодируем каждое поле отдельно
     $currentMarketsJson = json_encode($jsonData['current_markets'], JSON_UNESCAPED_UNICODE);
     $targetMarketsJson = json_encode($jsonData['target_markets'], JSON_UNESCAPED_UNICODE);
     $diffFactorsJson = json_encode($jsonData['differentiation_factors'], JSON_UNESCAPED_UNICODE);
@@ -391,7 +347,6 @@ try {
     $expectationsJson = json_encode($jsonData['expectations'], JSON_UNESCAPED_UNICODE);
     $consentsJson = json_encode($jsonData['consents'], JSON_UNESCAPED_UNICODE);
     
-    // Проверяем, есть ли уже запись
     $query = "SELECT id FROM company_data WHERE company_id = ?";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $companyId);
@@ -422,10 +377,8 @@ try {
     
     $uploadedFiles = [];
     
-    // Загружаем фото основного продукта
     if (isset($_FILES['product_photo']) && $_FILES['product_photo']['error'] === UPLOAD_ERR_OK) {
         try {
-            // Получаем ID основного продукта
             $query = "SELECT id FROM products WHERE company_id = ? AND is_main = TRUE LIMIT 1";
             $stmt = mysqli_prepare($link, $query);
             mysqli_stmt_bind_param($stmt, 'i', $companyId);
@@ -443,7 +396,6 @@ try {
         }
     }
     
-    // Загружаем фото вторичных продуктов
     if (isset($_FILES['product_photo_sec']) && is_array($_FILES['product_photo_sec']['name'])) {
         $query = "SELECT id FROM products WHERE company_id = ? AND is_main = FALSE ORDER BY id";
         $stmt = mysqli_prepare($link, $query);
@@ -476,7 +428,6 @@ try {
         }
     }
     
-    // Загружаем логотипы компании
     if (isset($_FILES['company_logo']) && is_array($_FILES['company_logo']['name'])) {
         $count = count($_FILES['company_logo']['name']);
         for ($i = 0; $i < $count; $i++) {
@@ -489,8 +440,6 @@ try {
                         'error' => $_FILES['company_logo']['error'][$i],
                         'size' => $_FILES['company_logo']['size'][$i],
                     ];
-                    // Для файлов компании используем company_id как product_id (временное решение)
-                    // Или можно создать отдельную логику в FileManager
                     $fileId = $fileManager->upload($file, null, $userId, 'logo');
                     $uploadedFiles[] = $fileId;
                 } catch (Exception $e) {
@@ -500,7 +449,6 @@ try {
         }
     }
     
-    // Загружаем фото процессов
     if (isset($_FILES['process_photos']) && is_array($_FILES['process_photos']['name'])) {
         $count = count($_FILES['process_photos']['name']);
         for ($i = 0; $i < $count; $i++) {
@@ -522,7 +470,6 @@ try {
         }
     }
     
-    // Загружаем каталоги
     if (isset($_FILES['digital_catalog']) && is_array($_FILES['digital_catalog']['name'])) {
         $count = count($_FILES['digital_catalog']['name']);
         for ($i = 0; $i < $count; $i++) {
@@ -544,7 +491,6 @@ try {
         }
     }
     
-    // Загружаем видео
     if (isset($_FILES['institutional_video']) && $_FILES['institutional_video']['error'] === UPLOAD_ERR_OK) {
         try {
             $fileId = $fileManager->upload($_FILES['institutional_video'], null, $userId, 'video');
@@ -554,7 +500,6 @@ try {
         }
     }
     
-    // Коммитим транзакцию
     mysqli_commit($link);
     
     $return['ok'] = 1;
@@ -563,13 +508,11 @@ try {
     $return['uploaded_files'] = count($uploadedFiles);
     
 } catch (Exception $e) {
-    // Откатываем транзакцию при ошибке
     mysqli_rollback($link);
     $return['err'] = 'Error al guardar: ' . $e->getMessage();
     error_log("Error in regfull_js.php: " . $e->getMessage());
 }
 
-// Очищаем буфер вывода перед отправкой JSON
 if (ob_get_level()) {
     ob_clean();
 }
