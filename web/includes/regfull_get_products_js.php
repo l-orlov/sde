@@ -1,0 +1,80 @@
+<?php
+session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+ob_start();
+
+include "functions.php";
+
+DBconnect();
+
+$return = ['res' => '', 'ok' => 0, 'err' => '', 'products' => []];
+
+if (!isset($_SESSION['uid'])) {
+    if (ob_get_level()) ob_clean();
+    $return['err'] = 'No autorizado. Por favor, inicie sesión.';
+    header('Content-Type: application/json');
+    echo json_encode($return);
+    exit;
+}
+
+$userId = intval($_SESSION['uid']);
+
+try {
+    global $link;
+    
+    $query = "SELECT id, is_main, name, tariff_code, description, volume_unit, volume_amount, annual_export, certifications
+              FROM products
+              WHERE user_id = ?
+              ORDER BY is_main DESC, id ASC";
+    $stmt = $link->prepare($query);
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $mainProduct = null;
+    $secondaryProducts = [];
+    
+    while ($row = $result->fetch_assoc()) {
+        $product = [
+            'id' => intval($row['id']),
+            'is_main' => (bool)$row['is_main'],
+            'name' => $row['name'],
+            'tariff_code' => $row['tariff_code'] ?? '',
+            'description' => $row['description'] ?? '',
+            'volume_unit' => $row['volume_unit'] ?? '',
+            'volume_amount' => $row['volume_amount'] ?? '',
+            'annual_export' => $row['annual_export'] ?? '',
+            'certifications' => $row['certifications'] ?? ''
+        ];
+        
+        if ($row['is_main']) {
+            $mainProduct = $product;
+        } else {
+            $secondaryProducts[] = $product;
+        }
+    }
+    
+    $stmt->close();
+    
+    $return['ok'] = 1;
+    $return['products'] = [
+        'main' => $mainProduct,
+        'secondary' => $secondaryProducts
+    ];
+    $return['res'] = 'Productos obtenidos correctamente';
+    
+} catch (Exception $e) {
+    error_log("Error getting products: " . $e->getMessage());
+    $return['err'] = 'Error al obtener productos: ' . $e->getMessage();
+}
+
+if (ob_get_level()) {
+    ob_clean();
+}
+header('Content-Type: application/json');
+echo json_encode($return);
+?>
+

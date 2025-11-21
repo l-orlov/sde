@@ -28,13 +28,13 @@ try {
     global $link;
     $fileManager = new FileManager();
     
-    $query = "SELECT f.id, f.product_id, f.file_type, f.file_name, f.file_path, f.storage_type, p.is_main
+    $query = "SELECT f.id, f.product_id, f.file_type, f.file_name, f.file_path, f.storage_type, p.is_main, p.id as product_exists
               FROM files f
-              LEFT JOIN products p ON f.product_id = p.id
+              LEFT JOIN products p ON f.product_id = p.id AND p.user_id = ?
               WHERE f.user_id = ? AND f.is_temporary = 0
               ORDER BY f.file_type, f.product_id, f.created_at";
     $stmt = $link->prepare($query);
-    $stmt->bind_param("i", $userId);
+    $stmt->bind_param("ii", $userId, $userId);
     $stmt->execute();
     $result = $stmt->get_result();
     
@@ -45,6 +45,7 @@ try {
         $fileId = $row['id'];
         $productId = $row['product_id'];
         $isMain = $row['is_main'] ?? false;
+        $productExists = $row['product_exists'] !== null;
         
         $storage = StorageFactory::createByType($row['storage_type']);
         $url = $storage->getUrl($row['file_path']);
@@ -55,12 +56,12 @@ try {
             'name' => $row['file_name']
         ];
         
-        if ($productId !== null) {
+        if ($productId !== null && $productId > 0) {
             $fileData['product_id'] = $productId;
         }
         
         if ($fileType === 'product_photo') {
-            if ($productId !== null && !$isMain) {
+            if ($productId !== null && $productId > 0 && $productExists && !$isMain) {
                 if (!isset($filesByType['product_photo_sec'])) {
                     $filesByType['product_photo_sec'] = [];
                 }
@@ -68,7 +69,7 @@ try {
                     $filesByType['product_photo_sec'][$productId] = [];
                 }
                 $filesByType['product_photo_sec'][$productId][] = $fileData;
-            } else {
+            } else if ($productId === null || $productId == 0 || ($productExists && $isMain)) {
                 if (!isset($filesByType['product_photo'])) {
                     $filesByType['product_photo'] = [];
                 }

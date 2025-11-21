@@ -1544,29 +1544,64 @@ document.addEventListener('DOMContentLoaded', () => {
           if (newFile.product_id) {
             appendToFormData('new_file_' + fileKey, newFile.temp_id);
             appendToFormData('new_file_product_id_' + fileKey, newFile.product_id);
+            
+            const existingFileKey = 'existing_file_' + fileKey;
+            if (fileState.existingFiles['product_photo_sec'] && fileState.existingFiles['product_photo_sec'][newFile.product_id]) {
+              const oldFiles = fileState.existingFiles['product_photo_sec'][newFile.product_id];
+              if (Array.isArray(oldFiles)) {
+                oldFiles.forEach(file => {
+                  appendToFormData(existingFileKey + '[]', file.id);
+                });
+              } else if (oldFiles) {
+                appendToFormData(existingFileKey, oldFiles.id);
+              }
+            }
           } else {
             appendToFormData('new_file_' + fileKey, newFile.temp_id);
+            
+            if (newFile.product_index !== null && newFile.product_index !== undefined) {
+              appendToFormData('new_file_product_index_' + fileKey, newFile.product_index);
+            }
+            
+            const existingFileKey = 'existing_file_' + fileKey;
+            const existing = fileState.existingFiles[fileKey];
+            if (existing) {
+              if (Array.isArray(existing)) {
+                existing.forEach(file => {
+                  appendToFormData(existingFileKey + '[]', file.id);
+                });
+              } else {
+                appendToFormData(existingFileKey, existing.id);
+              }
+            }
           }
         });
         
         Object.keys(fileState.existingFiles).forEach(fileType => {
           const existing = fileState.existingFiles[fileType];
+          
           if (fileType === 'product_photo_sec' && typeof existing === 'object' && !Array.isArray(existing)) {
             Object.keys(existing).forEach(productId => {
-              const files = existing[productId];
-              if (Array.isArray(files) && files.length > 0) {
-                files.forEach(file => {
-                  appendToFormData('existing_file_' + fileType + '_' + productId + '[]', file.id);
-                });
+              const fileKey = fileType + '_' + productId;
+              if (!fileState.newFiles[fileKey]) {
+                const files = existing[productId];
+                if (Array.isArray(files) && files.length > 0) {
+                  files.forEach(file => {
+                    appendToFormData('existing_file_' + fileKey + '[]', file.id);
+                  });
+                }
               }
             });
           } else if (existing && (Array.isArray(existing) ? existing.length > 0 : existing)) {
-            if (Array.isArray(existing)) {
-              existing.forEach((file, index) => {
-                appendToFormData('existing_file_' + fileType + '[]', file.id);
-              });
-            } else {
-              appendToFormData('existing_file_' + fileType, existing.id);
+            const fileKey = fileType;
+            if (!fileState.newFiles[fileKey]) {
+              if (Array.isArray(existing)) {
+                existing.forEach((file, index) => {
+                  appendToFormData('existing_file_' + fileKey + '[]', file.id);
+                });
+              } else {
+                appendToFormData('existing_file_' + fileKey, existing.id);
+              }
             }
           }
         });
@@ -2362,16 +2397,35 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     return null;
   }
   
+  function getProductIndexFromInput(input) {
+    const secItem = input.closest('.sec_item');
+    if (secItem) {
+      const allSecItems = Array.from(document.querySelectorAll('.sec_item'));
+      const index = allSecItems.indexOf(secItem);
+      return index >= 0 ? index : null;
+    }
+    return null;
+  }
+  
   async function uploadFile(file, input) {
     const fileType = getFileTypeFromInput(input);
-    if (!fileType) return;
+    if (!fileType) {
+      console.log('uploadFile: fileType not found for input:', input.name);
+      return;
+    }
+    
+    console.log('uploadFile: starting upload, fileType:', fileType, 'fileName:', file.name);
     
     const formData = new FormData();
     formData.append('file', file);
     formData.append('file_type', fileType);
     
     const productId = getProductIdFromInput(input);
-    if (productId) {
+    const productIndex = fileType === 'product_photo_sec' ? getProductIndexFromInput(input) : null;
+    
+    console.log('uploadFile: productId:', productId, 'productIndex:', productIndex);
+    
+    if (productId && productId.trim() !== '') {
       formData.append('product_id', productId);
     }
     
@@ -2382,28 +2436,63 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       });
       
       const result = await response.json();
+      console.log('uploadFile: server response:', result);
       
       if (result.ok === 1) {
-        const fileKey = productId ? `${fileType}_${productId}` : fileType;
+        let fileKey;
+        if (productId && productId.trim() !== '') {
+          fileKey = `${fileType}_${productId}`;
+        } else if (productIndex !== null && fileType === 'product_photo_sec') {
+          fileKey = `${fileType}_index_${productIndex}`;
+        } else {
+          fileKey = fileType;
+        }
+        
+        console.log('uploadFile: fileKey:', fileKey);
+        
         fileState.newFiles[fileKey] = {
           temp_id: result.file_id,
           url: result.url,
           name: result.name,
-          product_id: productId
+          product_id: productId && productId.trim() !== '' ? productId : null,
+          product_index: productIndex !== null ? productIndex : null
         };
         
-        displayFilePreview(input, result.url, result.name, true);
+        setTimeout(() => {
+          displayFilePreview(input, result.url, result.name, true);
+        }, 100);
         hideExistingFile(input, fileType, productId);
       } else {
+        console.error('uploadFile: error from server:', result.err);
         alert('Error al cargar el archivo: ' + (result.err || 'Error desconocido'));
       }
     } catch (error) {
+      console.error('uploadFile: exception:', error);
       alert('Error al cargar el archivo: ' + error.message);
     }
   }
   
   function displayFilePreview(input, url, name, isNew) {
-    const container = input.closest('.file-item') || input.closest('.producto_grid') || input.parentElement;
+    console.log('displayFilePreview: input:', input.name, 'url:', url, 'name:', name, 'isNew:', isNew);
+    
+    let container = input.closest('.file-item');
+    if (!container) {
+      container = input.closest('.producto_grid');
+    }
+    if (!container) {
+      container = input.closest('.sec_item');
+    }
+    if (!container) {
+      container = input.parentElement;
+    }
+    
+    if (!container) {
+      console.error('displayFilePreview: No container found for input:', input.name);
+      return;
+    }
+    
+    console.log('displayFilePreview: container:', container.className);
+    
     const preview = document.createElement('div');
     preview.className = 'file-preview' + (isNew ? ' new-file' : ' existing-file');
     
@@ -2427,30 +2516,61 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     preview.innerHTML = previewContent;
     preview.style.marginTop = '10px';
     preview.style.marginBottom = '10px';
+    preview.style.display = 'block';
+    preview.style.width = '100%';
+    preview.style.clear = 'both';
     
     const existingPreview = container.querySelector('.file-preview');
     if (existingPreview) {
       existingPreview.remove();
     }
     
-    if (input.nextSibling) {
-      container.insertBefore(preview, input.nextSibling);
-    } else {
+    if (container.classList.contains('producto_grid')) {
+      console.log('displayFilePreview: Appending to producto_grid');
       container.appendChild(preview);
+    } else if (container.classList.contains('sec_item')) {
+      console.log('displayFilePreview: Found sec_item, looking for producto_grid');
+      const productoGrid = container.querySelector('.producto_grid');
+      if (productoGrid) {
+        console.log('displayFilePreview: Appending to producto_grid within sec_item');
+        productoGrid.appendChild(preview);
+      } else {
+        console.warn('displayFilePreview: No producto_grid found in sec_item, appending to sec_item');
+        container.appendChild(preview);
+      }
+    } else {
+      const secItem = input.closest('.sec_item');
+      if (secItem) {
+        console.log('displayFilePreview: Input is within sec_item, looking for producto_grid');
+        const productoGrid = secItem.querySelector('.producto_grid');
+        if (productoGrid) {
+          console.log('displayFilePreview: Appending to producto_grid within sec_item (found via closest)');
+          productoGrid.appendChild(preview);
+        } else {
+          console.warn('displayFilePreview: No producto_grid found, appending to container');
+          if (input.nextSibling) {
+            container.insertBefore(preview, input.nextSibling);
+          } else {
+            container.appendChild(preview);
+          }
+        }
+      } else {
+        if (input.nextSibling) {
+          container.insertBefore(preview, input.nextSibling);
+        } else {
+          container.appendChild(preview);
+        }
+      }
     }
+    
+    console.log('displayFilePreview: Preview element created and appended');
   }
   
   function hideExistingFile(input, fileType, productId) {
-    let existing = fileState.existingFiles[fileType];
-    if (productId && existing && existing[productId]) {
-      existing = existing[productId];
-    }
-    if (existing && (Array.isArray(existing) ? existing.length > 0 : existing)) {
-      const container = input.closest('.file-item') || input.parentElement;
-      const existingPreview = container.querySelector('.existing-file');
-      if (existingPreview) {
-        existingPreview.style.display = 'none';
-      }
+    const container = input.closest('.file-item') || input.parentElement;
+    const existingPreview = container.querySelector('.existing-file');
+    if (existingPreview) {
+      existingPreview.style.display = 'none';
     }
   }
   
@@ -2461,10 +2581,12 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       
       if (result.ok === 1 && result.files) {
         fileState.existingFiles = result.files;
-        displayExistingFiles();
+        setTimeout(() => {
+          displayExistingFiles();
+        }, 500);
       }
     } catch (error) {
-      // Ошибка загрузки файлов - не критично
+      console.error('Error loading existing files:', error);
     }
   }
   
@@ -2519,32 +2641,279 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     
     // Secondary product photos
     if (files.product_photo_sec) {
+      console.log('displayExistingFiles: Found product_photo_sec files:', files.product_photo_sec);
+      console.log('displayExistingFiles: Loaded product IDs:', Array.from(loadedProductIds));
+      
       Object.keys(files.product_photo_sec).forEach(productId => {
         const photos = files.product_photo_sec[productId];
+        const productIdStr = String(productId);
+        const productIdNum = parseInt(productId, 10);
+        
+        if (!loadedProductIds.has(productIdNum)) {
+          console.warn('displayExistingFiles: Skipping file for product_id:', productIdStr, '- product does not exist');
+          return;
+        }
+        
+        console.log('displayExistingFiles: Processing product_id:', productIdStr, 'photos:', photos);
+        
         photos.forEach((file, index) => {
-          const secItem = document.querySelector(`input[type="hidden"][name="product_id_sec[]"][value="${productId}"]`)?.closest('.sec_item');
-          if (secItem) {
-            const input = secItem.querySelector('input[name="product_photo_sec[]"]');
-            if (input && index === 0) {
-              displayFilePreview(input, file.url, file.name, false);
+          if (index > 0) return;
+          
+          const secItems = document.querySelectorAll('.sec_item');
+          console.log('displayExistingFiles: Found', secItems.length, 'sec_item elements');
+          
+          let foundItem = null;
+          
+          secItems.forEach((item, itemIndex) => {
+            const productIdInput = item.querySelector('input[name="product_id_sec[]"]');
+            if (productIdInput) {
+              const itemProductIdStr = String(productIdInput.value || '').trim();
+              const itemProductIdNum = parseInt(itemProductIdStr, 10);
+              
+              console.log(`displayExistingFiles: sec_item[${itemIndex}] product_id:`, itemProductIdStr, 'comparing with', productIdStr);
+              
+              if (itemProductIdStr === productIdStr || (itemProductIdNum === productIdNum && !isNaN(itemProductIdNum) && !isNaN(productIdNum))) {
+                foundItem = item;
+                console.log('displayExistingFiles: Found matching sec_item for product_id:', productIdStr);
+              }
+            } else {
+              console.log(`displayExistingFiles: sec_item[${itemIndex}] has no product_id input`);
             }
+          });
+          
+          if (foundItem) {
+            const input = foundItem.querySelector('input[name="product_photo_sec[]"]');
+            if (input) {
+              console.log('displayExistingFiles: Displaying file preview for product_id:', productIdStr, 'file:', file.name);
+              displayFilePreview(input, file.url, file.name, false);
+            } else {
+              console.error('displayExistingFiles: Found sec_item but no input[name="product_photo_sec[]"]');
+            }
+          } else {
+            console.warn('displayExistingFiles: No matching sec_item found for product_id:', productIdStr, 'retrying in 500ms...');
+            setTimeout(() => {
+              const secItems = document.querySelectorAll('.sec_item');
+              let retryFoundItem = null;
+              
+              secItems.forEach(item => {
+                const productIdInput = item.querySelector('input[name="product_id_sec[]"]');
+                if (productIdInput) {
+                  const itemProductIdStr = String(productIdInput.value || '').trim();
+                  const itemProductIdNum = parseInt(itemProductIdStr, 10);
+                  
+                  if (itemProductIdStr === productIdStr || (itemProductIdNum === productIdNum && !isNaN(itemProductIdNum) && !isNaN(productIdNum))) {
+                    retryFoundItem = item;
+                  }
+                }
+              });
+              
+              if (retryFoundItem) {
+                const input = retryFoundItem.querySelector('input[name="product_photo_sec[]"]');
+                if (input) {
+                  console.log('displayExistingFiles: Retry successful, displaying file preview for product_id:', productIdStr);
+                  displayFilePreview(input, file.url, file.name, false);
+                }
+              } else {
+                console.error('displayExistingFiles: Retry failed, still no matching sec_item for product_id:', productIdStr);
+              }
+            }, 500);
           }
         });
       });
     }
   }
   
+  let loadedProductIds = new Set();
+  
+  async function loadExistingProducts() {
+    try {
+      const response = await fetch('includes/regfull_get_products_js.php');
+      const result = await response.json();
+      
+      loadedProductIds.clear();
+      
+      if (result.ok === 1 && result.products) {
+        const { main, secondary } = result.products;
+        
+        if (main && main.id) {
+          loadedProductIds.add(main.id);
+        }
+        
+        if (secondary && Array.isArray(secondary)) {
+          secondary.forEach(product => {
+            if (product.id) {
+              loadedProductIds.add(product.id);
+            }
+          });
+        }
+        
+        if (main) {
+          const mainProductInput = document.querySelector('input[name="main_product"]');
+          if (mainProductInput) {
+            mainProductInput.value = main.name || '';
+          }
+          
+          const tariffCodeInput = document.querySelector('input[name="tariff_code"]');
+          if (tariffCodeInput) {
+            tariffCodeInput.value = main.tariff_code || '';
+          }
+          
+          const descriptionInput = document.querySelector('input[name="product_description"]');
+          if (descriptionInput) {
+            descriptionInput.value = main.description || '';
+          }
+          
+          const volumeUnitDropdown = document.querySelector('input[name="volume_unit"]');
+          if (volumeUnitDropdown && main.volume_unit) {
+            volumeUnitDropdown.value = main.volume_unit;
+            const dropdown = volumeUnitDropdown.closest('.custom-dropdown');
+            if (dropdown) {
+              const selectedText = dropdown.querySelector('.selected-text');
+              const option = dropdown.querySelector(`[data-value="${main.volume_unit}"]`);
+              if (selectedText && option) {
+                selectedText.textContent = option.textContent;
+                option.classList.add('selected');
+              }
+              volumeUnitDropdown.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
+          
+          const volumeAmountInput = document.querySelector('input[name="volume_amount"]');
+          if (volumeAmountInput) {
+            volumeAmountInput.value = main.volume_amount || '';
+          }
+          
+          const annualExportInput = document.querySelector('input[name="annual_export"]');
+          if (annualExportInput) {
+            annualExportInput.value = main.annual_export || '';
+          }
+          
+          const certificationsInput = document.querySelector('input[name="certifications"]');
+          if (certificationsInput) {
+            certificationsInput.value = main.certifications || '';
+          }
+        }
+        
+        if (secondary && Array.isArray(secondary) && secondary.length > 0) {
+          const secList = document.querySelector('.sec-list');
+          const secTemplate = document.querySelector('.sec-template');
+          const secAdd = document.querySelector('.sec-add');
+          
+          if (secList && secTemplate && secAdd) {
+            const promises = secondary.map((product, index) => {
+              return new Promise((resolve) => {
+                const node = secTemplate.content.firstElementChild.cloneNode(true);
+                
+                const productIdInput = node.querySelector('input[name="product_id_sec[]"]');
+                if (productIdInput) {
+                  productIdInput.value = String(product.id || '');
+                }
+                
+                const nameInput = node.querySelector('input[name="secondary_products[]"]');
+                if (nameInput) {
+                  nameInput.value = product.name || '';
+                }
+                
+                const tariffCodeInput = node.querySelector('input[name="tariff_code_sec[]"]');
+                if (tariffCodeInput) {
+                  tariffCodeInput.value = product.tariff_code || '';
+                }
+                
+                const descriptionInput = node.querySelector('input[name="product_description_sec[]"]');
+                if (descriptionInput) {
+                  descriptionInput.value = product.description || '';
+                }
+                
+                const volumeUnitDropdown = node.querySelector('input[name="volume_unit_sec[]"]');
+                if (volumeUnitDropdown && product.volume_unit) {
+                  volumeUnitDropdown.value = product.volume_unit;
+                  const dropdown = volumeUnitDropdown.closest('.custom-dropdown');
+                  if (dropdown) {
+                    const selectedText = dropdown.querySelector('.selected-text');
+                    const option = dropdown.querySelector(`[data-value="${product.volume_unit}"]`);
+                    if (selectedText && option) {
+                      selectedText.textContent = option.textContent;
+                      option.classList.add('selected');
+                    }
+                  }
+                }
+                
+                const volumeAmountInput = node.querySelector('input[name="volume_amount_sec[]"]');
+                if (volumeAmountInput) {
+                  volumeAmountInput.value = product.volume_amount || '';
+                }
+                
+                const annualExportInput = node.querySelector('input[name="annual_export_sec[]"]');
+                if (annualExportInput) {
+                  annualExportInput.value = product.annual_export || '';
+                }
+                
+                const removeBtn = node.querySelector('.sec-remove');
+                if (removeBtn) {
+                  removeBtn.addEventListener('click', () => node.remove());
+                }
+                
+                secList.appendChild(node);
+                
+                const dropdown = node.querySelector('.custom-dropdown');
+                if (dropdown) {
+                  const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+                  if (hiddenInput && typeof initCustomDropdown === 'function') {
+                    setTimeout(() => {
+                      initCustomDropdown(dropdown, hiddenInput);
+                      if (product.volume_unit) {
+                        hiddenInput.value = product.volume_unit;
+                        const selectedText = dropdown.querySelector('.selected-text');
+                        const option = dropdown.querySelector(`[data-value="${product.volume_unit}"]`);
+                        if (selectedText && option) {
+                          selectedText.textContent = option.textContent;
+                          option.classList.add('selected');
+                        }
+                      }
+                      resolve();
+                    }, 50);
+                  } else {
+                    resolve();
+                  }
+                } else {
+                  resolve();
+                }
+              });
+            });
+            
+            await Promise.all(promises);
+            
+            await new Promise((resolve) => {
+              setTimeout(() => {
+                resolve();
+              }, 100);
+            });
+          }
+        }
+      }
+    } catch (error) {
+      // Ошибка загрузки продуктов - не критично
+    }
+  }
+  
   document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-      loadExistingFiles();
+    setTimeout(async () => {
+      await loadExistingProducts();
+      setTimeout(async () => {
+        await loadExistingFiles();
+      }, 300);
     }, 500);
     
-    document.querySelectorAll('input[type="file"]').forEach(input => {
-      input.addEventListener('change', function() {
-        if (this.files && this.files.length > 0) {
-          uploadFile(this.files[0], this);
+    document.addEventListener('change', function(e) {
+      if (e.target && e.target.type === 'file') {
+        console.log('File input change event:', e.target.name, 'files:', e.target.files);
+        if (e.target.files && e.target.files.length > 0) {
+          console.log('Calling uploadFile for:', e.target.files[0].name);
+          uploadFile(e.target.files[0], e.target);
+        } else {
+          console.log('No files selected');
         }
-      });
+      }
     });
   });
   

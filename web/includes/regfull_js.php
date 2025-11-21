@@ -219,17 +219,16 @@ try {
     
     // ========== 5. ПРОДУКТЫ ==========
     
-    $query = "DELETE FROM products WHERE company_id = ?";
-    $stmt = mysqli_prepare($link, $query);
-    mysqli_stmt_bind_param($stmt, 'i', $companyId);
-    mysqli_stmt_execute($stmt);
-    mysqli_stmt_close($stmt);
-    
+    $mainProductId = null;
     if (isset($input['main_product']) && !empty($input['main_product'])) {
-        $query = "INSERT INTO products (company_id, user_id, is_main, name, tariff_code, description, 
-                  volume_unit, volume_amount, annual_export, certifications) 
-                  VALUES (?, ?, TRUE, ?, ?, ?, ?, ?, ?, ?)";
+        $query = "SELECT id FROM products WHERE company_id = ? AND is_main = 1 LIMIT 1";
         $stmt = mysqli_prepare($link, $query);
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $existingMain = mysqli_fetch_assoc($result);
+        mysqli_stmt_close($stmt);
+        
         $productName = htmlspecialchars(trim($input['main_product'] ?? ''));
         $tariffCode = htmlspecialchars(trim($input['tariff_code'] ?? ''));
         $description = htmlspecialchars(trim($input['product_description'] ?? ''));
@@ -237,38 +236,115 @@ try {
         $volumeAmount = htmlspecialchars(trim($input['volume_amount'] ?? ''));
         $annualExport = htmlspecialchars(trim($input['annual_export'] ?? ''));
         $certifications = htmlspecialchars(trim($input['certifications'] ?? ''));
-        mysqli_stmt_bind_param($stmt, 'iisssssss', $companyId, $userId, $productName, $tariffCode, $description, $volumeUnit, $volumeAmount, $annualExport, $certifications);
-        mysqli_stmt_execute($stmt);
-        $mainProductId = mysqli_insert_id($link);
-        mysqli_stmt_close($stmt);
+        
+        if ($existingMain && isset($existingMain['id'])) {
+            $query = "UPDATE products SET name = ?, tariff_code = ?, description = ?, 
+                      volume_unit = ?, volume_amount = ?, annual_export = ?, certifications = ?
+                      WHERE id = ? AND company_id = ?";
+            $stmt = mysqli_prepare($link, $query);
+            mysqli_stmt_bind_param($stmt, 'sssssssii', $productName, $tariffCode, $description, 
+                                  $volumeUnit, $volumeAmount, $annualExport, $certifications, 
+                                  $existingMain['id'], $companyId);
+            mysqli_stmt_execute($stmt);
+            $mainProductId = $existingMain['id'];
+            mysqli_stmt_close($stmt);
+        } else {
+            $query = "INSERT INTO products (company_id, user_id, is_main, name, tariff_code, description, 
+                      volume_unit, volume_amount, annual_export, certifications) 
+                      VALUES (?, ?, TRUE, ?, ?, ?, ?, ?, ?, ?)";
+            $stmt = mysqli_prepare($link, $query);
+            mysqli_stmt_bind_param($stmt, 'iisssssss', $companyId, $userId, $productName, $tariffCode, $description, $volumeUnit, $volumeAmount, $annualExport, $certifications);
+            mysqli_stmt_execute($stmt);
+            $mainProductId = mysqli_insert_id($link);
+            mysqli_stmt_close($stmt);
+        }
     }
     
+    $newProductIdsByIndex = [];
+    $updatedProductIds = [];
+    
     if (isset($input['secondary_products']) && is_array($input['secondary_products'])) {
-        $query = "INSERT INTO products (company_id, user_id, is_main, name, tariff_code, description, 
-                  volume_unit, volume_amount, annual_export) 
-                  VALUES (?, ?, FALSE, ?, ?, ?, ?, ?, ?)";
-        $stmt = mysqli_prepare($link, $query);
-        
         $names = $input['secondary_products'];
+        $productIds = isset($input['product_id_sec']) && is_array($input['product_id_sec']) ? $input['product_id_sec'] : [];
         $tariffCodes = isset($input['tariff_code_sec']) && is_array($input['tariff_code_sec']) ? $input['tariff_code_sec'] : [];
         $descriptions = isset($input['product_description_sec']) && is_array($input['product_description_sec']) ? $input['product_description_sec'] : [];
         $volumeUnits = isset($input['volume_unit_sec']) && is_array($input['volume_unit_sec']) ? $input['volume_unit_sec'] : [];
         $volumeAmounts = isset($input['volume_amount_sec']) && is_array($input['volume_amount_sec']) ? $input['volume_amount_sec'] : [];
         $annualExports = isset($input['annual_export_sec']) && is_array($input['annual_export_sec']) ? $input['annual_export_sec'] : [];
         
+        $updateQuery = "UPDATE products SET name = ?, tariff_code = ?, description = ?, 
+                        volume_unit = ?, volume_amount = ?, annual_export = ?
+                        WHERE id = ? AND company_id = ? AND is_main = 0";
+        $updateStmt = mysqli_prepare($link, $updateQuery);
+        
+        $insertQuery = "INSERT INTO products (company_id, user_id, is_main, name, tariff_code, description, 
+                      volume_unit, volume_amount, annual_export) 
+                      VALUES (?, ?, FALSE, ?, ?, ?, ?, ?, ?)";
+        $insertStmt = mysqli_prepare($link, $insertQuery);
+        
         for ($i = 0; $i < count($names); $i++) {
             $productName = htmlspecialchars(trim($names[$i] ?? ''));
-            if (empty($productName)) continue;
-            
+            $productId = isset($productIds[$i]) ? intval($productIds[$i]) : 0;
             $tariffCode = isset($tariffCodes[$i]) ? htmlspecialchars(trim($tariffCodes[$i])) : '';
             $description = isset($descriptions[$i]) ? htmlspecialchars(trim($descriptions[$i])) : '';
             $volumeUnit = isset($volumeUnits[$i]) ? htmlspecialchars(trim($volumeUnits[$i])) : '';
             $volumeAmount = isset($volumeAmounts[$i]) ? htmlspecialchars(trim($volumeAmounts[$i])) : '';
             $annualExport = isset($annualExports[$i]) ? htmlspecialchars(trim($annualExports[$i])) : '';
             
-            mysqli_stmt_bind_param($stmt, 'iissssss', $companyId, $userId, $productName, $tariffCode, $description, $volumeUnit, $volumeAmount, $annualExport);
-            mysqli_stmt_execute($stmt);
+            $hasData = !empty($productName) || !empty($tariffCode) || !empty($description) || 
+                       !empty($volumeUnit) || !empty($volumeAmount) || !empty($annualExport);
+            
+            if (!$hasData && $productId == 0) {
+                continue;
+            }
+            
+            if (empty($productName) && $productId == 0) {
+                $productName = 'Producto ' . ($i + 1);
+            } else if (empty($productName) && $productId > 0) {
+                $productName = 'Producto ' . $productId;
+            }
+            
+            if ($productId > 0) {
+                mysqli_stmt_bind_param($updateStmt, 'ssssssii', $productName, $tariffCode, $description, 
+                                      $volumeUnit, $volumeAmount, $annualExport, $productId, $companyId);
+                mysqli_stmt_execute($updateStmt);
+                $newProductIdsByIndex[$i] = $productId;
+                $updatedProductIds[] = $productId;
+            } else {
+                mysqli_stmt_bind_param($insertStmt, 'iissssss', $companyId, $userId, $productName, $tariffCode, $description, $volumeUnit, $volumeAmount, $annualExport);
+                mysqli_stmt_execute($insertStmt);
+                $newProductIdsByIndex[$i] = mysqli_insert_id($link);
+            }
         }
+        
+        mysqli_stmt_close($updateStmt);
+        mysqli_stmt_close($insertStmt);
+        
+        $allProductIds = array_merge($updatedProductIds, array_values($newProductIdsByIndex));
+        $allProductIds = array_filter($allProductIds, function($id) { return $id > 0; });
+        $allProductIds = array_unique($allProductIds);
+        
+        if (!empty($allProductIds)) {
+            $placeholders = implode(',', array_fill(0, count($allProductIds), '?'));
+            $deleteQuery = "DELETE FROM products WHERE company_id = ? AND is_main = 0 AND id NOT IN ($placeholders)";
+            $deleteStmt = mysqli_prepare($link, $deleteQuery);
+            $types = 'i' . str_repeat('i', count($allProductIds));
+            $params = array_merge([$companyId], $allProductIds);
+            mysqli_stmt_bind_param($deleteStmt, $types, ...$params);
+            mysqli_stmt_execute($deleteStmt);
+            mysqli_stmt_close($deleteStmt);
+        } else {
+            $deleteQuery = "DELETE FROM products WHERE company_id = ? AND is_main = 0";
+            $deleteStmt = mysqli_prepare($link, $deleteQuery);
+            mysqli_stmt_bind_param($deleteStmt, 'i', $companyId);
+            mysqli_stmt_execute($deleteStmt);
+            mysqli_stmt_close($deleteStmt);
+        }
+    } else {
+        $query = "DELETE FROM products WHERE company_id = ? AND is_main = 0";
+        $stmt = mysqli_prepare($link, $query);
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
     }
     
@@ -383,26 +459,43 @@ try {
             $productIdKey = 'new_file_product_id_' . $fileKey;
             $productId = isset($input[$productIdKey]) ? intval($input[$productIdKey]) : null;
             
-            $existingFileKey = 'existing_file_' . $fileKey;
-            if (strpos($fileKey, 'product_photo_sec_') === 0) {
-                $productIdFromKey = intval(substr($fileKey, 18));
-                $existingFileKey = 'existing_file_' . $fileKey;
+            $productIndexKey = 'new_file_product_index_' . $fileKey;
+            $productIndex = isset($input[$productIndexKey]) ? intval($input[$productIndexKey]) : null;
+            
+            if ($productId === null && $productIndex !== null && isset($newProductIdsByIndex[$productIndex])) {
+                $productId = $newProductIdsByIndex[$productIndex];
             }
             
             $existingFileIds = [];
-            if (isset($input[$existingFileKey])) {
-                if (is_array($input[$existingFileKey])) {
-                    $existingFileIds = array_map('intval', $input[$existingFileKey]);
+            
+            $existingFileKey1 = 'existing_file_' . $fileKey;
+            $existingFileKey2 = 'existing_file_' . $fileKey . '[]';
+            
+            if (isset($input[$existingFileKey1])) {
+                if (is_array($input[$existingFileKey1])) {
+                    $existingFileIds = array_merge($existingFileIds, array_map('intval', $input[$existingFileKey1]));
                 } else {
-                    $existingFileIds = [intval($input[$existingFileKey])];
+                    $existingFileIds[] = intval($input[$existingFileKey1]);
                 }
             }
             
+            if (isset($input[$existingFileKey2])) {
+                if (is_array($input[$existingFileKey2])) {
+                    $existingFileIds = array_merge($existingFileIds, array_map('intval', $input[$existingFileKey2]));
+                } else {
+                    $existingFileIds[] = intval($input[$existingFileKey2]);
+                }
+            }
+            
+            $existingFileIds = array_unique($existingFileIds);
+            
             foreach ($existingFileIds as $oldFileId) {
-                try {
-                    $fileManager->delete($oldFileId, $userId);
-                } catch (Exception $e) {
-                    error_log("Error deleting old file {$oldFileId}: " . $e->getMessage());
+                if ($oldFileId > 0) {
+                    try {
+                        $fileManager->delete($oldFileId, $userId);
+                    } catch (Exception $e) {
+                        error_log("Error deleting old file {$oldFileId}: " . $e->getMessage());
+                    }
                 }
             }
             
