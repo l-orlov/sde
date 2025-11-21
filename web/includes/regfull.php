@@ -1630,36 +1630,44 @@ document.addEventListener('DOMContentLoaded', () => {
         
         Object.keys(fileState.newFiles).forEach(fileKey => {
           const newFile = fileState.newFiles[fileKey];
+          
+          // Отправляем новый файл
+          appendToFormData('new_file_' + fileKey, newFile.temp_id);
+          
+          // Отправляем product_id если есть
           if (newFile.product_id) {
-            appendToFormData('new_file_' + fileKey, newFile.temp_id);
             appendToFormData('new_file_product_id_' + fileKey, newFile.product_id);
-            
-            const existingFileKey = 'existing_file_' + fileKey;
+          }
+          
+          // Отправляем product_index если есть (для новых вторичных продуктов)
+          if (newFile.product_index !== null && newFile.product_index !== undefined) {
+            appendToFormData('new_file_product_index_' + fileKey, newFile.product_index);
+          }
+          
+          // Отправляем старый файл для удаления (если есть)
+          const existingFileKey = 'existing_file_' + fileKey;
+          
+          if (newFile.product_id) {
+            // Для вторичных продуктов
             if (fileState.existingFiles['product_photo_sec'] && fileState.existingFiles['product_photo_sec'][newFile.product_id]) {
               const oldFiles = fileState.existingFiles['product_photo_sec'][newFile.product_id];
-              if (Array.isArray(oldFiles)) {
+              if (Array.isArray(oldFiles) && oldFiles.length > 0) {
                 oldFiles.forEach(file => {
                   appendToFormData(existingFileKey + '[]', file.id);
                 });
-              } else if (oldFiles) {
+              } else if (oldFiles && oldFiles.id) {
                 appendToFormData(existingFileKey, oldFiles.id);
               }
             }
           } else {
-            appendToFormData('new_file_' + fileKey, newFile.temp_id);
-            
-            if (newFile.product_index !== null && newFile.product_index !== undefined) {
-              appendToFormData('new_file_product_index_' + fileKey, newFile.product_index);
-            }
-            
-            const existingFileKey = 'existing_file_' + fileKey;
+            // Для остальных типов файлов (product_photo, logo, etc.)
             const existing = fileState.existingFiles[fileKey];
             if (existing) {
-              if (Array.isArray(existing)) {
+              if (Array.isArray(existing) && existing.length > 0) {
                 existing.forEach(file => {
                   appendToFormData(existingFileKey + '[]', file.id);
                 });
-              } else {
+              } else if (existing.id) {
                 appendToFormData(existingFileKey, existing.id);
               }
             }
@@ -1670,25 +1678,33 @@ document.addEventListener('DOMContentLoaded', () => {
           const existing = fileState.existingFiles[fileType];
           
           if (fileType === 'product_photo_sec' && typeof existing === 'object' && !Array.isArray(existing)) {
+            // Обработка вторичных продуктов
             Object.keys(existing).forEach(productId => {
               const fileKey = fileType + '_' + productId;
+              // Отправляем существующий файл только если нет нового файла для этого продукта
               if (!fileState.newFiles[fileKey]) {
                 const files = existing[productId];
-                if (Array.isArray(files) && files.length > 0) {
-                  files.forEach(file => {
-                    appendToFormData('existing_file_' + fileKey + '[]', file.id);
-                  });
+                if (files) {
+                  if (Array.isArray(files) && files.length > 0) {
+                    files.forEach(file => {
+                      appendToFormData('existing_file_' + fileKey + '[]', file.id);
+                    });
+                  } else if (files && files.id) {
+                    appendToFormData('existing_file_' + fileKey, files.id);
+                  }
                 }
               }
             });
           } else if (existing && (Array.isArray(existing) ? existing.length > 0 : existing)) {
+            // Обработка остальных типов файлов (product_photo, logo, process_photo, etc.)
             const fileKey = fileType;
+            // Отправляем существующий файл только если нет нового файла
             if (!fileState.newFiles[fileKey]) {
               if (Array.isArray(existing)) {
                 existing.forEach((file, index) => {
                   appendToFormData('existing_file_' + fileKey + '[]', file.id);
                 });
-              } else {
+              } else if (existing.id) {
                 appendToFormData('existing_file_' + fileKey, existing.id);
               }
             }

@@ -517,6 +517,7 @@ try {
         }
     }
     
+    // Обработка существующих файлов (когда нет нового файла)
     foreach ($input as $key => $value) {
         if (strpos($key, 'existing_file_') === 0 && strpos($key, 'new_file_') === false) {
             $fileKey = substr($key, 14);
@@ -524,21 +525,89 @@ try {
                 $fileKey = str_replace('[]', '', $fileKey);
             }
             
-            if ($fileKey === 'product_photo' && $mainProductId) {
-                $fileIds = [];
-                if (is_array($value)) {
-                    $fileIds = array_map('intval', $value);
-                } else {
-                    $fileIds[] = intval($value);
+            $fileIds = [];
+            if (is_array($value)) {
+                $fileIds = array_map('intval', $value);
+            } else {
+                $fileIds[] = intval($value);
+            }
+            
+            // Проверяем, есть ли новый файл для этого fileKey
+            $hasNewFile = false;
+            foreach ($input as $newKey => $newValue) {
+                if (strpos($newKey, 'new_file_') === 0) {
+                    $newFileKey = substr($newKey, 9);
+                    if ($newFileKey === $fileKey) {
+                        $hasNewFile = true;
+                        break;
+                    }
                 }
-                
-                foreach ($fileIds as $fileId) {
-                    if ($fileId > 0) {
-                        $query = "UPDATE files SET is_temporary = 0, product_id = ? WHERE id = ? AND user_id = ? AND (product_id IS NULL OR product_id = 0)";
+            }
+            
+            // Если нет нового файла, сохраняем существующий
+            if (!$hasNewFile) {
+                if ($fileKey === 'product_photo') {
+                    // Основной продукт
+                    if ($mainProductId) {
+                        foreach ($fileIds as $fileId) {
+                            if ($fileId > 0) {
+                                // Обновляем product_id для файла основного продукта
+                                $query = "UPDATE files SET is_temporary = 0, product_id = ? WHERE id = ? AND user_id = ?";
+                                $stmt = mysqli_prepare($link, $query);
+                                mysqli_stmt_bind_param($stmt, 'iii', $mainProductId, $fileId, $userId);
+                                mysqli_stmt_execute($stmt);
+                                mysqli_stmt_close($stmt);
+                            }
+                        }
+                    } else {
+                        // Если mainProductId еще не определен, просто помечаем файл как постоянный
+                        foreach ($fileIds as $fileId) {
+                            if ($fileId > 0) {
+                                $query = "UPDATE files SET is_temporary = 0 WHERE id = ? AND user_id = ?";
+                                $stmt = mysqli_prepare($link, $query);
+                                mysqli_stmt_bind_param($stmt, 'ii', $fileId, $userId);
+                                mysqli_stmt_execute($stmt);
+                                mysqli_stmt_close($stmt);
+                            }
+                        }
+                    }
+                } elseif (strpos($fileKey, 'product_photo_sec_') === 0) {
+                    // Вторичный продукт
+                    $productIdStr = substr($fileKey, 18); // 'product_photo_sec_' = 18 символов
+                    $productId = intval($productIdStr);
+                    
+                    if ($productId > 0) {
+                        // Проверяем, что продукт существует и принадлежит пользователю
+                        $query = "SELECT id FROM products WHERE id = ? AND user_id = ? AND is_main = 0";
                         $stmt = mysqli_prepare($link, $query);
-                        mysqli_stmt_bind_param($stmt, 'iii', $mainProductId, $fileId, $userId);
+                        mysqli_stmt_bind_param($stmt, 'ii', $productId, $userId);
                         mysqli_stmt_execute($stmt);
+                        $result = mysqli_stmt_get_result($stmt);
+                        $product = mysqli_fetch_assoc($result);
                         mysqli_stmt_close($stmt);
+                        
+                        if ($product) {
+                            foreach ($fileIds as $fileId) {
+                                if ($fileId > 0) {
+                                    $query = "UPDATE files SET is_temporary = 0, product_id = ? WHERE id = ? AND user_id = ?";
+                                    $stmt = mysqli_prepare($link, $query);
+                                    mysqli_stmt_bind_param($stmt, 'iii', $productId, $fileId, $userId);
+                                    mysqli_stmt_execute($stmt);
+                                    mysqli_stmt_close($stmt);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Остальные типы файлов (logo, process_photo, digital_catalog, institutional_video)
+                    foreach ($fileIds as $fileId) {
+                        if ($fileId > 0) {
+                            $query = "UPDATE files SET is_temporary = 0 WHERE id = ? AND user_id = ?";
+                            $stmt = mysqli_prepare($link, $query);
+                            mysqli_stmt_bind_param($stmt, 'ii', $fileId, $userId);
+                            mysqli_stmt_execute($stmt);
+                            mysqli_stmt_close($stmt);
+                        }
                     }
                 }
             }
