@@ -54,36 +54,58 @@ try {
     // Загрузка изображений товаров
     if (!empty($products)) {
         $productIds = array_column($products, 'id');
-        $placeholders = implode(',', array_fill(0, count($productIds), '?'));
-        $query = "SELECT f.id, f.product_id, f.file_path, f.storage_type, p.is_main
-                  FROM files f
-                  LEFT JOIN products p ON f.product_id = p.id
-                  WHERE f.user_id = ? AND f.file_type = 'product_photo' 
-                  AND f.is_temporary = 0 AND f.product_id IN ($placeholders)
-                  ORDER BY p.is_main DESC, f.product_id, f.created_at";
-        $stmt = mysqli_prepare($link, $query);
-        $types = 'i' . str_repeat('i', count($productIds));
-        $params = array_merge([$userId], $productIds);
-        mysqli_stmt_bind_param($stmt, $types, ...$params);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-        
-        while ($row = mysqli_fetch_assoc($result)) {
-            $pid = intval($row['product_id']);
-            if (!isset($productPhotos[$pid])) {
-                try {
-                    $storageType = $row['storage_type'] ?? 'local';
-                    if (empty($storageType)) {
-                        $storageType = 'local';
-                    }
-                    $storage = StorageFactory::createByType($storageType);
-                    $productPhotos[$pid] = $storage->getUrl($row['file_path']);
-                } catch (Exception $e) {
-                    $productPhotos[$pid] = null;
-                }
+        $mainProductId = null;
+        foreach ($products as $product) {
+            if ($product['is_main']) {
+                $mainProductId = $product['id'];
+                break;
             }
         }
-        mysqli_stmt_close($stmt);
+        
+        // Загрузка изображений для вторичных товаров
+        if (count($productIds) > 0) {
+            $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+            $query = "SELECT f.id, f.product_id, f.file_path, f.storage_type, p.is_main, p.id as product_id_from_table
+                      FROM files f
+                      LEFT JOIN products p ON f.product_id = p.id AND p.user_id = ?
+                      WHERE f.user_id = ? AND f.file_type = 'product_photo' 
+                      AND f.is_temporary = 0 
+                      AND (f.product_id IN ($placeholders) OR (f.product_id IS NULL OR f.product_id = 0))
+                      ORDER BY p.is_main DESC, f.product_id, f.created_at";
+            $stmt = mysqli_prepare($link, $query);
+            $types = 'ii' . str_repeat('i', count($productIds));
+            $params = array_merge([$userId, $userId], $productIds);
+            mysqli_stmt_bind_param($stmt, $types, ...$params);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            
+            while ($row = mysqli_fetch_assoc($result)) {
+                $pid = null;
+                $isMain = $row['is_main'] ?? false;
+                $productIdFromTable = $row['product_id_from_table'];
+                
+                // Если product_id NULL или 0, и это основной товар
+                if (($row['product_id'] === null || intval($row['product_id']) == 0) && $isMain && $mainProductId) {
+                    $pid = $mainProductId;
+                } else if ($row['product_id'] !== null && intval($row['product_id']) > 0) {
+                    $pid = intval($row['product_id']);
+                }
+                
+                if ($pid !== null && !isset($productPhotos[$pid])) {
+                    try {
+                        $storageType = $row['storage_type'] ?? 'local';
+                        if (empty($storageType)) {
+                            $storageType = 'local';
+                        }
+                        $storage = StorageFactory::createByType($storageType);
+                        $productPhotos[$pid] = $storage->getUrl($row['file_path']);
+                    } catch (Exception $e) {
+                        $productPhotos[$pid] = null;
+                    }
+                }
+            }
+            mysqli_stmt_close($stmt);
+        }
     }
 } catch (Exception $e) {
     error_log("Error loading products in home.php: " . $e->getMessage());

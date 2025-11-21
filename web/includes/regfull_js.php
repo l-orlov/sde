@@ -466,6 +466,10 @@ try {
                 $productId = $newProductIdsByIndex[$productIndex];
             }
             
+            if ($productId === null && $fileKey === 'product_photo' && $mainProductId) {
+                $productId = $mainProductId;
+            }
+            
             $existingFileIds = [];
             
             $existingFileKey1 = 'existing_file_' . $fileKey;
@@ -510,6 +514,34 @@ try {
             }
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
+        }
+    }
+    
+    foreach ($input as $key => $value) {
+        if (strpos($key, 'existing_file_') === 0 && strpos($key, 'new_file_') === false) {
+            $fileKey = substr($key, 14);
+            if (strpos($fileKey, '[]') !== false) {
+                $fileKey = str_replace('[]', '', $fileKey);
+            }
+            
+            if ($fileKey === 'product_photo' && $mainProductId) {
+                $fileIds = [];
+                if (is_array($value)) {
+                    $fileIds = array_map('intval', $value);
+                } else {
+                    $fileIds[] = intval($value);
+                }
+                
+                foreach ($fileIds as $fileId) {
+                    if ($fileId > 0) {
+                        $query = "UPDATE files SET is_temporary = 0, product_id = ? WHERE id = ? AND user_id = ? AND (product_id IS NULL OR product_id = 0)";
+                        $stmt = mysqli_prepare($link, $query);
+                        mysqli_stmt_bind_param($stmt, 'iii', $mainProductId, $fileId, $userId);
+                        mysqli_stmt_execute($stmt);
+                        mysqli_stmt_close($stmt);
+                    }
+                }
+            }
         }
     }
     
