@@ -21,7 +21,22 @@ $lastname = htmlspecialchars($userData['last_name'] ?? '');
 $firstname = htmlspecialchars($userData['first_name'] ?? '');
 $email = htmlspecialchars($userData['email'] ?? '');
 $phone = htmlspecialchars($userData['phone'] ?? '');
-$companyName = isset($userData['company_name']) ? htmlspecialchars($userData['company_name']) : '';
+
+$companyName = '';
+if (isset($userData['company_name']) && !empty($userData['company_name'])) {
+    $companyName = htmlspecialchars($userData['company_name']);
+} else {
+    $query = "SELECT name FROM companies WHERE user_id = ? LIMIT 1";
+    $stmt = mysqli_prepare($link, $query);
+    mysqli_stmt_bind_param($stmt, 'i', $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    if ($result && mysqli_num_rows($result) > 0) {
+        $company = mysqli_fetch_assoc($result);
+        $companyName = htmlspecialchars($company['name'] ?? '');
+    }
+    mysqli_stmt_close($stmt);
+}
 
 // Загрузка товаров пользователя
 require_once __DIR__ . '/FileManager.php';
@@ -149,6 +164,11 @@ $visibleProducts = min(4, $totalProducts);
     <!-- Left Sidebar - Profile Form -->
     <aside class="home-sidebar">
       <div class="home-profile-form">
+        <?php if (!empty($companyName)): ?>
+          <div class="home-profile-company-name" style="text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 20px; color: #333; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+            <?= $companyName ?>
+          </div>
+        <?php endif; ?>
         <div class="home-avatar-upload">
           <div class="home-avatar-placeholder" id="home-avatar-placeholder" style="cursor: pointer;">
             <img id="home-avatar-image" src="" alt="Logo" style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
@@ -196,10 +216,11 @@ $visibleProducts = min(4, $totalProducts);
         </div>
         
         <div class="home-profile-buttons">
-          <button data-i18n="btn_save_profile" class="btn btn-save-profile">Guardar cambios</button>
+          <button data-i18n="btn_save_profile" class="btn btn-save-profile" id="btnSaveProfile">Guardar cambios</button>
           <button data-i18n="btn_logout" class="btn btn-logout">Cerrar sesión</button>
           <span data-i18n="logout_confirm" style="display: none;">¿Está seguro de que desea cerrar sesión?</span>
         </div>
+        <div id="home-profile-message" style="margin-top: 15px; display: none; padding: 10px; border-radius: 4px; text-align: center;"></div>
       </div>
       
       <div class="home-profile-action">
@@ -500,6 +521,98 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   });
+  
+  // Save profile button handler
+  const saveProfileBtn = document.getElementById('btnSaveProfile');
+  const profileMessage = document.getElementById('home-profile-message');
+  
+  if (saveProfileBtn) {
+    saveProfileBtn.addEventListener('click', async function() {
+      const lastname = document.getElementById('profile-lastname').value.trim();
+      const firstname = document.getElementById('profile-firstname').value.trim();
+      const companyName = document.getElementById('profile-company').value.trim();
+      const email = document.getElementById('profile-email').value.trim();
+      const phone = document.getElementById('profile-phone').value.trim();
+      const password = document.getElementById('profile-password').value.trim();
+      
+      if (!email) {
+        showProfileMessage('El correo electrónico es obligatorio', 'error');
+        return;
+      }
+      
+      if (!phone) {
+        showProfileMessage('El número de teléfono es obligatorio', 'error');
+        return;
+      }
+      
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showProfileMessage('El formato del correo electrónico no es válido', 'error');
+        return;
+      }
+      
+      saveProfileBtn.disabled = true;
+      saveProfileBtn.textContent = 'Guardando...';
+      
+      try {
+        const data = {
+          lastname: lastname,
+          firstname: firstname,
+          company_name: companyName,
+          email: email,
+          phone: phone
+        };
+        
+        if (password) {
+          data.password = password;
+        }
+        
+        const response = await fetch('includes/home_update_profile_js.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.ok === 1) {
+          showProfileMessage(result.res || 'Perfil actualizado correctamente', 'success');
+          if (password) {
+            document.getElementById('profile-password').value = '';
+          }
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          showProfileMessage(result.err || 'Error al actualizar el perfil', 'error');
+          saveProfileBtn.disabled = false;
+          saveProfileBtn.textContent = 'Guardar cambios';
+        }
+      } catch (error) {
+        showProfileMessage('Error de conexión. Intente de nuevo.', 'error');
+        saveProfileBtn.disabled = false;
+        saveProfileBtn.textContent = 'Guardar cambios';
+      }
+    });
+  }
+  
+  function showProfileMessage(message, type) {
+    if (!profileMessage) return;
+    
+    profileMessage.textContent = message;
+    profileMessage.style.display = 'block';
+    profileMessage.className = type === 'success' ? 'success' : 'error';
+    profileMessage.style.backgroundColor = type === 'success' ? '#d4edda' : '#f8d7da';
+    profileMessage.style.color = type === 'success' ? '#155724' : '#721c24';
+    profileMessage.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
+    
+    if (type === 'success') {
+      setTimeout(() => {
+        profileMessage.style.display = 'none';
+      }, 3000);
+    }
+  }
   
   // Logout button handler
   const logoutBtn = document.querySelector('.btn-logout');

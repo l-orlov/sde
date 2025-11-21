@@ -1,3 +1,92 @@
+<?
+// Загрузка данных компании из БД
+$companyData = null;
+$companyAddresses = ['legal' => null, 'admin' => null];
+$companyContacts = null;
+$companySocialNetworks = [];
+$companyDataJson = null;
+
+if (isset($_SESSION['uid'])) {
+    $userId = intval($_SESSION['uid']);
+    $companyId = null;
+    
+    // Загрузка основных данных компании
+    $query = "SELECT id, name, tax_id, legal_name, start_date, website, organization_type, main_activity 
+              FROM companies WHERE user_id = ? LIMIT 1";
+    $stmt = mysqli_prepare($link, $query);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $userId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $companyData = mysqli_fetch_assoc($result);
+        mysqli_stmt_close($stmt);
+        
+        if ($companyData) {
+            $companyId = intval($companyData['id']);
+            
+            // Конвертация start_date из timestamp в формат d/m/Y
+            if ($companyData['start_date']) {
+                $timestamp = intval($companyData['start_date']);
+                if ($timestamp > 0) {
+                    $dateObj = new DateTime();
+                    $dateObj->setTimestamp($timestamp);
+                    $companyData['start_date'] = $dateObj->format('d/m/Y');
+                } else {
+                    $companyData['start_date'] = '';
+                }
+            }
+        }
+    }
+    
+    // Загрузка адресов
+    if ($companyId) {
+        $query = "SELECT type, street, street_number, postal_code, floor, apartment, locality, department 
+                  FROM company_addresses WHERE company_id = ?";
+        $stmt = mysqli_prepare($link, $query);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            while ($row = mysqli_fetch_assoc($result)) {
+                $companyAddresses[$row['type']] = $row;
+            }
+            mysqli_stmt_close($stmt);
+        }
+        
+        // Загрузка контактов
+        $query = "SELECT contact_person, position, email, area_code, phone 
+                  FROM company_contacts WHERE company_id = ? LIMIT 1";
+        $stmt = mysqli_prepare($link, $query);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $companyContacts = mysqli_fetch_assoc($result);
+            mysqli_stmt_close($stmt);
+        }
+        
+        // Загрузка социальных сетей
+        $query = "SELECT network_type, url 
+                  FROM company_social_networks WHERE company_id = ? 
+                  ORDER BY id ASC";
+        $stmt = mysqli_prepare($link, $query);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            while ($row = mysqli_fetch_assoc($result)) {
+                $companySocialNetworks[] = $row;
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
+}
+
+// Функция для безопасного вывода значений
+function esc_attr($value) {
+    return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+}
+?>
 <!-- EMPRESA -->
 <div class="regfull-lang" onclick="toggleRegfullLangMenu()">
   <img src="img/icons/lang.png" alt="Language">
@@ -16,19 +105,19 @@
   <div class="form" novalidate>
     <!-- Nombre -->
     <div class="label"><label for="name" data-i18n="regfull_company_name">Nombre de la Empresa/Emprendimiento <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="name" name="name" required></div>
+    <div class="field"><input type="search" id="name" name="name" value="<?= esc_attr($companyData['name'] ?? '') ?>" required></div>
     <!-- CUIT -->
     <div class="label"><label for="tax_id" data-i18n="regfull_cuit">CUIT / Identificación Fiscal <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="tax_id" name="tax_id" data-i18n-placeholder="regfull_cuit_placeholder" placeholder="XX-XXXXXXXX-X" required></div>
+    <div class="field"><input type="search" id="tax_id" name="tax_id" value="<?= esc_attr($companyData['tax_id'] ?? '') ?>" data-i18n-placeholder="regfull_cuit_placeholder" placeholder="XX-XXXXXXXX-X" required></div>
     <!-- Razón social -->
     <div class="label"><label for="legal_name" data-i18n="regfull_razon_social">Razón social <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="legal_name" name="legal_name" required></div>
+    <div class="field"><input type="search" id="legal_name" name="legal_name" value="<?= esc_attr($companyData['legal_name'] ?? '') ?>" required></div>
     <!-- Fecha de inicio -->
     <div class="label"><label for="start_date" data-i18n="regfull_start_date">Fecha de Inicio de Actividad <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="start_date" name="start_date" data-i18n-placeholder="regfull_date_placeholder" placeholder="dd/mm/aaaa" inputmode="numeric" required></div>
+    <div class="field"><input type="search" id="start_date" name="start_date" value="<?= esc_attr($companyData['start_date'] ?? '') ?>" data-i18n-placeholder="regfull_date_placeholder" placeholder="dd/mm/aaaa" inputmode="numeric" required></div>
     <!-- Página web -->
     <div class="label"><label for="website" data-i18n="regfull_website">Página web (si aplica)</label></div>
-    <div class="field"><input type="search" id="website" name="website" type="url" data-i18n-placeholder="regfull_website_placeholder" placeholder="http://…"></div>
+    <div class="field"><input type="search" id="website" name="website" value="<?= esc_attr($companyData['website'] ?? '') ?>" type="url" data-i18n-placeholder="regfull_website_placeholder" placeholder="http://…"></div>
     <!-- Redes sociales -->
     <div class="label"><span data-i18n="regfull_social_networks">Redes sociales:</span></div>
     <div class="field" id="social-wrapper">
@@ -64,15 +153,15 @@
       <div class="label"><span data-i18n="regfull_legal_address">Domicilio Legal <span class="req">*</span></span></div>
       <div class="address_grid">
         <label class="label_span" data-i18n="regfull_street">Calle <span class="req">*</span></label>
-        <input type="search" name="street_legal" class="span_right">
+        <input type="search" name="street_legal" class="span_right" value="<?= esc_attr($companyAddresses['legal']['street'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_number">Altura <span class="req">*</span></label>
-        <input type="search" name="street_number_legal" class="">
+        <input type="search" name="street_number_legal" class="" value="<?= esc_attr($companyAddresses['legal']['street_number'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_postal_code">Código Postal <span class="req">*</span></label>
-        <input type="search" name="postal_code_legal" class="">
+        <input type="search" name="postal_code_legal" class="" value="<?= esc_attr($companyAddresses['legal']['postal_code'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_floor">Piso</label>
-        <input type="search" name="floor_legal" class="">
+        <input type="search" name="floor_legal" class="" value="<?= esc_attr($companyAddresses['legal']['floor'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_apartment">Departamento</label>
-        <input type="search" name="apartment_legal" class="">
+        <input type="search" name="apartment_legal" class="" value="<?= esc_attr($companyAddresses['legal']['apartment'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_locality">Localidad <span class="req">*</span></label>
         <div class="span_right">
           <div class="custom-dropdown">
@@ -98,7 +187,7 @@
               <div class="dropdown-option" data-value="Bandera">Bandera</div>
               <div class="dropdown-option" data-value="Monte Quemado y Sumampa">Monte Quemado y Sumampa</div>
             </div>
-            <input type="hidden" name="locality_legal" value="">
+            <input type="hidden" name="locality_legal" value="<?= esc_attr($companyAddresses['legal']['locality'] ?? '') ?>">
           </div>
         </div>
         <label class="label_span" data-i18n="regfull_department">Departamento <span class="req">*</span></label>
@@ -138,7 +227,7 @@
               <div class="dropdown-option" data-value="Sarmiento">Sarmiento</div>
               <div class="dropdown-option" data-value="Silípica">Silípica</div>
             </div>
-            <input type="hidden" name="department_legal" value="">
+            <input type="hidden" name="department_legal" value="<?= esc_attr($companyAddresses['legal']['department'] ?? '') ?>">
           </div>
         </div>
       </div>
@@ -148,15 +237,15 @@
       <div class="label"><span data-i18n="regfull_admin_address">Dirección administrativa <span class="req">*</span></span></div>
       <div class="address_grid">
         <label class="label_span" data-i18n="regfull_street">Calle <span class="req">*</span></label>
-        <input type="search" name="street_admin" class="span_right">
+        <input type="search" name="street_admin" class="span_right" value="<?= esc_attr($companyAddresses['admin']['street'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_number">Altura <span class="req">*</span></label>
-        <input type="search" name="street_number_admin" class="">
+        <input type="search" name="street_number_admin" class="" value="<?= esc_attr($companyAddresses['admin']['street_number'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_postal_code">Código Postal <span class="req">*</span></label>
-        <input type="search" name="postal_code_admin" class="">
+        <input type="search" name="postal_code_admin" class="" value="<?= esc_attr($companyAddresses['admin']['postal_code'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_floor">Piso</label>
-        <input type="search" name="floor_admin" class="">
+        <input type="search" name="floor_admin" class="" value="<?= esc_attr($companyAddresses['admin']['floor'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_apartment">Departamento</label>
-        <input type="search" name="apartment_admin" class="">
+        <input type="search" name="apartment_admin" class="" value="<?= esc_attr($companyAddresses['admin']['apartment'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_locality">Localidad <span class="req">*</span></label>
         <div class="span_right">
           <div class="custom-dropdown">
@@ -182,7 +271,7 @@
               <div class="dropdown-option" data-value="Bandera">Bandera</div>
               <div class="dropdown-option" data-value="Monte Quemado y Sumampa">Monte Quemado y Sumampa</div>
             </div>
-            <input type="hidden" name="locality_admin" value="">
+            <input type="hidden" name="locality_admin" value="<?= esc_attr($companyAddresses['admin']['locality'] ?? '') ?>">
           </div>
         </div>
         <label class="label_span" data-i18n="regfull_department">Departamento <span class="req">*</span></label>
@@ -222,7 +311,7 @@
               <div class="dropdown-option" data-value="Sarmiento">Sarmiento</div>
               <div class="dropdown-option" data-value="Silípica">Silípica</div>
             </div>
-            <input type="hidden" name="department_admin" value="">
+            <input type="hidden" name="department_admin" value="<?= esc_attr($companyAddresses['admin']['department'] ?? '') ?>">
           </div>
         </div>
       </div>
@@ -231,15 +320,15 @@
     <div class="contacto_datos">
       <div class="label"><span data-i18n="regfull_contact_person">Persona de Contacto <span class="req">*</span></span></div>
       <div class="contacto_grid">
-        <input type="search" name="contact_person" class="span_all">
+        <input type="search" name="contact_person" class="span_all" value="<?= esc_attr($companyContacts['contact_person'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_contact_position">Cargo de Persona de contacto <span class="req">*</span></label>
-        <input type="search" name="contact_position">
+        <input type="search" name="contact_position" value="<?= esc_attr($companyContacts['position'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_email">E-mail <span class="req">*</span></label>
-        <input type="email" name="contact_email">
+        <input type="email" name="contact_email" value="<?= esc_attr($companyContacts['email'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_phone">Teléfono <span class="req">*</span></label>
         <div class="phone_inline">
-          <input type="search" name="contact_area_code" class="area" data-i18n-placeholder="regfull_area_code" placeholder="Código de área">
-          <input type="search" name="contact_phone" placeholder="">
+          <input type="search" name="contact_area_code" class="area" value="<?= esc_attr($companyContacts['area_code'] ?? '') ?>" data-i18n-placeholder="regfull_area_code" placeholder="Código de área">
+          <input type="search" name="contact_phone" value="<?= esc_attr($companyContacts['phone'] ?? '') ?>" placeholder="">
         </div>
       </div>
     </div>
@@ -2326,6 +2415,215 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     quickSave();
   }
   
+  // Данные компании из БД для заполнения формы
+  window.companyDataFromDB = {
+    organization_type: <?= json_encode($companyData['organization_type'] ?? '') ?>,
+    main_activity: <?= json_encode($companyData['main_activity'] ?? '') ?>,
+    social_networks: <?= json_encode($companySocialNetworks) ?>,
+    locality_legal: <?= json_encode($companyAddresses['legal']['locality'] ?? '') ?>,
+    department_legal: <?= json_encode($companyAddresses['legal']['department'] ?? '') ?>,
+    locality_admin: <?= json_encode($companyAddresses['admin']['locality'] ?? '') ?>,
+    department_admin: <?= json_encode($companyAddresses['admin']['department'] ?? '') ?>
+  };
+  
+  function fillDropdownsFromDB() {
+    const data = window.companyDataFromDB;
+    
+    // Заполнение organization_type
+    if (data.organization_type) {
+      const orgTypeDropdown = document.querySelector('input[name="organization_type"]');
+      if (orgTypeDropdown) {
+        const dropdown = orgTypeDropdown.closest('.custom-dropdown');
+        if (dropdown) {
+          const options = dropdown.querySelectorAll('.dropdown-option');
+          for (let option of options) {
+            if (option.dataset.value === data.organization_type) {
+              orgTypeDropdown.value = data.organization_type;
+              const selectedText = dropdown.querySelector('.selected-text');
+              if (selectedText) {
+                selectedText.textContent = option.textContent;
+              }
+              option.classList.add('selected');
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Заполнение main_activity
+    if (data.main_activity) {
+      const mainActivityDropdown = document.querySelector('input[name="main_activity"]');
+      if (mainActivityDropdown) {
+        const dropdown = mainActivityDropdown.closest('.custom-dropdown');
+        if (dropdown) {
+          const options = dropdown.querySelectorAll('.dropdown-option');
+          for (let option of options) {
+            if (option.dataset.value === data.main_activity) {
+              mainActivityDropdown.value = data.main_activity;
+              const selectedText = dropdown.querySelector('.selected-text');
+              if (selectedText) {
+                selectedText.textContent = option.textContent;
+              }
+              option.classList.add('selected');
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Заполнение locality_legal
+    if (data.locality_legal) {
+      const localityLegalDropdown = document.querySelector('input[name="locality_legal"]');
+      if (localityLegalDropdown) {
+        localityLegalDropdown.value = data.locality_legal;
+        const dropdown = localityLegalDropdown.closest('.custom-dropdown');
+        if (dropdown) {
+          const options = dropdown.querySelectorAll('.dropdown-option');
+          for (let option of options) {
+            if (option.dataset.value === data.locality_legal) {
+              const selectedText = dropdown.querySelector('.selected-text');
+              if (selectedText) {
+                selectedText.textContent = option.textContent;
+              }
+              option.classList.add('selected');
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Заполнение department_legal
+    if (data.department_legal) {
+      const departmentLegalDropdown = document.querySelector('input[name="department_legal"]');
+      if (departmentLegalDropdown) {
+        departmentLegalDropdown.value = data.department_legal;
+        const dropdown = departmentLegalDropdown.closest('.custom-dropdown');
+        if (dropdown) {
+          const options = dropdown.querySelectorAll('.dropdown-option');
+          for (let option of options) {
+            if (option.dataset.value === data.department_legal) {
+              const selectedText = dropdown.querySelector('.selected-text');
+              if (selectedText) {
+                selectedText.textContent = option.textContent;
+              }
+              option.classList.add('selected');
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Заполнение locality_admin
+    if (data.locality_admin) {
+      const localityAdminDropdown = document.querySelector('input[name="locality_admin"]');
+      if (localityAdminDropdown) {
+        localityAdminDropdown.value = data.locality_admin;
+        const dropdown = localityAdminDropdown.closest('.custom-dropdown');
+        if (dropdown) {
+          const options = dropdown.querySelectorAll('.dropdown-option');
+          for (let option of options) {
+            if (option.dataset.value === data.locality_admin) {
+              const selectedText = dropdown.querySelector('.selected-text');
+              if (selectedText) {
+                selectedText.textContent = option.textContent;
+              }
+              option.classList.add('selected');
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Заполнение department_admin
+    if (data.department_admin) {
+      const departmentAdminDropdown = document.querySelector('input[name="department_admin"]');
+      if (departmentAdminDropdown) {
+        departmentAdminDropdown.value = data.department_admin;
+        const dropdown = departmentAdminDropdown.closest('.custom-dropdown');
+        if (dropdown) {
+          const options = dropdown.querySelectorAll('.dropdown-option');
+          for (let option of options) {
+            if (option.dataset.value === data.department_admin) {
+              const selectedText = dropdown.querySelector('.selected-text');
+              if (selectedText) {
+                selectedText.textContent = option.textContent;
+              }
+              option.classList.add('selected');
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Заполнение социальных сетей
+    if (data.social_networks && data.social_networks.length > 0) {
+      const socialWrapper = document.getElementById('social-wrapper');
+      if (socialWrapper) {
+        // Очистить существующие строки, кроме первой
+        const existingRows = socialWrapper.querySelectorAll('.social_row');
+        for (let i = 1; i < existingRows.length; i++) {
+          existingRows[i].remove();
+        }
+        
+        data.social_networks.forEach((social, index) => {
+          let row;
+          if (index === 0) {
+            row = socialWrapper.querySelector('.social_row');
+          } else {
+            // Клонировать первую строку для новых
+            const firstRow = socialWrapper.querySelector('.social_row');
+            if (firstRow) {
+              row = firstRow.cloneNode(true);
+              const removeBtn = row.querySelector('.remove');
+              if (removeBtn) {
+                removeBtn.hidden = false;
+              }
+              socialWrapper.appendChild(row);
+            }
+          }
+          
+          if (row) {
+            const urlInput = row.querySelector('input[name="social_url[]"]');
+            const hiddenInput = row.querySelector('input.net');
+            const finalInput = row.querySelector('input.net-final');
+            
+            if (urlInput && social.url) {
+              urlInput.value = social.url;
+            }
+            
+            if (hiddenInput && social.network_type) {
+              hiddenInput.value = social.network_type;
+              const dropdown = hiddenInput.closest('.custom-dropdown');
+              if (dropdown) {
+                const options = dropdown.querySelectorAll('.dropdown-option');
+                for (let option of options) {
+                  if (option.dataset.value === social.network_type) {
+                    const selectedText = dropdown.querySelector('.selected-text');
+                    if (selectedText) {
+                      selectedText.textContent = option.textContent;
+                    }
+                    option.classList.add('selected');
+                    break;
+                  }
+                }
+              }
+            }
+            
+            if (finalInput && social.network_type) {
+              finalInput.value = social.network_type;
+            }
+          }
+        });
+      }
+    }
+  }
+  
   document.addEventListener('DOMContentLoaded', () => {
     const saved = localStorage.getItem(STORAGE_KEY);
     
@@ -2335,6 +2633,11 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
         fillTestData();
       });
     }
+    
+    // Заполнить dropdown'ы и социальные сети из БД
+    setTimeout(() => {
+      fillDropdownsFromDB();
+    }, 500);
     
     setTimeout(() => {
       if (saved) {
