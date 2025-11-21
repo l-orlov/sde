@@ -22,6 +22,75 @@ $firstname = htmlspecialchars($userData['first_name'] ?? '');
 $email = htmlspecialchars($userData['email'] ?? '');
 $phone = htmlspecialchars($userData['phone'] ?? '');
 $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['company_name']) : '';
+
+// Загрузка товаров пользователя
+require_once __DIR__ . '/FileManager.php';
+require_once __DIR__ . '/storage/StorageFactory.php';
+
+$products = [];
+$productPhotos = [];
+
+try {
+    $query = "SELECT id, is_main, name, tariff_code, description 
+              FROM products 
+              WHERE user_id = ? 
+              ORDER BY is_main DESC, id ASC";
+    $stmt = mysqli_prepare($link, $query);
+    mysqli_stmt_bind_param($stmt, 'i', $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    
+    while ($row = mysqli_fetch_assoc($result)) {
+        $products[] = [
+            'id' => intval($row['id']),
+            'is_main' => (bool)$row['is_main'],
+            'name' => htmlspecialchars($row['name'] ?? ''),
+            'tariff_code' => htmlspecialchars($row['tariff_code'] ?? ''),
+            'description' => htmlspecialchars($row['description'] ?? '')
+        ];
+    }
+    mysqli_stmt_close($stmt);
+    
+    // Загрузка изображений товаров
+    if (!empty($products)) {
+        $productIds = array_column($products, 'id');
+        $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+        $query = "SELECT f.id, f.product_id, f.file_path, f.storage_type, p.is_main
+                  FROM files f
+                  LEFT JOIN products p ON f.product_id = p.id
+                  WHERE f.user_id = ? AND f.file_type = 'product_photo' 
+                  AND f.is_temporary = 0 AND f.product_id IN ($placeholders)
+                  ORDER BY p.is_main DESC, f.product_id, f.created_at";
+        $stmt = mysqli_prepare($link, $query);
+        $types = 'i' . str_repeat('i', count($productIds));
+        $params = array_merge([$userId], $productIds);
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        
+        while ($row = mysqli_fetch_assoc($result)) {
+            $pid = intval($row['product_id']);
+            if (!isset($productPhotos[$pid])) {
+                try {
+                    $storageType = $row['storage_type'] ?? 'local';
+                    if (empty($storageType)) {
+                        $storageType = 'local';
+                    }
+                    $storage = StorageFactory::createByType($storageType);
+                    $productPhotos[$pid] = $storage->getUrl($row['file_path']);
+                } catch (Exception $e) {
+                    $productPhotos[$pid] = null;
+                }
+            }
+        }
+        mysqli_stmt_close($stmt);
+    }
+} catch (Exception $e) {
+    error_log("Error loading products in home.php: " . $e->getMessage());
+}
+
+$totalProducts = count($products);
+$visibleProducts = min(4, $totalProducts);
 ?>
 <div class="home-container">
   <!-- Header -->
@@ -121,7 +190,7 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
       <!-- Products Section -->
       <section class="home-section home-products-section">
         <div class="home-section-header">
-          <h2 class="home-section-title"><span data-i18n="home_section_title">Información sobre Productos y Servicios</span> <span class="home-section-count" data-total="25" data-visible="4">4/25</span></h2>
+          <h2 class="home-section-title"><span data-i18n="home_section_title">Información sobre Productos y Servicios</span> <span class="home-section-count" data-total="<?php echo $totalProducts; ?>" data-visible="<?php echo $visibleProducts; ?>"><?php echo $visibleProducts; ?>/<?php echo $totalProducts; ?></span></h2>
           <div class="home-search-box">
             <input type="search" class="home-search-input" data-i18n-placeholder="home_search_placeholder">
             <svg class="home-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -131,90 +200,44 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
           </div>
         </div>
         
-        <div class="home-products-grid">
-          <div class="home-product-card home-product-visible">
-            <div class="home-product-image">
-              <img src="img/productos/foto1.jpg" alt="Queso de cabra madurado">
+        <?php if (empty($products)): ?>
+          <div style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 18px; color: #666; margin-bottom: 30px;">
+              <p data-i18n="home_no_products_message">Aún no has agregado productos. ¡Comienza agregando tu primer producto!</p>
             </div>
-            <div class="home-product-info">
-              <div data-i18n="product_goat_cheese" class="home-product-name">Queso de cabra madurado</div>
-              <div class="home-product-code">0406.90.20</div>
+            <a href="?page=regfull" class="btn btn-show-more" style="text-decoration: none; display: inline-block;">
+              <span data-i18n="home_add_products_button">Agregar Productos</span>
+            </a>
+          </div>
+        <?php else: ?>
+          <div class="home-products-grid">
+            <?php foreach ($products as $index => $product): 
+              $isVisible = $index < 4;
+              $productImage = isset($productPhotos[$product['id']]) ? $productPhotos[$product['id']] : null;
+              $imageSrc = $productImage ? $productImage : 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#f0f0f0"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="Arial" font-size="14" fill="#999">No img</text></svg>');
+              $imageAlt = htmlspecialchars($product['name']);
+              $productName = htmlspecialchars($product['name']);
+              $tariffCode = htmlspecialchars($product['tariff_code'] ?: '0000.00.00');
+            ?>
+            <div class="home-product-card <?php echo $isVisible ? 'home-product-visible' : 'home-product-hidden'; ?>">
+              <div class="home-product-image">
+                <img src="<?php echo $imageSrc; ?>" alt="<?php echo $imageAlt; ?>">
+              </div>
+              <div class="home-product-info">
+                <div class="home-product-name"><?php echo $productName; ?></div>
+                <div class="home-product-code"><?php echo $tariffCode; ?></div>
+              </div>
             </div>
+            <?php endforeach; ?>
           </div>
           
-          <div class="home-product-card home-product-visible">
-            <div class="home-product-image">
-              <img src="img/productos/foto2.jpg" alt="Miel natural">
+          <?php if ($totalProducts > 4): ?>
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+              <button data-i18n="btn_show_more" class="btn btn-show-more" id="showMoreProducts">Mostrar más</button>
+              <button data-i18n="btn_hide" class="btn btn-show-less" id="showLessProducts" style="display: none;">Ocultar</button>
             </div>
-            <div class="home-product-info">
-              <div data-i18n="product_natural_honey" class="home-product-name">Miel natural</div>
-              <div class="home-product-code">0409.00.00</div>
-            </div>
-          </div>
-          
-          <div class="home-product-card home-product-visible">
-            <div class="home-product-image">
-              <img src="img/productos/foto3.jpg" alt="Aceite de oliva">
-            </div>
-            <div class="home-product-info">
-              <div data-i18n="product_olive_oil" class="home-product-name">Aceite de oliva</div>
-              <div class="home-product-code">1509.10.00</div>
-            </div>
-          </div>
-          
-          <div class="home-product-card home-product-visible">
-            <div class="home-product-image">
-              <img src="img/productos/foto4.png" alt="Yerba mate">
-            </div>
-            <div class="home-product-info">
-              <div data-i18n="product_yerba_mate" class="home-product-name">Yerba mate</div>
-              <div class="home-product-code">0903.00.10</div>
-            </div>
-          </div>
-          
-          <div class="home-product-card home-product-hidden">
-            <div class="home-product-image">
-              <img src="img/productos/foto5.jpg" alt="Mermelada de durazno natural">
-            </div>
-            <div class="home-product-info">
-              <div data-i18n="product_peach_jam" class="home-product-name">Mermelada de durazno natural</div>
-              <div class="home-product-code">2007.99.10</div>
-            </div>
-          </div>
-          
-          <div class="home-product-card home-product-hidden">
-            <div class="home-product-image">
-              <img src="img/productos/foto6.jpg" alt="Dulce de leche artesanal">
-            </div>
-            <div class="home-product-info">
-              <div data-i18n="product_dulce_leche" class="home-product-name">Dulce de leche artesanal</div>
-              <div class="home-product-code">1901.90.90</div>
-            </div>
-          </div>
-          
-          <!-- Hidden products -->
-          <?php
-          $productImages = ['foto1.jpg', 'foto2.jpg', 'foto3.jpg', 'foto4.png', 'foto5.jpg', 'foto6.jpg'];
-          for ($i = 7; $i <= 25; $i++) {
-            $imageIndex = ($i - 7) % 6;
-            $imagePath = 'img/productos/' . $productImages[$imageIndex];
-          ?>
-          <div class="home-product-card home-product-hidden">
-            <div class="home-product-image">
-              <img src="<?php echo $imagePath; ?>" alt="Producto <?php echo $i; ?>">
-            </div>
-            <div class="home-product-info">
-              <div data-i18n="product_generic" class="home-product-name">Producto <?php echo $i; ?></div>
-              <div class="home-product-code">0000.00.00</div>
-            </div>
-          </div>
-          <?php } ?>
-        </div>
-        
-        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-          <button data-i18n="btn_show_more" class="btn btn-show-more" id="showMoreProducts">Mostrar más</button>
-          <button data-i18n="btn_hide" class="btn btn-show-less" id="showLessProducts" style="display: none;">Ocultar</button>
-        </div>
+          <?php endif; ?>
+        <?php endif; ?>
       </section>
 
       <!-- Presentations Section -->
@@ -295,12 +318,17 @@ $companyName = isset($userData['company_name']) ? htmlspecialchars($userData['co
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const showMoreBtn = document.getElementById('showMoreProducts');
-  const showLessBtn = document.getElementById('showLessProducts');
   const productsGrid = document.querySelector('.home-products-grid');
   const countElement = document.querySelector('.home-products-section .home-section-count');
   
-  if (!showMoreBtn || !showLessBtn || !productsGrid || !countElement) return;
+  if (!productsGrid || !countElement) return;
+  
+  const showMoreBtn = document.getElementById('showMoreProducts');
+  const showLessBtn = document.getElementById('showLessProducts');
+  
+  if (!showMoreBtn || !showLessBtn) {
+    return;
+  }
   
   const totalProducts = parseInt(countElement.getAttribute('data-total')) || 25;
   let visibleCount = 0;
