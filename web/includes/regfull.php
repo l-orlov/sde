@@ -632,13 +632,13 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="field">
         <div class="factors_grid">
-          <label class="chk"><input type="checkbox"><span data-i18n="regfull_quality">Calidad</span></label>
-          <label class="chk"><input type="checkbox"><span data-i18n="regfull_innovation">Innovación</span></label>
-          <label class="chk"><input type="checkbox"><span data-i18n="regfull_territorial_origin">Origen territorial</span></label>
-          <label class="chk"><input type="checkbox"><span data-i18n="regfull_traceability">Trazabilidad</span></label>
-          <label class="chk"><input type="checkbox"><span data-i18n="regfull_competitive_price">Precio competitivo</span></label>
+          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Calidad"><span data-i18n="regfull_quality">Calidad</span></label>
+          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Innovación"><span data-i18n="regfull_innovation">Innovación</span></label>
+          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Origen territorial"><span data-i18n="regfull_territorial_origin">Origen territorial</span></label>
+          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Trazabilidad"><span data-i18n="regfull_traceability">Trazabilidad</span></label>
+          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Precio competitivo"><span data-i18n="regfull_competitive_price">Precio competitivo</span></label>
           <div class="other">
-            <label class="chk"><input type="checkbox" class="otros_cb"><span data-i18n="regfull_others">Otros</span></label>
+            <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Otros" class="otros_cb"><span data-i18n="regfull_others">Otros</span></label>
             <input type="search" name="other_differentiation" class="otros_inp" placeholder="" disabled>
           </div>
         </div>
@@ -853,13 +853,13 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="field">
         <div class="needs-grid">
-          <label class="chk"><input type="checkbox"><span data-i18n="regfull_training">Capacitación</span></label>
-          <label class="chk"><input type="checkbox"><span data-i18n="regfull_fair_access">Acceso a ferias</span></label>
-          <label class="chk"><input type="checkbox"><span data-i18n="regfull_certifications_need">Certificaciones</span></label>
-          <label class="chk"><input type="checkbox"><span data-i18n="regfull_financing">Financiamiento</span></label>
-          <label class="chk"><input type="checkbox"><span data-i18n="regfull_commercial_partners">Socios comerciales</span></label>
+          <label class="chk"><input type="checkbox" name="needs[]" value="Capacitación"><span data-i18n="regfull_training">Capacitación</span></label>
+          <label class="chk"><input type="checkbox" name="needs[]" value="Acceso a ferias"><span data-i18n="regfull_fair_access">Acceso a ferias</span></label>
+          <label class="chk"><input type="checkbox" name="needs[]" value="Certificaciones"><span data-i18n="regfull_certifications_need">Certificaciones</span></label>
+          <label class="chk"><input type="checkbox" name="needs[]" value="Financiamiento"><span data-i18n="regfull_financing">Financiamiento</span></label>
+          <label class="chk"><input type="checkbox" name="needs[]" value="Socios comerciales"><span data-i18n="regfull_commercial_partners">Socios comerciales</span></label>
           <div class="other">
-            <label class="chk"><input type="checkbox" class="otros-cb"><span data-i18n="regfull_others">Otros</span></label>
+            <label class="chk"><input type="checkbox" name="needs[]" value="Otros" class="otros-cb"><span data-i18n="regfull_others">Otros</span></label>
             <input name="other_needs" class="fld otros-inp" type="text" placeholder="" disabled>
           </div>
         </div>
@@ -947,6 +947,93 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <script>
+// Глобальные функции для работы с localStorage
+const STORAGE_KEY = 'regfull_form_data';
+
+function quickSave() {
+  const formData = {};
+  
+  document.querySelectorAll('input[type="text"], input[type="search"], input:not([type]), input[type="email"], input[type="url"], textarea').forEach(field => {
+    if (field.type !== 'file' && !field.hidden && field.name && field.value.trim()) {
+      formData[field.name] = field.value.trim();
+    }
+  });
+  
+  document.querySelectorAll('input[type="hidden"]').forEach(field => {
+    if (field.name) {
+      formData[field.name] = field.value;
+      const dropdown = field.closest('.custom-dropdown');
+      if (dropdown) {
+        const selectedText = dropdown.querySelector('.selected-text');
+        if (selectedText && selectedText.textContent && selectedText.textContent !== '…') {
+          formData[field.name + '_text'] = selectedText.textContent;
+        }
+      }
+    }
+  });
+  
+  document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+    if (radio.name) {
+      formData[radio.name] = radio.value;
+    }
+  });
+  
+  document.querySelectorAll('input[name="estimated_term"]').forEach(field => {
+    if (field.value || field.value === '0') {
+      formData['estimated_term'] = field.value;
+    }
+  });
+  
+  const checkboxValues = {};
+  document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+    if (checkbox.name) {
+      if (!checkboxValues[checkbox.name]) {
+        checkboxValues[checkbox.name] = [];
+      }
+      checkboxValues[checkbox.name].push(checkbox.value || 'checked');
+    }
+  });
+  Object.assign(formData, checkboxValues);
+  
+  document.querySelectorAll('input[name="differentiation_factors[]"]').forEach(checkbox => {
+    if (!formData['differentiation_factors[]']) {
+      formData['differentiation_factors[]'] = [];
+    }
+    if (checkbox.checked) {
+      const value = (checkbox.value || 'checked').trim();
+      if (!formData['differentiation_factors[]'].includes(value)) {
+        formData['differentiation_factors[]'].push(value);
+      }
+    }
+  });
+  
+  document.querySelectorAll('input[name="needs[]"]').forEach(checkbox => {
+    if (!formData['needs[]']) {
+      formData['needs[]'] = [];
+    }
+    if (checkbox.checked) {
+      const value = (checkbox.value || 'checked').trim();
+      if (!formData['needs[]'].includes(value)) {
+        formData['needs[]'].push(value);
+      }
+    }
+  });
+  
+  document.querySelectorAll('input[name="other_differentiation"]').forEach(field => {
+    if (field.value && field.value.trim()) {
+      formData['other_differentiation'] = field.value.trim();
+    }
+  });
+  
+  document.querySelectorAll('input[name="other_needs"]').forEach(field => {
+    if (field.value && field.value.trim()) {
+      formData['other_needs'] = field.value.trim();
+    }
+  });
+  
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+}
+
 // Обработчик отправки формы
 document.addEventListener('DOMContentLoaded', () => {
   const btnSave = document.getElementById('btnSaveRegister');
@@ -954,6 +1041,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   if (btnSave) {
     btnSave.addEventListener('click', async function() {
+      quickSave();
+      
       const STORAGE_KEY = 'regfull_form_data';
       const formData = {};
       
@@ -1514,7 +1603,34 @@ document.addEventListener('DOMContentLoaded', () => {
           msgEl.textContent = result.res || 'Datos guardados correctamente';
           msgEl.style.display = 'block';
           
-          localStorage.removeItem('regfull_form_data');
+          try {
+            const currentData = JSON.parse(localStorage.getItem('regfull_form_data') || '{}');
+            const persistentData = {};
+            
+            if (currentData['differentiation_factors[]']) {
+              persistentData['differentiation_factors[]'] = currentData['differentiation_factors[]'];
+            }
+            if (currentData['needs[]']) {
+              persistentData['needs[]'] = currentData['needs[]'];
+            }
+            if (currentData['estimated_term']) {
+              persistentData['estimated_term'] = currentData['estimated_term'];
+            }
+            if (currentData['other_differentiation']) {
+              persistentData['other_differentiation'] = currentData['other_differentiation'];
+            }
+            if (currentData['other_needs']) {
+              persistentData['other_needs'] = currentData['other_needs'];
+            }
+            
+            localStorage.removeItem('regfull_form_data');
+            
+            if (Object.keys(persistentData).length > 0) {
+              localStorage.setItem('regfull_form_data', JSON.stringify(persistentData));
+            }
+          } catch (e) {
+            localStorage.removeItem('regfull_form_data');
+          }
           
           setTimeout(() => {
             window.location.href = '?page=home';
@@ -2033,48 +2149,6 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     } catch (e) {
       // Ошибка восстановления данных
     }
-  }
-  
-  function quickSave() {
-    const formData = {};
-    
-    document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], textarea').forEach(field => {
-      if (field.type !== 'file' && !field.hidden && field.name && field.value.trim()) {
-        formData[field.name] = field.value.trim();
-      }
-    });
-    
-    document.querySelectorAll('input[type="hidden"]').forEach(field => {
-      if (field.name) {
-        formData[field.name] = field.value;
-        const dropdown = field.closest('.custom-dropdown');
-        if (dropdown) {
-          const selectedText = dropdown.querySelector('.selected-text');
-          if (selectedText && selectedText.textContent && selectedText.textContent !== '…') {
-            formData[field.name + '_text'] = selectedText.textContent;
-          }
-        }
-      }
-    });
-    
-    document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
-      if (radio.name) {
-        formData[radio.name] = radio.value;
-      }
-    });
-    
-    const checkboxValues = {};
-    document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-      if (checkbox.name) {
-        if (!checkboxValues[checkbox.name]) {
-          checkboxValues[checkbox.name] = [];
-        }
-        checkboxValues[checkbox.name].push(checkbox.value || 'checked');
-      }
-    });
-    Object.assign(formData, checkboxValues);
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
   }
   
   function fillTestData() {
