@@ -1,7 +1,7 @@
 {
     "register_title": "REGISTER DATA",
-    "register_lastname_placeholder": "Enter your Last Name",
-    "register_firstname_placeholder": "Enter your First Name",
+    "register_company_name_placeholder": "Enter your Company Name",
+    "register_tax_id_placeholder": "Enter your CUIL/CUIT",
     "register_mail_placeholder": "Enter your Email",
     "register_phone_placeholder": "Enter your WhatsApp Number",
     "register_pass_placeholder": "Enter your Password",

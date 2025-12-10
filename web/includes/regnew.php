@@ -10,7 +10,6 @@
 			<ul id="login_lang_menu" class="login_lang_menu hidden">
 				<li onclick="setLang('regnew', 'es')">Español</li>
 				<li onclick="setLang('regnew', 'en')">English</li>
-				<!-- <li onclick="setLang('regnew', 'ru')">Русский</li> -->
 			</ul>
 		</div>
         <div class="login_tit" data-i18n="register_title">REGISTRO DE DATOS</div>
@@ -18,12 +17,12 @@
             <div class="logins">
                 <div class="login_input_box">
                     <div class="login_input_inp">
-                        <input type="Text" id="lastname" data-i18n-placeholder="register_lastname_placeholder">
+                        <input type="Text" id="company_name" data-i18n-placeholder="register_company_name_placeholder">
                     </div>
                 </div>
                 <div class="login_input_box">
                     <div class="login_input_inp">
-                        <input type="Text" id="firstname" data-i18n-placeholder="register_firstname_placeholder">
+                        <input type="Text" id="tax_id" data-i18n-placeholder="register_tax_id_placeholder">
                     </div>
                 </div>
                 <div class="login_input_box">
@@ -75,14 +74,14 @@ function regUser() {
 	msgEl.innerHTML = '';
 	msgEl.classList.remove('err');
 
-	let lastname = document.getElementById('lastname').value.trim();
-	let firstname = document.getElementById('firstname').value.trim();
+	let company_name = document.getElementById('company_name').value.trim();
+	let tax_id = document.getElementById('tax_id').value.trim();
 	let mail = document.getElementById('mail').value.trim();
 	let phone = document.getElementById('phone').value.trim();
 	let pass = document.getElementById('pass').value.trim();
 	let repass = document.getElementById('repass').value.trim();
 	
-	let requiredFields = { lastname, firstname, mail, phone, pass, repass };
+	let requiredFields = { company_name, tax_id, mail, phone, pass, repass };
 	for (let field in requiredFields) {
 		const val = String(requiredFields[field]).trim();
 		if (!val) {
@@ -99,8 +98,8 @@ function regUser() {
 	}
 
 	let senddata = {
-		lastname: lastname,
-		firstname: firstname,
+		company_name: company_name,
+		tax_id: tax_id,
 		mail: mail,
 		phone: phone,
 		pass: pass
@@ -130,8 +129,8 @@ function regUser() {
 }
 function clearForm() {
 	// Clear fields
-	document.getElementById('lastname').value='';
-	document.getElementById('firstname').value='';
+	document.getElementById('company_name').value='';
+	document.getElementById('tax_id').value='';
 	document.getElementById('mail').value='';
 	document.getElementById('phone').value='';
 	document.getElementById('pass').value='';

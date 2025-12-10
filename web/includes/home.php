@@ -17,15 +17,13 @@ if (!$userData) {
     exit();
 }
 
-$lastname = htmlspecialchars($userData['last_name'] ?? '');
-$firstname = htmlspecialchars($userData['first_name'] ?? '');
+$companyName = htmlspecialchars($userData['company_name'] ?? '');
+$taxId = htmlspecialchars($userData['tax_id'] ?? '');
 $email = htmlspecialchars($userData['email'] ?? '');
 $phone = htmlspecialchars($userData['phone'] ?? '');
 
-$companyName = '';
-if (isset($userData['company_name']) && !empty($userData['company_name'])) {
-    $companyName = htmlspecialchars($userData['company_name']);
-} else {
+// Если company_name не заполнено в users, берем из companies
+if (empty($companyName)) {
     $query = "SELECT name FROM companies WHERE user_id = ? LIMIT 1";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $userId);
@@ -182,18 +180,13 @@ $visibleProducts = min(4, $totalProducts);
         
         <div class="home-form-fields">
           <div class="home-form-field">
-            <label data-i18n="home_form_lastname" class="home-form-label">Apellido:</label>
-            <input type="text" class="home-form-input" id="profile-lastname" value="<?= $lastname ?>">
-          </div>
-          
-          <div class="home-form-field">
-            <label data-i18n="home_form_firstname" class="home-form-label">Nombre:</label>
-            <input type="text" class="home-form-input" id="profile-firstname" value="<?= $firstname ?>">
-          </div>
-          
-          <div class="home-form-field">
             <label data-i18n="home_form_company" class="home-form-label">Nombre de la empresa:</label>
             <input type="text" class="home-form-input" id="profile-company" value="<?= $companyName ?>">
+          </div>
+          
+          <div class="home-form-field">
+            <label data-i18n="home_form_tax_id" class="home-form-label">CUIL/CUIT:</label>
+            <input type="text" class="home-form-input" id="profile-tax-id" value="<?= $taxId ?>">
           </div>
           
           <div class="home-form-field">
@@ -528,9 +521,8 @@ document.addEventListener('DOMContentLoaded', function() {
   
   if (saveProfileBtn) {
     saveProfileBtn.addEventListener('click', async function() {
-      const lastname = document.getElementById('profile-lastname').value.trim();
-      const firstname = document.getElementById('profile-firstname').value.trim();
       const companyName = document.getElementById('profile-company').value.trim();
+      const taxId = document.getElementById('profile-tax-id').value.trim();
       const email = document.getElementById('profile-email').value.trim();
       const phone = document.getElementById('profile-phone').value.trim();
       const password = document.getElementById('profile-password').value.trim();
@@ -555,9 +547,8 @@ document.addEventListener('DOMContentLoaded', function() {
       
       try {
         const data = {
-          lastname: lastname,
-          firstname: firstname,
           company_name: companyName,
+          tax_id: taxId,
           email: email,
           phone: phone
         };

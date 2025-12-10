@@ -25,7 +25,7 @@ if (isset($_GET['logout']) && $_GET['logout'] == '1') {
 				<div class="logins">
 					<div class="login_input_box">
 						<div class="login_input_inp">
-							<input style="width: 100%;" type="Text" id="phone" data-i18n-placeholder="login_phone_placeholder">
+							<input style="width: 100%;" type="Text" id="tax_id" data-i18n-placeholder="login_tax_id_placeholder">
 						</div>
 						<div class="login_input_ico">
 							<img src="img/icons/telephone.png">
@@ -76,10 +76,10 @@ function login() {
 	msgEl.innerHTML = '';
 	msgEl.classList.remove('err');
 
-	let phone = document.getElementById('phone').value.trim();
+	let tax_id = document.getElementById('tax_id').value.trim();
 	let pass = document.getElementById('pass').value.trim();
 	
-	let requiredFields = { phone, pass };
+	let requiredFields = { tax_id, pass };
 	for (let field in requiredFields) {
 		const val = String(requiredFields[field]).trim();
 		if (!val) {
@@ -90,7 +90,7 @@ function login() {
 	}
 
 	let senddata = {
-		phone: phone,
+		tax_id: tax_id,
 		pass: pass
 	};
 	fetch('includes/login_js.php', { method: 'POST', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify( senddata )})
@@ -119,7 +119,7 @@ function login() {
 }
 function clearForm() {
 	// Clear fields
-	document.getElementById('phone').value='';
+	document.getElementById('tax_id').value='';
 	document.getElementById('pass').value='';
 	// Clear message
 	document.getElementById('login_info_msg').innerHTML = '';

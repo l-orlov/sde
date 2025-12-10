@@ -1,7 +1,7 @@
 CREATE TABLE users (
     id         INT UNSIGNED    NOT NULL AUTO_INCREMENT,
-    first_name VARCHAR(100)    NOT NULL,
-    last_name  VARCHAR(100)    NOT NULL,
+    company_name VARCHAR(255)  NOT NULL,
+    tax_id     VARCHAR(50)     NOT NULL,
     email      VARCHAR(255)    NOT NULL,
     phone      VARCHAR(32)     NOT NULL,
     password   VARCHAR(50)     NOT NULL,

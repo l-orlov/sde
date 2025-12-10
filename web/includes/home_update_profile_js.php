@@ -37,9 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         
-        $lastname = isset($input['lastname']) ? htmlspecialchars(trim($input['lastname'])) : '';
-        $firstname = isset($input['firstname']) ? htmlspecialchars(trim($input['firstname'])) : '';
         $companyName = isset($input['company_name']) ? htmlspecialchars(trim($input['company_name'])) : '';
+        $taxId = isset($input['tax_id']) ? htmlspecialchars(trim($input['tax_id'])) : '';
         $email = isset($input['email']) ? htmlspecialchars(trim($input['email'])) : '';
         $phone = isset($input['phone']) ? htmlspecialchars(trim($input['phone'])) : '';
         $password = isset($input['password']) ? trim($input['password']) : '';
@@ -102,13 +101,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if (!empty($password)) {
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $query = "UPDATE users SET last_name = ?, first_name = ?, email = ?, phone = ?, password = ? WHERE id = ?";
+            $query = "UPDATE users SET company_name = ?, tax_id = ?, email = ?, phone = ?, password = ? WHERE id = ?";
             $stmt = mysqli_prepare($link, $query);
-            mysqli_stmt_bind_param($stmt, 'sssssi', $lastname, $firstname, $email, $phone, $hashedPassword, $userId);
+            mysqli_stmt_bind_param($stmt, 'sssssi', $companyName, $taxId, $email, $phone, $hashedPassword, $userId);
         } else {
-            $query = "UPDATE users SET last_name = ?, first_name = ?, email = ?, phone = ? WHERE id = ?";
+            $query = "UPDATE users SET company_name = ?, tax_id = ?, email = ?, phone = ? WHERE id = ?";
             $stmt = mysqli_prepare($link, $query);
-            mysqli_stmt_bind_param($stmt, 'ssssi', $lastname, $firstname, $email, $phone, $userId);
+            mysqli_stmt_bind_param($stmt, 'ssssi', $companyName, $taxId, $email, $phone, $userId);
         }
         
         if (!mysqli_stmt_execute($stmt)) {
@@ -129,18 +128,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if (!empty($companyName)) {
             if ($companyId) {
-                $query = "UPDATE companies SET name = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?";
+                $query = "UPDATE companies SET name = ?, tax_id = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?";
                 $stmt = mysqli_prepare($link, $query);
-                mysqli_stmt_bind_param($stmt, 'si', $companyName, $companyId);
+                mysqli_stmt_bind_param($stmt, 'ssi', $companyName, $taxId, $companyId);
             } else {
-                $query = "INSERT INTO companies (user_id, name, created_at, updated_at) VALUES (?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP())";
+                $query = "INSERT INTO companies (user_id, name, tax_id, created_at, updated_at) VALUES (?, ?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP())";
                 $stmt = mysqli_prepare($link, $query);
-                mysqli_stmt_bind_param($stmt, 'is', $userId, $companyName);
+                mysqli_stmt_bind_param($stmt, 'iss', $userId, $companyName, $taxId);
             }
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
         } else if ($companyId) {
-            $query = "UPDATE companies SET name = '', updated_at = UNIX_TIMESTAMP() WHERE id = ?";
+            $query = "UPDATE companies SET name = '', tax_id = '', updated_at = UNIX_TIMESTAMP() WHERE id = ?";
             $stmt = mysqli_prepare($link, $query);
             mysqli_stmt_bind_param($stmt, 'i', $companyId);
             mysqli_stmt_execute($stmt);
