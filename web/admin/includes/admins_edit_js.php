@@ -14,7 +14,7 @@ $input = json_decode($inputJSON, true);
 $id = isset($input['id']) ? intval($input['id']) : 0;
 
 if ($id <= 0) {
-    echo json_encode(['ok' => 0, 'err' => 'Not valid ID']);
+    echo json_encode(['ok' => 0, 'err' => 'ID no válido']);
     exit;
 }
 

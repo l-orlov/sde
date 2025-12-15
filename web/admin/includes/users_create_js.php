@@ -12,7 +12,7 @@ $inputJSON = file_get_contents('php://input');
 $input = json_decode($inputJSON, true);
 
 if (!$input) {
-  echo json_encode(['ok' => 0, 'err' => 'Not valid JSON']);
+  echo json_encode(['ok' => 0, 'err' => 'JSON no válido']);
   exit;
 }
 
@@ -24,7 +24,7 @@ $password = isset($input['password']) ? mysqli_real_escape_string($link, $input[
 
 // Проверка обязательных полей
 if (empty($company_name) || empty($tax_id) || empty($email) || empty($phone) || empty($password)) {
-  echo json_encode(['ok' => 0, 'err' => 'All fields are required']);
+  echo json_encode(['ok' => 0, 'err' => 'Todos los campos son obligatorios']);
   exit;
 }
 
@@ -36,7 +36,7 @@ mysqli_stmt_execute($checkStmt);
 $checkResult = mysqli_stmt_get_result($checkStmt);
 
 if (mysqli_num_rows($checkResult) > 0) {
-  echo json_encode(['ok' => 0, 'err' => 'Email or phone already exists']);
+  echo json_encode(['ok' => 0, 'err' => 'El correo electrónico o teléfono ya existe']);
   exit;
 }
 

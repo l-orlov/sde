@@ -22,7 +22,7 @@ if (!$input) {
         'res' => '',
         'ok' => 0,
         'cant' => 0,
-        'err' => "Not valid JSON",
+        'err' => "JSON no válido",
         'server_data' => $inputJSON
     ]);
     exit;
@@ -36,7 +36,7 @@ $res .= '<div class="adm_busc">
 
 	<input class="adm_busc_input" type="Text" id="busc_texto" value="'.$busc.'">
 
-	<div class="adm_busc_bt" onclick="admin_list_by_filter();">Find</div>
+	<div class="adm_busc_bt" onclick="admin_list_by_filter();">Buscar</div>
 
 </div>';
 
@@ -45,9 +45,9 @@ $res .= '<div class="adm_busc">
 $res .= '
 	<div class="adm_zag">ID</div>
 
-	<div class="adm_zag">Login</div>
+	<div class="adm_zag">Usuario</div>
 
-	<div class="adm_zag">Password</div>
+	<div class="adm_zag">Contraseña</div>
 
 	<div class="adm_zag"></div>
 

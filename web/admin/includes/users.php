@@ -18,13 +18,13 @@ $busc = '';
 
 <div class="container-fluid">
 
-	<h1 class="h3 mb-2 text-gray-800">Users</h1>
+	<h1 class="h3 mb-2 text-gray-800">Usuarios</h1>
 
 	<div class="card shadow mb-4">
 
 		<div class="card-body">
 
-			<h6 class="m-0 font-weight-bold text-primary py-3">Users list:
+			<h6 class="m-0 font-weight-bold text-primary py-3">Lista de usuarios:
 
 				<?= $count ?>
 
@@ -52,19 +52,19 @@ $busc = '';
 
 			<div class="addnew">
 
-            <div class="adm_add_tit">Company Name:</div>
+            <div class="adm_add_tit">Nombre de la Empresa:</div>
 				<div class="adm_add_txt"><input class="add_input" type="text" id="company_name"></div>
 
-				<div class="adm_add_tit">Tax ID:</div>
+				<div class="adm_add_tit">CUIL/CUIT:</div>
 				<div class="adm_add_txt"><input class="add_input" type="text" id="tax_id"></div>
 
-				<div class="adm_add_tit">Email:</div>
+				<div class="adm_add_tit">Correo electrónico:</div>
 				<div class="adm_add_txt"><input class="add_input" type="text" id="email"></div>
 
-				<div class="adm_add_tit">Phone:</div>
+				<div class="adm_add_tit">Teléfono:</div>
 				<div class="adm_add_txt"><input class="add_input" type="text" id="phone"></div>
 
-				<div class="adm_add_tit">Password:</div>
+				<div class="adm_add_tit">Contraseña:</div>
 				<div class="adm_add_txt"><input class="add_input" type="text" id="password"></div>
 
                 <div style="grid-column: 1/-1; text-align:right; font-size:30px;" onclick="user_create()">
@@ -114,7 +114,7 @@ function user_list(pg, busc) {
 	.then(data => {
 		document.getElementById('debug').innerHTML = data.debug || '';
 		document.getElementById('user_list').innerHTML = data.res;
-		document.getElementById('dataTable_info').innerHTML = 'Showing: ' + data.cant + ' users';
+		document.getElementById('dataTable_info').innerHTML = 'Mostrando: ' + data.cant + ' usuarios';
 
 		for (let i = 0; i < <?= $cc ?>; i++) {
 			let pageElem = document.getElementById('pager_' + i);
@@ -126,7 +126,7 @@ function user_list(pg, busc) {
 	})
 	.catch(error => {
 		console.error('Failed to get users list:', error);
-		document.getElementById('user_list').innerHTML = '<p style="color:red;">Failed to get users list</p>';
+		document.getElementById('user_list').innerHTML = '<p style="color:red;">Error al obtener la lista de usuarios</p>';
 	});
 }
 function user_get_edit_form(id) {
@@ -159,7 +159,7 @@ function user_get_edit_form(id) {
     })
     .catch(error => {
         console.error("Connection error:", error);
-        document.getElementById('debug').innerHTML = `<p style="color:red;">Failed to get user edit form</p>`;
+        document.getElementById('debug').innerHTML = `<p style="color:red;">Error al obtener el formulario de edición</p>`;
     });
 }
 function user_edit_save(id) {
@@ -200,11 +200,11 @@ function user_edit_save(id) {
     })
     .catch(error => {
         console.error("Connection error:", error);
-        document.getElementById('debug').innerHTML = `<p style="color:red;">Connection error</p>`;
+        document.getElementById('debug').innerHTML = `<p style="color:red;">Error de conexión</p>`;
     });
 }
 function user_del(id) {
-	if (!confirm("Are you sure to delete this data?\nThere is no way to recover the deleted data")) {
+	if (!confirm("¿Está seguro de eliminar estos datos?\nNo hay forma de recuperar los datos eliminados")) {
         return;
     }
 
@@ -223,7 +223,7 @@ function user_del(id) {
                 let countText = countElem.innerText;
                 let currentCount = parseInt(countText.split(':')[1].trim());
                 if (currentCount > 0) {
-                    countElem.innerHTML = 'Showing: ' + (currentCount - 1) + ' users';
+                    countElem.innerHTML = 'Mostrando: ' + (currentCount - 1) + ' usuarios';
                 }
             }
 		} else {
@@ -233,7 +233,7 @@ function user_del(id) {
 	})
 	.catch(error => {
 		console.error("Connection error:", error);
-		document.getElementById('debug').innerHTML = `<p style="color:red;">Connection error</p>`;
+		document.getElementById('debug').innerHTML = `<p style="color:red;">Error de conexión</p>`;
 	});
 }
 function user_create() {
@@ -271,7 +271,7 @@ function user_create() {
     })
     .catch(error => {
         console.error("Connection error:", error);
-        document.getElementById('debug').innerHTML = `<p style="color:red;">Connection error</p>`;
+        document.getElementById('debug').innerHTML = `<p style="color:red;">Error de conexión</p>`;
     });
 }
 function user_list_by_filter() {

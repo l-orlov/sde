@@ -12,7 +12,7 @@ $inputJSON = file_get_contents('php://input');
 $input = json_decode($inputJSON, true);
 
 if (!$input) {
-  echo json_encode(['ok' => 0, 'err' => 'Not valid JSON']);
+  echo json_encode(['ok' => 0, 'err' => 'JSON no válido']);
   exit;
 }
 

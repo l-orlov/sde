@@ -18,13 +18,13 @@ $busc = '';
 
 <div class="container-fluid">
 
-	<h1 class="h3 mb-2 text-gray-800">Admins</h1>
+	<h1 class="h3 mb-2 text-gray-800">Administradores</h1>
 
 	<div class="card shadow mb-4">
 
 		<div class="card-body">
 
-			<h6 class="m-0 font-weight-bold text-primary py-3">Admins list:
+			<h6 class="m-0 font-weight-bold text-primary py-3">Lista de administradores:
 
 				<?= $count ?>
 
@@ -52,10 +52,10 @@ $busc = '';
 
 			<div class="addnew">
 
-            <div class="adm_add_tit">Login:</div>
+            <div class="adm_add_tit">Usuario:</div>
 				<div class="adm_add_txt"><input class="add_input" type="text" id="login"></div>
 
-				<div class="adm_add_tit">Password:</div>
+				<div class="adm_add_tit">Contraseña:</div>
 				<div class="adm_add_txt"><input class="add_input" type="text" id="password"></div>
 
                 <div style="grid-column: 1/-1; text-align:right; font-size:30px;" onclick="admin_create()">
@@ -106,7 +106,7 @@ function admin_list(pg, busc) {
 	.then(data => {
 		document.getElementById('debug').innerHTML = data.debug || '';
 		document.getElementById('admin_list').innerHTML = data.res;
-		document.getElementById('dataTable_info').innerHTML = 'Showing: ' + data.cant + ' admins';
+		document.getElementById('dataTable_info').innerHTML = 'Mostrando: ' + data.cant + ' administradores';
 
 		for (let i = 0; i < <?= $cc ?>; i++) {
 			let pageElem = document.getElementById('pager_' + i);
@@ -118,7 +118,7 @@ function admin_list(pg, busc) {
 	})
 	.catch(error => {
 		console.error('Error en la petición:', error);
-		document.getElementById('admin_list').innerHTML = '<p style="color:red;">Failed to get admins list</p>';
+		document.getElementById('admin_list').innerHTML = '<p style="color:red;">Error al obtener la lista de administradores</p>';
 	});
 }
 function admin_get_edit_form(id) {
@@ -151,7 +151,7 @@ function admin_get_edit_form(id) {
     })
     .catch(error => {
         console.error("Connection error:", error);
-        document.getElementById('debug').innerHTML = `<p style="color:red;">Failed to get admin edit form</p>`;
+            document.getElementById('debug').innerHTML = `<p style="color:red;">Error al obtener el formulario de edición</p>`;
     });
 }
 function admin_edit_save(id) {
@@ -188,7 +188,7 @@ function admin_edit_save(id) {
     });
 }
 function admin_del(id) {
-	if (!confirm("Are you sure to delete this data?\nThere is no way to recover the deleted data")) {
+	if (!confirm("¿Está seguro de eliminar estos datos?\nNo hay forma de recuperar los datos eliminados")) {
         return;
     }
 
@@ -207,7 +207,7 @@ function admin_del(id) {
                 let countText = countElem.innerText;
                 let currentCount = parseInt(countText.split(':')[1].trim());
                 if (currentCount > 0) {
-                    countElem.innerHTML = 'Showing: ' + (currentCount - 1) + ' admins';
+                    countElem.innerHTML = 'Mostrando: ' + (currentCount - 1) + ' administradores';
                 }
             }
 		} else {

@@ -20,7 +20,7 @@ if (!$input) {
     echo json_encode([
         'res' => '',
         'ok' => 0,
-        'err' => "Not valid JSON",
+        'err' => "JSON no válido",
         'server' => $inputJSON
     ]);
     exit;
@@ -30,7 +30,7 @@ if (!isset($input['login'], $input['pass']) || empty($input['login']) || empty($
     echo json_encode([
         'res' => $res,
         'ok' => 0,
-        'err' => "Required fields are missing",
+        'err' => "Faltan campos obligatorios",
         'server' => $input
     ]);
     exit;
@@ -49,7 +49,7 @@ if ($row = mysqli_fetch_assoc($result)) {
     $_SESSION['admid'] = $row['id'];
     $ok = 1;
 } else {
-    $err = "Not valid login o password";
+    $err = "Usuario o contraseña no válidos";
 }
 
 $return = [

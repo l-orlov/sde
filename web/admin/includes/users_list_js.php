@@ -20,7 +20,7 @@ if (!$input) {
         'res' => '',
         'ok' => 0,
         'cant' => 0,
-        'err' => "Not valid JSON",
+        'err' => "JSON no válido",
         'server_data' => $inputJSON
     ]);
     exit;
@@ -31,17 +31,17 @@ $busc = isset($input['busc'])	? trim($input['busc']) : '';
 
 $res .= '<div class="adm_busc">
 	<input class="adm_busc_input" type="Text" id="busc_texto" value="'.$busc.'">
-	<div class="adm_busc_bt" onclick="user_list_by_filter();">Find</div>
+	<div class="adm_busc_bt" onclick="user_list_by_filter();">Buscar</div>
 </div>';
 
 $res .= '
 	<div class="adm_zag">ID</div>
-	<div class="adm_zag">Company Name</div>
-	<div class="adm_zag">Tax ID</div>
-	<div class="adm_zag">Email</div>
-	<div class="adm_zag">Phone</div>
-	<div class="adm_zag">Created at</div>
-	<div class="adm_zag">Updated at</div>
+	<div class="adm_zag">Nombre de la Empresa</div>
+	<div class="adm_zag">CUIL/CUIT</div>
+	<div class="adm_zag">Correo electrónico</div>
+	<div class="adm_zag">Teléfono</div>
+	<div class="adm_zag">Creado el</div>
+	<div class="adm_zag">Actualizado el</div>
 	<div class="adm_zag"></div>
 	<div class="adm_zag"></div>
 ';

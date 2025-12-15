@@ -14,7 +14,7 @@ $input = json_decode($inputJSON, true);
 $id = isset($input['id']) ? intval($input['id']) : 0;
 
 if ($id <= 0) {
-    echo json_encode(['ok' => 0, 'err' => 'Not valid ID']);
+    echo json_encode(['ok' => 0, 'err' => 'ID no válido']);
     exit;
 }
 
@@ -31,7 +31,7 @@ mysqli_stmt_execute($checkStmt);
 $checkResult = mysqli_stmt_get_result($checkStmt);
 
 if (mysqli_num_rows($checkResult) > 0) {
-    echo json_encode(['ok' => 0, 'err' => 'Email or phone already exists']);
+    echo json_encode(['ok' => 0, 'err' => 'El correo electrónico o teléfono ya existe']);
     exit;
 }
 

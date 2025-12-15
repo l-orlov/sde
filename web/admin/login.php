@@ -44,21 +44,21 @@ ob_implicit_flush();
                              </div>
                                 <div class="p-5">
                                     <div class="text-center">
-                                        <h1 class="h4 text-gray-900 mb-4">Welcome</h1>
+                                        <h1 class="h4 text-gray-900 mb-4">Bienvenido</h1>
                                     </div>
                                     <form class="user">
                                         <div class="form-group">
                                             <input type="text" class="form-control form-control-user"
-                                                id="inputLogin" placeholder="Login">
+                                                id="inputLogin" placeholder="Usuario">
                                         </div>
 
                                         <div class="form-group">
                                             <input type="password" class="form-control form-control-user"
-                                                id="inputPassword" placeholder="Password">
+                                                id="inputPassword" placeholder="Contraseña">
                                         </div>
 
 										<div onclick="loginAdm()" class="btn btn-primary btn-user btn-block">
-                                            Login
+                                            Iniciar sesión
                                         </div>
 
                                     </form>

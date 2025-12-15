@@ -15,7 +15,7 @@ $inputJSON = file_get_contents('php://input');
 $input = json_decode($inputJSON, true);
 
 if (!isset($input['id']) || !is_numeric($input['id'])) {
-    echo json_encode(["ok" => 0, "err" => "Not valid ID"]);
+    echo json_encode(["ok" => 0, "err" => "ID no válido"]);
     exit;
 }
 
@@ -28,7 +28,7 @@ mysqli_stmt_bind_param($stmt, 'i', $id);
 if (mysqli_stmt_execute($stmt)) {
     $ok = 1;
 } else {
-    $res = "Failed to delete: " . mysqli_stmt_error($stmt);
+    $res = "Error al eliminar: " . mysqli_stmt_error($stmt);
 }
 
 echo json_encode([
