@@ -5,6 +5,7 @@ CREATE TABLE users (
     email      VARCHAR(255)    NOT NULL,
     phone      VARCHAR(32)     NOT NULL,
     password   VARCHAR(50)     NOT NULL,
+    is_admin   TINYINT(1)      NOT NULL DEFAULT 0,
     created_at INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),
     updated_at INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),
 
@@ -12,6 +13,8 @@ CREATE TABLE users (
     UNIQUE KEY `users_phone_uidx` (`phone`),
     UNIQUE KEY `users_email_uidx` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- alter table users add column is_admin TINYINT(1) NOT NULL DEFAULT 0;
 
 -- Таблица компаний
 CREATE TABLE companies (
