@@ -60,11 +60,9 @@ if ($page =='logout' ) include 'includes/logout.php';
 
 <?
 SWITCH ( $page ) {
-    case 'tgbotusers':          include "includes/tg_bot_users.php";            break;
-    case 'tgbotactions':        include "includes/tg_bot_actions.php";          break;
-    case 'tgbotstarttemplates': include "includes/tg_bot_start_templates.php";  break;
+    case 'users':               include "includes/users.php";                  break;
     case 'admins':              include "includes/admins.php";                  break;
-    default:                    include "includes/tg_bot_users.php";            break;
+    default:                    include "includes/users.php";                    break;
 }
 ?>
 

@@ -10,23 +10,9 @@
             <hr class="sidebar-divider">
 
             <li class="nav-item">
-                <a class="nav-link" href="index.php?page=tgbotusers">
+                <a class="nav-link" href="index.php?page=users">
                     <img src="img/db_table.png" class="nav-icon-size">
-                    <span>TG bot users</span>
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" href="index.php?page=tgbotactions">
-                    <img src="img/db_table.png" class="nav-icon-size">
-                    <span>TG bot actions</span>
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" href="index.php?page=tgbotstarttemplates">
-                    <img src="img/db_table.png" class="nav-icon-size">
-                    <span>TG bot start templates</span>
+                    <span>Users</span>
                 </a>
             </li>
 

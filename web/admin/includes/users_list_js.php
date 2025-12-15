@@ -31,17 +31,15 @@ $busc = isset($input['busc'])	? trim($input['busc']) : '';
 
 $res .= '<div class="adm_busc">
 	<input class="adm_busc_input" type="Text" id="busc_texto" value="'.$busc.'">
-	<div class="adm_busc_bt" onclick="action_list_by_filter();">Find</div>
+	<div class="adm_busc_bt" onclick="user_list_by_filter();">Find</div>
 </div>';
 
 $res .= '
 	<div class="adm_zag">ID</div>
-	<div class="adm_zag">User ID</div>
-	<div class="adm_zag">Username</div>
-	<div class="adm_zag">Command</div>
-	<div class="adm_zag">Parameter</div>
-	<div class="adm_zag">Status</div>
-	<div class="adm_zag">Fail reason</div>
+	<div class="adm_zag">Company Name</div>
+	<div class="adm_zag">Tax ID</div>
+	<div class="adm_zag">Email</div>
+	<div class="adm_zag">Phone</div>
 	<div class="adm_zag">Created at</div>
 	<div class="adm_zag">Updated at</div>
 	<div class="adm_zag"></div>
@@ -52,16 +50,15 @@ $pger = $page;
 $c = 250;
 $pger *= $c;
 
-$query="SELECT * FROM tg_bot_actions";
+$query="SELECT * FROM users";
 
 if ( strlen($busc) > 0 ) {
 	$query .= " WHERE 
-			id			LIKE '%".$busc."%' OR 
-			user_id		LIKE '%".$busc."%' OR 
-			username	LIKE '%".$busc."%' OR 
-			command		LIKE '%".$busc."%' OR 
-			parameter	LIKE '%".$busc."%' OR 
-			fail_reason	LIKE '%".$busc."%'";
+			id				LIKE '%".mysqli_real_escape_string($link, $busc)."%' OR 
+			company_name	LIKE '%".mysqli_real_escape_string($link, $busc)."%' OR 
+			tax_id			LIKE '%".mysqli_real_escape_string($link, $busc)."%' OR 
+			email			LIKE '%".mysqli_real_escape_string($link, $busc)."%' OR 
+			phone			LIKE '%".mysqli_real_escape_string($link, $busc)."%'";
 }
 
 $query .= " ORDER BY id DESC LIMIT ".$pger.", ".$c."";
@@ -84,19 +81,17 @@ while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
 	$cant++;
 	$res .= '
 		<div class="adm_list_txt" id="c0_'.$row['id'].'">'.$row['id'].'</div>
-		<div class="adm_list_txt" id="c1_'.$row['id'].'">'.$row['user_id'].'</div>
-		<div class="adm_list_txt" id="c2_'.$row['id'].'">'.$row['username'].'</div>
-		<div class="adm_list_txt" id="c3_'.$row['id'].'">'.$row['command'].'</div>
-		<div class="adm_list_txt" id="c4_'.$row['id'].'">'.$row['parameter'].'</div>
-		<div class="adm_list_txt" id="c5_'.$row['id'].'">'.$row['status'].'</div>
-		<div class="adm_list_txt" id="c6_'.$row['id'].'">'.$row['fail_reason'].'</div>
-		<div class="adm_list_txt" id="c7_'.$row['id'].'">'.$created_at_human.'</div>
-		<div class="adm_list_txt" id="c8_'.$row['id'].'">'.$updated_at_human.'</div>
-		<div class="adm_list_txt pad" id="c9_'.$row['id'].'">
-			<img id="edit_icon_'.$row['id'].'" onclick="action_get_edit_form('.$row['id'].')" src="img/edit.png" class="edit-icon-size">
+		<div class="adm_list_txt" id="c1_'.$row['id'].'">'.htmlspecialchars($row['company_name']).'</div>
+		<div class="adm_list_txt" id="c2_'.$row['id'].'">'.htmlspecialchars($row['tax_id']).'</div>
+		<div class="adm_list_txt" id="c3_'.$row['id'].'">'.htmlspecialchars($row['email']).'</div>
+		<div class="adm_list_txt" id="c4_'.$row['id'].'">'.htmlspecialchars($row['phone']).'</div>
+		<div class="adm_list_txt" id="c5_'.$row['id'].'">'.$created_at_human.'</div>
+		<div class="adm_list_txt" id="c6_'.$row['id'].'">'.$updated_at_human.'</div>
+		<div class="adm_list_txt pad" id="c7_'.$row['id'].'">
+			<img id="edit_icon_'.$row['id'].'" onclick="user_get_edit_form('.$row['id'].')" src="img/edit.png" class="edit-icon-size">
 		</div>
-		<div class="adm_list_txt pad" id="c10_'.$row['id'].'">
-			<img onclick="action_del('.$row['id'].')" src="img/trash.png" class="edit-icon-size">
+		<div class="adm_list_txt pad" id="c8_'.$row['id'].'">
+			<img onclick="user_del('.$row['id'].')" src="img/trash.png" class="edit-icon-size">
 		</div>
 		<div class="adm_list_edit_box" id="adm_list_edit_box'.$row['id'].'"></div>
 	';
@@ -108,3 +103,4 @@ echo json_encode([
     "cant" => $cant,
 ]);
 ?>
+

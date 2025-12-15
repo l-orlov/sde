@@ -21,7 +21,7 @@ if (!isset($input['id']) || !is_numeric($input['id'])) {
 
 $id = intval($input['id']);
 
-$query = "DELETE FROM tg_bot_actions WHERE id = ?";
+$query = "DELETE FROM users WHERE id = ?";
 $stmt = mysqli_prepare($link, $query);
 mysqli_stmt_bind_param($stmt, 'i', $id);
 
@@ -36,3 +36,4 @@ echo json_encode([
     "res" => $res
 ]);
 ?>
+
