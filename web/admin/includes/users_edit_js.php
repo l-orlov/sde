@@ -22,6 +22,7 @@ $company_name = isset($input['company_name']) ? mysqli_real_escape_string($link,
 $tax_id = isset($input['tax_id']) ? mysqli_real_escape_string($link, $input['tax_id']) : '';
 $email = isset($input['email']) ? mysqli_real_escape_string($link, $input['email']) : '';
 $phone = isset($input['phone']) ? mysqli_real_escape_string($link, $input['phone']) : '';
+$is_admin = isset($input['is_admin']) ? intval($input['is_admin']) : 0;
 
 // Проверка уникальности email и phone (кроме текущего пользователя)
 $checkQuery = "SELECT id FROM users WHERE (email = ? OR phone = ?) AND id != ?";
@@ -40,17 +41,18 @@ $query = "UPDATE users SET
     tax_id = ?,
     email = ?,
     phone = ?,
+    is_admin = ?,
     updated_at = UNIX_TIMESTAMP()
 WHERE id = ?";
 
 $stmt = mysqli_prepare($link, $query);
-mysqli_stmt_bind_param($stmt, "ssssi", 
-    $company_name, $tax_id, $email, $phone, $id
+mysqli_stmt_bind_param($stmt, "ssssii", 
+    $company_name, $tax_id, $email, $phone, $is_admin, $id
 );
 $success = mysqli_stmt_execute($stmt);
 
 if ($success) {
-    $selectQuery = "SELECT id, company_name, tax_id, email, phone, created_at, updated_at FROM users WHERE id = ?";
+    $selectQuery = "SELECT id, company_name, tax_id, email, phone, is_admin, created_at, updated_at FROM users WHERE id = ?";
     $stmt = mysqli_prepare($link, $selectQuery);
     mysqli_stmt_bind_param($stmt, "i", $id);
     mysqli_stmt_execute($stmt);
@@ -63,6 +65,7 @@ if ($success) {
         'tax_id' => $user['tax_id'],
         'email' => $user['email'],
         'phone' => $user['phone'],
+        'is_admin' => $user['is_admin'],
         'created_at' => date('Y-m-d H:i', $user['created_at']),
         'updated_at' => date('Y-m-d H:i', $user['updated_at']),
     ];

@@ -21,6 +21,7 @@ $tax_id = isset($input['tax_id']) ? mysqli_real_escape_string($link, $input['tax
 $email = isset($input['email']) ? mysqli_real_escape_string($link, $input['email']) : '';
 $phone = isset($input['phone']) ? mysqli_real_escape_string($link, $input['phone']) : '';
 $password = isset($input['password']) ? mysqli_real_escape_string($link, $input['password']) : '';
+$is_admin = isset($input['is_admin']) ? intval($input['is_admin']) : 0;
 
 // Проверка обязательных полей
 if (empty($company_name) || empty($tax_id) || empty($email) || empty($phone) || empty($password)) {
@@ -41,8 +42,8 @@ if (mysqli_num_rows($checkResult) > 0) {
 }
 
 $query = "INSERT INTO users 
-  (company_name, tax_id, email, phone, password) 
-  VALUES (?, ?, ?, ?, ?)";
+  (company_name, tax_id, email, phone, password, is_admin) 
+  VALUES (?, ?, ?, ?, ?, ?)";
 
 $stmt = mysqli_prepare($link, $query);
 if (!$stmt) {
@@ -52,8 +53,8 @@ if (!$stmt) {
 
 mysqli_stmt_bind_param(
   $stmt, 
-  "sssss",
-  $company_name, $tax_id, $email, $phone, $password
+  "sssssi",
+  $company_name, $tax_id, $email, $phone, $password, $is_admin
 );
 
 $success = mysqli_stmt_execute($stmt);

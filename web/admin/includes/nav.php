@@ -15,12 +15,5 @@
                     <span>Usuarios</span>
                 </a>
             </li>
-
-            <li class="nav-item">
-                <a class="nav-link" href="index.php?page=admins">
-                    <img src="img/db_table.png" class="nav-icon-size">
-                    <span>Administradores</span>
-                </a>
-            </li>
      
         </ul>

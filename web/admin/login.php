@@ -27,8 +27,6 @@ ob_implicit_flush();
     <link href="css/style.css" rel="stylesheet">
 </head>
 
-<div id="mensaje"></div>
-
 <body class="bg-primary">
     <div class="container">
         <!-- Outer Row -->
@@ -49,13 +47,15 @@ ob_implicit_flush();
                                     <form class="user">
                                         <div class="form-group">
                                             <input type="text" class="form-control form-control-user"
-                                                id="inputLogin" placeholder="Usuario">
+                                                id="inputLogin" placeholder="Email o CUIL/CUIT">
                                         </div>
 
                                         <div class="form-group">
                                             <input type="password" class="form-control form-control-user"
                                                 id="inputPassword" placeholder="Contraseña">
                                         </div>
+
+                                        <div id="mensaje"></div>
 
 										<div onclick="loginAdm()" class="btn btn-primary btn-user btn-block">
                                             Iniciar sesión
@@ -92,7 +92,7 @@ function loginAdm() {
     mensajeDiv.innerHTML = '';
 
     if (login === "" || pass === "") {
-        debug.innerHTML = '<p style="color:red;">Por favor, complete ambos campos.</p>';
+        mensajeDiv.innerHTML = '<p style="color:red;">Por favor, complete ambos campos.</p>';
         return;
     }
 

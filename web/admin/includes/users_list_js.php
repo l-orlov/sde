@@ -40,6 +40,7 @@ $res .= '
 	<div class="adm_zag">CUIL/CUIT</div>
 	<div class="adm_zag">Correo electrónico</div>
 	<div class="adm_zag">Teléfono</div>
+	<div class="adm_zag">Es Admin</div>
 	<div class="adm_zag">Creado el</div>
 	<div class="adm_zag">Actualizado el</div>
 	<div class="adm_zag"></div>
@@ -78,6 +79,7 @@ while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
 	$created_at_human = date('Y-m-d H:i', $row['created_at']);
 	$updated_at_human = date('Y-m-d H:i', $row['updated_at']);
 
+	$is_admin_text = ($row['is_admin'] == 1) ? 'Sí' : 'No';
 	$cant++;
 	$res .= '
 		<div class="adm_list_txt" id="c0_'.$row['id'].'">'.$row['id'].'</div>
@@ -85,12 +87,13 @@ while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
 		<div class="adm_list_txt" id="c2_'.$row['id'].'">'.htmlspecialchars($row['tax_id']).'</div>
 		<div class="adm_list_txt" id="c3_'.$row['id'].'">'.htmlspecialchars($row['email']).'</div>
 		<div class="adm_list_txt" id="c4_'.$row['id'].'">'.htmlspecialchars($row['phone']).'</div>
-		<div class="adm_list_txt" id="c5_'.$row['id'].'">'.$created_at_human.'</div>
-		<div class="adm_list_txt" id="c6_'.$row['id'].'">'.$updated_at_human.'</div>
-		<div class="adm_list_txt pad" id="c7_'.$row['id'].'">
+		<div class="adm_list_txt" id="c5_'.$row['id'].'">'.$is_admin_text.'</div>
+		<div class="adm_list_txt" id="c6_'.$row['id'].'">'.$created_at_human.'</div>
+		<div class="adm_list_txt" id="c7_'.$row['id'].'">'.$updated_at_human.'</div>
+		<div class="adm_list_txt pad" id="c8_'.$row['id'].'">
 			<img id="edit_icon_'.$row['id'].'" onclick="user_get_edit_form('.$row['id'].')" src="img/edit.png" class="edit-icon-size">
 		</div>
-		<div class="adm_list_txt pad" id="c8_'.$row['id'].'">
+		<div class="adm_list_txt pad" id="c9_'.$row['id'].'">
 			<img onclick="user_del('.$row['id'].')" src="img/trash.png" class="edit-icon-size">
 		</div>
 		<div class="adm_list_edit_box" id="adm_list_edit_box'.$row['id'].'"></div>

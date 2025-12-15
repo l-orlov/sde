@@ -61,7 +61,6 @@ if ($page =='logout' ) include 'includes/logout.php';
 <?
 SWITCH ( $page ) {
     case 'users':               include "includes/users.php";                  break;
-    case 'admins':              include "includes/admins.php";                  break;
     default:                    include "includes/users.php";                    break;
 }
 ?>

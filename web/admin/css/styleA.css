@@ -4,31 +4,10 @@
 }
 /* Navbar */
 
-.table-responsive.tg_bot_users {
+.table-responsive.users {
 	width: 100%;
 	display: grid;
-	grid-template-columns: repeat(6, max-content) repeat(2, 40px);
-	grid-gap: 0px;
-	overflow-x: auto;
-}
-.table-responsive.tg_bot_actions {
-	width: 100%;
-	display: grid;
-	grid-template-columns: repeat(9, max-content) repeat(2, 40px);
-	grid-gap: 0px;
-	overflow-x: auto;
-}
-.table-responsive.templates {
-	width: 100%;
-	display: grid;
-	grid-template-columns: repeat(3, max-content) repeat(2, 40px);
-	grid-gap: 0px;
-	overflow-x: auto;
-}
-.table-responsive.admins {
-	width: 100%;
-	display: grid;
-	grid-template-columns: repeat(3, max-content) repeat(2, 40px);
+	grid-template-columns: repeat(8, max-content) repeat(2, 40px);
 	grid-gap: 0px;
 	overflow-x: auto;
 }
@@ -239,4 +218,18 @@
 
 .readonly-checkbox {
     pointer-events: none;
+}
+
+/* Login error message */
+#mensaje {
+    text-align: center;
+    margin: 10px 0 15px 0;
+    padding: 10px;
+    min-height: 20px;
+    font-size: 14px;
+}
+
+#mensaje p {
+    margin: 0;
+    padding: 0;
 }

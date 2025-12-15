@@ -67,6 +67,14 @@ $busc = '';
 				<div class="adm_add_tit">Contraseña:</div>
 				<div class="adm_add_txt"><input class="add_input" type="text" id="password"></div>
 
+				<div class="adm_add_tit">Es Administrador:</div>
+				<div class="adm_add_txt">
+					<select class="add_input" id="is_admin">
+						<option value="0">No</option>
+						<option value="1">Sí</option>
+					</select>
+				</div>
+
                 <div style="grid-column: 1/-1; text-align:right; font-size:30px;" onclick="user_create()">
                     <img id="saveIcon" src="img/save.png" class="icon-size">
                 </div>
@@ -168,7 +176,8 @@ function user_edit_save(id) {
         company_name:		    document.getElementById('company_name' + id)?.value    || '',
         tax_id:		            document.getElementById('tax_id' + id)?.value        || '',
         email:		            document.getElementById('email' + id)?.value            || '',
-        phone:		            document.getElementById('phone' + id)?.value            || ''
+        phone:		            document.getElementById('phone' + id)?.value            || '',
+        is_admin:		        document.getElementById('is_admin' + id)?.value        || '0'
     };
 
     fetch('includes/users_edit_js.php', {
@@ -191,8 +200,9 @@ function user_edit_save(id) {
             document.getElementById('c2_' + id).innerHTML = responseData.user.tax_id;
             document.getElementById('c3_' + id).innerHTML = responseData.user.email;
             document.getElementById('c4_' + id).innerHTML = responseData.user.phone;
-            document.getElementById('c5_' + id).innerHTML = responseData.user.created_at;
-            document.getElementById('c6_' + id).innerHTML = responseData.user.updated_at;
+            document.getElementById('c5_' + id).innerHTML = responseData.user.is_admin == 1 ? 'Sí' : 'No';
+            document.getElementById('c6_' + id).innerHTML = responseData.user.created_at;
+            document.getElementById('c7_' + id).innerHTML = responseData.user.updated_at;
         } else {
             console.error("Failed to save:", responseData.err);
             document.getElementById('debug').innerHTML = `<p style="color:red;">Error: ${responseData.err}</p>`;
@@ -242,7 +252,8 @@ function user_create() {
         tax_id:		    document.getElementById('tax_id')?.value		    || '',
         email:		    document.getElementById('email')?.value		    || '',
         phone:		    document.getElementById('phone')?.value		    || '',
-        password:		document.getElementById('password')?.value		|| ''
+        password:		document.getElementById('password')?.value		|| '',
+        is_admin:		document.getElementById('is_admin')?.value		|| '0'
     };
 
     fetch('includes/users_create_js.php', {
@@ -262,6 +273,7 @@ function user_create() {
             document.getElementById('email').value = '';
             document.getElementById('phone').value = '';
             document.getElementById('password').value = '';
+            document.getElementById('is_admin').value = '0';
 
             user_list(0, '');
         } else {

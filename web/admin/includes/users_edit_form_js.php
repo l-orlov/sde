@@ -48,6 +48,14 @@ $res .= '
 
     <div class="adm_list_txt">Teléfono:</div>
     <div class="adm_list_txt"><input class="edit_input" type="text" id="phone' . $row['id'] . '" value="' . htmlspecialchars($row['phone'] ?? '') . '"></div>
+
+    <div class="adm_list_txt">Es Administrador:</div>
+    <div class="adm_list_txt">
+        <select class="edit_input" id="is_admin' . $row['id'] . '">
+            <option value="0"' . (($row['is_admin'] ?? 0) == 0 ? ' selected' : '') . '>No</option>
+            <option value="1"' . (($row['is_admin'] ?? 0) == 1 ? ' selected' : '') . '>Sí</option>
+        </select>
+    </div>
     
     <div style="grid-column: 1/-1; text-align:center; margin-top: 5px; ">
         <img src="img/save.png" width="30" height="30" onclick="user_edit_save(' . $row['id'] . ')" style="cursor: pointer;">

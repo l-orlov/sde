@@ -39,9 +39,11 @@ if (!isset($input['login'], $input['pass']) || empty($input['login']) || empty($
 $login = $input['login'];
 $pass = $input['pass'];
 
-$query = "SELECT id, login FROM admins WHERE login = ? AND password = ?";
+// Проверяем пользователя в таблице users с is_admin = 1
+// login может быть email или tax_id
+$query = "SELECT id, email, tax_id FROM users WHERE (email = ? OR tax_id = ?) AND password = ? AND is_admin = 1";
 $stmt = mysqli_prepare($link, $query);
-mysqli_stmt_bind_param($stmt, 'ss', $login, $pass);
+mysqli_stmt_bind_param($stmt, 'sss', $login, $login, $pass);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 
@@ -49,7 +51,7 @@ if ($row = mysqli_fetch_assoc($result)) {
     $_SESSION['admid'] = $row['id'];
     $ok = 1;
 } else {
-    $err = "Usuario o contraseña no válidos";
+    $err = "Usuario o contraseña no válidos o no tiene permisos de administrador";
 }
 
 $return = [
