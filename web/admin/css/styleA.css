@@ -20,7 +20,7 @@
 }
 .scroll-buttons:hover {
 	color: white;
-	background:#2967EC;
+	background:#0082C6;
 }
 .loading {
 	max-width: 45px;
@@ -30,7 +30,7 @@
 	box-sizing: border-box;
 }
 .adm_zag {
-	background-color: #2967EC !important;
+	background-color: #0082C6 !important;
 	color: #FFF;
 	display: flex;
     justify-content: center;
@@ -120,7 +120,7 @@
 	border: 1px solid #CCC;
 }
 .adm_busc_bt {
-	background-color: #2967EC !important;
+	background-color: #0082C6 !important;
 	color: white !important;
 	border-radius: 5px;
 	padding: 5px 10px;
@@ -133,7 +133,7 @@
 	cursor: pointer;
 }
 .adm_busc_bt:hover {
-	background-color: #1f53c6 !important;
+	background-color: #006ba3 !important;
 }
 
 /* Pager */
