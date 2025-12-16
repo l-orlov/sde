@@ -1,11 +1,15 @@
 <?
+ob_start();
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 set_time_limit(0);
-error_reporting(E_ALL);
-ob_implicit_flush();
 
-include "../../includes/functions.php";
+include __DIR__ . '/path_helper.php';
+include getIncludesFilePath('functions.php');
 DBconnect();
 
 $return = [];
@@ -17,6 +21,8 @@ $inputJSON = file_get_contents('php://input');
 $input = json_decode($inputJSON, true);
 
 if (!$input) {
+    if (ob_get_level()) ob_clean();
+    header('Content-Type: application/json');
     echo json_encode([
         'res' => '',
         'ok' => 0,
@@ -27,6 +33,8 @@ if (!$input) {
 }
 
 if (!isset($input['login'], $input['pass']) || empty($input['login']) || empty($input['pass'])) {
+    if (ob_get_level()) ob_clean();
+    header('Content-Type: application/json');
     echo json_encode([
         'res' => $res,
         'ok' => 0,
@@ -61,5 +69,7 @@ $return = [
     'server' => $input
 ];
 
+ob_clean();
+header('Content-Type: application/json');
 echo json_encode($return);
 ?>

@@ -4,6 +4,9 @@ date_default_timezone_set('America/Argentina/Buenos_Aires');
 set_time_limit (0);
 error_reporting(E_ALL);
 ob_implicit_flush();
+
+include __DIR__ . '/includes/path_helper.php';
+$basePath = getAdminBasePath();
 ?>
 
 <!DOCTYPE html>
@@ -18,13 +21,13 @@ ob_implicit_flush();
     <title>Admin</title>
 
     <!-- Custom fonts for this template-->
-    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="<?= $basePath ?>vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
 
     <link
         href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
         rel="stylesheet">
     <!-- Custom styles for this template-->
-    <link href="css/style.css" rel="stylesheet">
+    <link href="<?= $basePath ?>css/style.css" rel="stylesheet">
 </head>
 
 <body class="bg-primary">
@@ -38,7 +41,7 @@ ob_implicit_flush();
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="text-center">
-                                 <img class="pt-5" src="./img/logo.png" style="max-width: 300px; width: 100%;">
+                                 <img class="pt-5" src="<?= $basePath ?>img/logo.png" style="max-width: 300px; width: 100%;">
                              </div>
                                 <div class="p-5">
                                     <div class="text-center">
@@ -72,14 +75,14 @@ ob_implicit_flush();
     </div>
 
     <!-- Bootstrap core JavaScript-->
-    <script src="vendor/jquery/jquery.min.js"></script>
-    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= $basePath ?>vendor/jquery/jquery.min.js"></script>
+    <script src="<?= $basePath ?>vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
     <!-- Core plugin JavaScript-->
-    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="<?= $basePath ?>vendor/jquery-easing/jquery.easing.min.js"></script>
 
     <!-- Custom scripts for all pages-->
-    <script src="js/sb-admin-2.min.js"></script>
+    <script src="<?= $basePath ?>js/sb-admin-2.min.js"></script>
 </body>
 </html>
 
@@ -96,7 +99,19 @@ function loginAdm() {
         return;
     }
 
-    fetch('/admin/includes/login_js.php', {
+    // Определяем базовый путь автоматически
+    var basePath = window.location.pathname;
+    var adminPos = basePath.lastIndexOf('/admin');
+    if (adminPos !== -1) {
+        basePath = basePath.substring(0, adminPos + 6); // +6 для '/admin'
+    } else {
+        basePath = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+    }
+    if (basePath[basePath.length - 1] !== '/') {
+        basePath += '/';
+    }
+
+    fetch(basePath + 'includes/login_js.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ login, pass })
@@ -110,7 +125,7 @@ function loginAdm() {
         let ok = res_arr['ok'];
         let err = res_arr['err'];
         if (ok === 1) {
-            window.location.href = "/admin/index.php";
+            window.location.href = basePath + "index.php";
         } else {
             mensajeDiv.innerHTML = `<p style='color:red;'>Error: ${data.err}</p>`;
         }

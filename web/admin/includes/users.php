@@ -1,4 +1,10 @@
 <?
+// Определяем базовый путь, если он еще не определен
+if (!isset($basePath)) {
+    include __DIR__ . '/path_helper.php';
+    $basePath = getAdminBasePath();
+}
+
 $query = "SELECT COUNT(id) as cprod FROM users";
 
 $result = mysqli_query($link, $query) or die("SQL query error: " . basename(__FILE__) . " <b>$query</b><br>at line: " . __LINE__);
@@ -47,7 +53,7 @@ $busc = '';
 			<div class="uploadload" id="uploadload"></div>
 
             <div class="addnew_ico" onclick="user_add_open()">
-                <img id="plusIcon" src="img/plus.png" class="icon-size">
+                <img id="plusIcon" src="<?= $basePath ?>img/plus.png" class="icon-size">
             </div>
 
 			<div class="addnew">
@@ -76,7 +82,7 @@ $busc = '';
 				</div>
 
                 <div style="grid-column: 1/-1; text-align:right; font-size:30px;" onclick="user_create()">
-                    <img id="saveIcon" src="img/save.png" class="icon-size">
+                    <img id="saveIcon" src="<?= $basePath ?>img/save.png" class="icon-size">
                 </div>
 
 			</div>
@@ -98,22 +104,34 @@ $busc = '';
 	</div>
 
 <script>
+// Определяем базовый путь автоматически
+var basePath = window.location.pathname;
+var adminPos = basePath.lastIndexOf('/admin');
+if (adminPos !== -1) {
+    basePath = basePath.substring(0, adminPos + 6); // +6 для '/admin'
+} else {
+    basePath = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+}
+if (basePath[basePath.length - 1] !== '/') {
+    basePath += '/';
+}
+
 function user_add_open() {
     let st = document.querySelector('.addnew');
     let plusIcon = document.getElementById('plusIcon');
 
     if (st.style.display === 'grid') {
         st.style.display = 'none';
-        plusIcon.src = "img/plus.png";
+        plusIcon.src = basePath + "img/plus.png";
     } else {
         st.style.display = 'grid';
-        plusIcon.src = "img/close.png";
+        plusIcon.src = basePath + "img/close.png";
     }
 }
 function user_list(pg, busc) {
-	document.getElementById('user_list').innerHTML = '<img class="loading" src="img/loading_modern.gif">';
+	document.getElementById('user_list').innerHTML = '<img class="loading" src="' + basePath + 'img/loading_modern.gif">';
 
-	fetch('includes/users_list_js.php', {
+	fetch(basePath + 'includes/users_list_js.php', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ pg, busc })
@@ -143,11 +161,11 @@ function user_get_edit_form(id) {
 
     if (editBox.style.display === "grid") {
         editBox.style.display = "none";
-        if (editIcon) editIcon.src = "img/edit.png";
+        if (editIcon) editIcon.src = basePath + "img/edit.png";
         return;
     }
 
-    fetch('includes/users_edit_form_js.php', {
+    fetch(basePath + 'includes/users_edit_form_js.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
@@ -159,7 +177,7 @@ function user_get_edit_form(id) {
             editBox.innerHTML = data.res;
             editBox.style.display = "grid";
 
-            if (editIcon) editIcon.src = "img/close.png";
+            if (editIcon) editIcon.src = basePath + "img/close.png";
         } else {
             console.error("Failed to get user edit form:", data.err);
             document.getElementById('debug').innerHTML = `<p style="color:red;">Error: ${data.err}</p>`;
@@ -180,7 +198,7 @@ function user_edit_save(id) {
         is_admin:		        document.getElementById('is_admin' + id)?.value        || '0'
     };
 
-    fetch('includes/users_edit_js.php', {
+    fetch(basePath + 'includes/users_edit_js.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -191,7 +209,7 @@ function user_edit_save(id) {
 
         if (responseData.ok === 1) {
             const editIcon = document.getElementById('edit_icon_' + id);
-            if (editIcon) editIcon.src = "img/edit.png";
+            if (editIcon) editIcon.src = basePath + "img/edit.png";
 
             document.getElementById('adm_list_edit_box' + id).style.display = "none";
 
@@ -218,7 +236,7 @@ function user_del(id) {
         return;
     }
 
-	fetch('includes/users_del_js.php', {
+	fetch(basePath + 'includes/users_del_js.php', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ id: id })
@@ -256,7 +274,7 @@ function user_create() {
         is_admin:		document.getElementById('is_admin')?.value		|| '0'
     };
 
-    fetch('includes/users_create_js.php', {
+    fetch(basePath + 'includes/users_create_js.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -266,7 +284,7 @@ function user_create() {
         console.log(responseData);
         if (responseData.ok === 1) {
             document.querySelector('.addnew').style.display = 'none';
-            document.getElementById('plusIcon').src = "img/plus.png";
+            document.getElementById('plusIcon').src = basePath + "img/plus.png";
 
             document.getElementById('company_name').value = '';
             document.getElementById('tax_id').value = '';

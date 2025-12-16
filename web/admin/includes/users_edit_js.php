@@ -5,7 +5,8 @@ set_time_limit (0);
 error_reporting(E_ALL);
 ob_implicit_flush();
 
-include "../../includes/functions.php";
+include __DIR__ . '/path_helper.php';
+include getIncludesFilePath('functions.php');
 DBconnect();
 
 $inputJSON = file_get_contents('php://input');
