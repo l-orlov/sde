@@ -5,6 +5,12 @@ if (!isset($basePath)) {
     $basePath = getAdminBasePath();
 }
 
+// Подключаемся к БД если еще не подключены
+if (!isset($link)) {
+    include getIncludesFilePath('functions.php');
+    DBconnect();
+}
+
 $query = "SELECT COUNT(id) as cprod FROM users";
 
 $result = mysqli_query($link, $query) or die("SQL query error: " . basename(__FILE__) . " <b>$query</b><br>at line: " . __LINE__);
@@ -12,8 +18,6 @@ $result = mysqli_query($link, $query) or die("SQL query error: " . basename(__FI
 $row = mysqli_fetch_array($result, MYSQLI_ASSOC);
 
 $count = $row['cprod'];
-
-$cc = ceil($count / 250);
 
 $busc = '';
 ?>
@@ -26,81 +30,89 @@ $busc = '';
 
 	<h1 class="h3 mb-2 text-gray-800">Usuarios</h1>
 
-	<div class="card shadow mb-4">
-
-		<div class="card-body">
-
-			<h6 class="m-0 font-weight-bold text-primary py-3">Lista de usuarios:
-
-				<?= $count ?>
-
-			</h6>
-
-			<div class="pager">
-
-				<? for ($i = 0; $i < $cc; $i++) { ?>
-
-					<div class="pgr_box" id="pager_<?= $i ?>" onclick="user_list(<?= $i ?>, '<?=$busc?>')">
-
-						<?= $i + 1 ?>
-
+	<div class="row">
+		<!-- Левая колонка: Список пользователей -->
+		<div class="col-md-4">
+			<div class="card shadow mb-4">
+				<div class="card-body">
+					<h6 class="m-0 font-weight-bold text-primary py-3">Lista de usuarios: <?= $count ?></h6>
+					
+					<!-- Поиск -->
+					<div class="adm_busc">
+						<input class="adm_busc_input" type="text" id="busc_texto" placeholder="Buscar...">
+						<div class="adm_busc_bt" onclick="user_list_by_filter()">Buscar</div>
 					</div>
 
-				<? } ?>
+					<!-- Кнопка добавления -->
+					<div class="addnew_ico" onclick="user_add_open()">
+						<img id="plusIcon" src="<?= $basePath ?>img/plus.png" class="icon-size">
+					</div>
 
-			</div>
+					<!-- Форма добавления -->
+					<div class="addnew">
+						<div class="form-field-group">
+							<div class="adm_add_tit">Nombre de la Empresa:</div>
+							<div class="adm_add_txt"><input class="add_input" type="text" id="company_name"></div>
+						</div>
 
-			<div class="uploadload" id="uploadload"></div>
+						<div class="form-field-group">
+							<div class="adm_add_tit">CUIL/CUIT:</div>
+							<div class="adm_add_txt"><input class="add_input" type="text" id="tax_id"></div>
+						</div>
 
-            <div class="addnew_ico" onclick="user_add_open()">
-                <img id="plusIcon" src="<?= $basePath ?>img/plus.png" class="icon-size">
-            </div>
+						<div class="form-field-group">
+							<div class="adm_add_tit">Correo electrónico:</div>
+							<div class="adm_add_txt"><input class="add_input" type="text" id="email"></div>
+						</div>
 
-			<div class="addnew">
+						<div class="form-field-group">
+							<div class="adm_add_tit">Teléfono:</div>
+							<div class="adm_add_txt"><input class="add_input" type="text" id="phone"></div>
+						</div>
 
-            <div class="adm_add_tit">Nombre de la Empresa:</div>
-				<div class="adm_add_txt"><input class="add_input" type="text" id="company_name"></div>
+						<div class="form-field-group">
+							<div class="adm_add_tit">Contraseña:</div>
+							<div class="adm_add_txt"><input class="add_input" type="text" id="password"></div>
+						</div>
 
-				<div class="adm_add_tit">CUIL/CUIT:</div>
-				<div class="adm_add_txt"><input class="add_input" type="text" id="tax_id"></div>
+						<div class="form-field-group">
+							<div class="adm_add_tit">Es Administrador:</div>
+							<div class="adm_add_txt">
+								<select class="add_input" id="is_admin">
+									<option value="0">No</option>
+									<option value="1">Sí</option>
+								</select>
+							</div>
+						</div>
 
-				<div class="adm_add_tit">Correo electrónico:</div>
-				<div class="adm_add_txt"><input class="add_input" type="text" id="email"></div>
+						<div class="form-field-group" style="text-align:right; margin-top: 10px;">
+							<button type="button" onclick="user_create()" style="background: #0082C6; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+								Guardar
+							</button>
+						</div>
+					</div>
 
-				<div class="adm_add_tit">Teléfono:</div>
-				<div class="adm_add_txt"><input class="add_input" type="text" id="phone"></div>
-
-				<div class="adm_add_tit">Contraseña:</div>
-				<div class="adm_add_txt"><input class="add_input" type="text" id="password"></div>
-
-				<div class="adm_add_tit">Es Administrador:</div>
-				<div class="adm_add_txt">
-					<select class="add_input" id="is_admin">
-						<option value="0">No</option>
-						<option value="1">Sí</option>
-					</select>
-				</div>
-
-                <div style="grid-column: 1/-1; text-align:right; font-size:30px;" onclick="user_create()">
-                    <img id="saveIcon" src="<?= $basePath ?>img/save.png" class="icon-size">
-                </div>
-
-			</div>
-
-			<div class="table-responsive users" id="user_list"></div>
-
-			<div class="row">
-
-				<div class="col-sm-12 col-md-5">
+					<!-- Список пользователей -->
+					<div class="table-responsive users-simple" id="user_list"></div>
 
 					<div class="dataTables_info" id="dataTable_info" role="status" aria-live="polite"></div>
-
 				</div>
-
 			</div>
-
 		</div>
 
+		<!-- Правая колонка: Детальная форма -->
+		<div class="col-md-8">
+			<div class="card shadow mb-4">
+				<div class="card-body">
+					<h6 class="m-0 font-weight-bold text-primary py-3">Datos del Usuario</h6>
+					<div id="user_detail_form" class="user-detail-form">
+						<div class="user-detail-empty">
+							<p>Seleccione un usuario de la lista para ver sus datos.</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 
 <script>
@@ -115,122 +127,68 @@ if (adminPos !== -1) {
 if (basePath[basePath.length - 1] !== '/') {
     basePath += '/';
 }
+// Устанавливаем глобально для использования в других скриптах
+window.basePath = basePath;
+
+var currentSelectedUserId = null;
 
 function user_add_open() {
     let st = document.querySelector('.addnew');
     let plusIcon = document.getElementById('plusIcon');
 
-    if (st.style.display === 'grid') {
+    if (st.style.display === 'flex' || st.style.display === '') {
         st.style.display = 'none';
         plusIcon.src = basePath + "img/plus.png";
     } else {
-        st.style.display = 'grid';
+        st.style.display = 'flex';
         plusIcon.src = basePath + "img/close.png";
     }
 }
+
 function user_list(pg, busc) {
 	document.getElementById('user_list').innerHTML = '<img class="loading" src="' + basePath + 'img/loading_modern.gif">';
 
-	fetch(basePath + 'includes/users_list_js.php', {
+	fetch(basePath + 'includes/users_list_simple_js.php', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ pg, busc })
+		body: JSON.stringify({ pg: 0, busc })
 	})
 	.then(response => response.json()) 
 	.then(data => {
 		document.getElementById('debug').innerHTML = data.debug || '';
 		document.getElementById('user_list').innerHTML = data.res;
 		document.getElementById('dataTable_info').innerHTML = 'Mostrando: ' + data.cant + ' usuarios';
-
-		for (let i = 0; i < <?= $cc ?>; i++) {
-			let pageElem = document.getElementById('pager_' + i);
-			if (pageElem) pageElem.style.backgroundColor = "#CCC";
+		
+		// Восстанавливаем выделение если был выбран пользователь
+		if (currentSelectedUserId) {
+			highlightUser(currentSelectedUserId);
 		}
-
-		let activePageElem = document.getElementById('pager_' + pg);
-		if (activePageElem) activePageElem.style.backgroundColor = "#999";
 	})
 	.catch(error => {
 		console.error('Failed to get users list:', error);
 		document.getElementById('user_list').innerHTML = '<p style="color:red;">Error al obtener la lista de usuarios</p>';
 	});
 }
-function user_get_edit_form(id) {
-    const editBox = document.getElementById('adm_list_edit_box' + id);
-    const editIcon = document.getElementById('edit_icon_' + id);
 
-    if (editBox.style.display === "grid") {
-        editBox.style.display = "none";
-        if (editIcon) editIcon.src = basePath + "img/edit.png";
-        return;
-    }
-
-    fetch(basePath + 'includes/users_edit_form_js.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.ok === 1) {
-            document.getElementById('debug').innerHTML = data.debug || '';
-            editBox.innerHTML = data.res;
-            editBox.style.display = "grid";
-
-            if (editIcon) editIcon.src = basePath + "img/close.png";
-        } else {
-            console.error("Failed to get user edit form:", data.err);
-            document.getElementById('debug').innerHTML = `<p style="color:red;">Error: ${data.err}</p>`;
-        }
-    })
-    .catch(error => {
-        console.error("Connection error:", error);
-        document.getElementById('debug').innerHTML = `<p style="color:red;">Error al obtener el formulario de edición</p>`;
-    });
+function highlightUser(userId) {
+	// Убираем выделение со всех строк
+	document.querySelectorAll('.user-row').forEach(row => {
+		row.style.backgroundColor = '';
+	});
+	
+	// Выделяем выбранного пользователя
+	const rows = document.querySelectorAll(`[id^="user_row"][id*="_${userId}"]`);
+	rows.forEach(row => {
+		row.style.backgroundColor = '#e3f2fd';
+	});
 }
-function user_edit_save(id) {
-    let data = {
-        id:		                id,
-        company_name:		    document.getElementById('company_name' + id)?.value    || '',
-        tax_id:		            document.getElementById('tax_id' + id)?.value        || '',
-        email:		            document.getElementById('email' + id)?.value            || '',
-        phone:		            document.getElementById('phone' + id)?.value            || '',
-        is_admin:		        document.getElementById('is_admin' + id)?.value        || '0'
-    };
 
-    fetch(basePath + 'includes/users_edit_js.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(responseData => {
-        console.log(responseData);
-
-        if (responseData.ok === 1) {
-            const editIcon = document.getElementById('edit_icon_' + id);
-            if (editIcon) editIcon.src = basePath + "img/edit.png";
-
-            document.getElementById('adm_list_edit_box' + id).style.display = "none";
-
-            document.getElementById('c0_' + id).innerHTML = responseData.user.id;
-            document.getElementById('c1_' + id).innerHTML = responseData.user.company_name;
-            document.getElementById('c2_' + id).innerHTML = responseData.user.tax_id;
-            document.getElementById('c3_' + id).innerHTML = responseData.user.email;
-            document.getElementById('c4_' + id).innerHTML = responseData.user.phone;
-            document.getElementById('c5_' + id).innerHTML = responseData.user.is_admin == 1 ? 'Sí' : 'No';
-            document.getElementById('c6_' + id).innerHTML = responseData.user.created_at;
-            document.getElementById('c7_' + id).innerHTML = responseData.user.updated_at;
-        } else {
-            console.error("Failed to save:", responseData.err);
-            document.getElementById('debug').innerHTML = `<p style="color:red;">Error: ${responseData.err}</p>`;
-        }
-    })
-    .catch(error => {
-        console.error("Connection error:", error);
-        document.getElementById('debug').innerHTML = `<p style="color:red;">Error de conexión</p>`;
-    });
+function selectUser(userId) {
+	currentSelectedUserId = userId;
+	highlightUser(userId);
+	loadUserFullData(userId);
 }
+
 function user_del(id) {
 	if (!confirm("¿Está seguro de eliminar estos datos?\nNo hay forma de recuperar los datos eliminados")) {
         return;
@@ -244,7 +202,14 @@ function user_del(id) {
 	.then(response => response.json()) 
 	.then(data => {
 		if (data.ok === 1) {
-			document.querySelectorAll(`[id^=c][id$=_${id}]`).forEach(el => el.style.display = "none");
+			// Удаляем строки из списка
+			document.querySelectorAll(`[id*="_${id}"]`).forEach(el => el.style.display = "none");
+			
+			// Очищаем форму справа если удалили выбранного пользователя
+			if (currentSelectedUserId == id) {
+				currentSelectedUserId = null;
+				document.getElementById('user_detail_form').innerHTML = '<div class="user-detail-empty"><p>Seleccione un usuario de la lista para ver sus datos.</p></div>';
+			}
 
             let countElem = document.getElementById('dataTable_info');
             if (countElem) {
@@ -264,6 +229,7 @@ function user_del(id) {
 		document.getElementById('debug').innerHTML = `<p style="color:red;">Error de conexión</p>`;
 	});
 }
+
 function user_create() {
     let data = {
         company_name:	document.getElementById('company_name')?.value	|| '',
@@ -304,11 +270,68 @@ function user_create() {
         document.getElementById('debug').innerHTML = `<p style="color:red;">Error de conexión</p>`;
     });
 }
+
 function user_list_by_filter() {
 	let busc = document.getElementById('busc_texto').value;
-	user_list(0,busc);
+	user_list(0, busc);
 }
 
-user_list(0,'');
+// Загрузка полных данных пользователя
+function loadUserFullData(userId) {
+	const formContainer = document.getElementById('user_detail_form');
+	formContainer.innerHTML = '<div class="text-center p-4"><img class="loading" src="' + basePath + 'img/loading_modern.gif"></div>';
+	
+	fetch(basePath + 'includes/users_get_full_data_js.php', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ user_id: userId })
+	})
+	.then(response => {
+		// Проверяем, что ответ действительно JSON
+		const contentType = response.headers.get('content-type');
+		if (!contentType || !contentType.includes('application/json')) {
+			return response.text().then(text => {
+				console.error('Respuesta no es JSON:', text);
+				throw new Error('El servidor devolvió una respuesta no válida: ' + text.substring(0, 200));
+			});
+		}
+		return response.json();
+	})
+	.then(data => {
+		if (data.ok === 1 && data.data) {
+			displayUserForm(data.data, userId);
+			// Инициализируем отслеживание изменений после отображения формы
+			setTimeout(() => {
+				if (typeof initChangeTracking === 'function') {
+					initChangeTracking(data.data);
+				}
+			}, 300);
+		} else {
+			formContainer.innerHTML = '<div class="alert alert-danger">Error: ' + (data.err || 'Error desconocido') + '</div>';
+		}
+	})
+	.catch(error => {
+		console.error('Error loading user data:', error);
+		formContainer.innerHTML = '<div class="alert alert-danger">Error de conexión al cargar los datos: ' + error.message + '</div>';
+	});
+}
+
+// Отображение формы с данными пользователя
+function displayUserForm(data, userId) {
+	// Сбрасываем отслеживание изменений при загрузке новой формы
+	if (typeof changedFields !== 'undefined') {
+		changedFields = {};
+	}
+	if (typeof originalFormData !== 'undefined') {
+		originalFormData = {};
+	}
+	
+	const form = generateUserFormHTML(data, userId);
+	document.getElementById('user_detail_form').innerHTML = form;
+}
+
+user_list(0, '');
 </script>
+
+<script src="<?= $basePath ?>js/user_detail_form.js"></script>
 
