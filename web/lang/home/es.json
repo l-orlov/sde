@@ -27,6 +27,9 @@
   "product_yerba_mate": "Yerba mate",
   "product_peach_jam": "Mermelada de durazno natural",
   "product_dulce_leche": "Dulce de leche artesanal",
-  "product_generic": "Producto"
+  "product_generic": "Producto",
+  "home_moderation_message": "Sus datos están en moderación. Por favor, espere la confirmación del administrador.",
+  "home_no_products_message": "Aún no has agregado productos. ¡Comienza agregando tu primer producto!",
+  "home_add_products_button": "Agregar Productos"
 }
 

@@ -61,7 +61,7 @@
 	border: 1px solid #CCC;
 	font-size: 12px;
 	line-height: 1;
-	padding: 1px;
+	padding: 3px;
 	overflow-wrap: break-word;
 }
 .addnew {
@@ -435,7 +435,7 @@
 .table-responsive.users-simple {
     width: 100%;
     display: grid;
-    grid-template-columns: 60px 1fr 40px;
+    grid-template-columns: 60px 1fr 40px 40px;
     grid-gap: 0px;
     overflow-x: auto;
     margin-top: 10px;

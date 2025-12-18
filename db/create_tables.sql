@@ -27,12 +27,20 @@ CREATE TABLE companies (
     website             VARCHAR(255),
     organization_type   VARCHAR(100),
     main_activity       VARCHAR(100),
+    moderation_status   ENUM('pending', 'approved') NOT NULL DEFAULT 'pending',
+    moderation_date     INT UNSIGNED    NULL,
+    moderated_by        INT UNSIGNED    NULL,
     created_at          INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),
     updated_at          INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `companies_user_uidx` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Миграция: добавить поля модерации (если таблица уже существует)
+-- ALTER TABLE companies ADD COLUMN moderation_status ENUM('pending', 'approved') NOT NULL DEFAULT 'pending';
+-- ALTER TABLE companies ADD COLUMN moderation_date INT UNSIGNED NULL;
+-- ALTER TABLE companies ADD COLUMN moderated_by INT UNSIGNED NULL;
 
 -- Адреса компаний
 CREATE TABLE company_addresses (

@@ -52,7 +52,8 @@ try {
     $userData['updated_at'] = $userData['updated_at'] ? date('Y-m-d H:i', $userData['updated_at']) : '';
     
     // 1. Основные данные компании
-    $query = "SELECT id, name, tax_id, legal_name, start_date, website, organization_type, main_activity 
+    $query = "SELECT id, name, tax_id, legal_name, start_date, website, organization_type, main_activity,
+                     moderation_status, moderation_date, moderated_by
               FROM companies WHERE user_id = ? LIMIT 1";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $userId);

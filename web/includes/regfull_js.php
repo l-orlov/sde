@@ -108,13 +108,16 @@ try {
     
     if ($companyId) {
         $query = "UPDATE companies SET name = ?, tax_id = ?, legal_name = ?, start_date = ?, 
-                  website = ?, organization_type = ?, main_activity = ?, updated_at = UNIX_TIMESTAMP() 
+                  website = ?, organization_type = ?, main_activity = ?, 
+                  moderation_status = 'pending', moderation_date = NULL, moderated_by = NULL,
+                  updated_at = UNIX_TIMESTAMP() 
                   WHERE id = ?";
         $stmt = mysqli_prepare($link, $query);
         mysqli_stmt_bind_param($stmt, 'sssissis', $name, $taxId, $legalName, $startDateTimestamp, $website, $organizationType, $mainActivity, $companyId);
     } else {
         $query = "INSERT INTO companies (user_id, name, tax_id, legal_name, start_date, website, 
-                  organization_type, main_activity) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                  organization_type, main_activity, moderation_status) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')";
         $stmt = mysqli_prepare($link, $query);
         mysqli_stmt_bind_param($stmt, 'isssisss', $userId, $name, $taxId, $legalName, $startDateTimestamp, $website, $organizationType, $mainActivity);
     }

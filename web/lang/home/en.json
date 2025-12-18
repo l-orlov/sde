@@ -27,5 +27,8 @@
   "product_yerba_mate": "Yerba mate",
   "product_peach_jam": "Natural peach jam",
   "product_dulce_leche": "Artisanal dulce de leche",
-  "product_generic": "Product"
+  "product_generic": "Product",
+  "home_moderation_message": "Your data is under moderation. Please wait for administrator confirmation.",
+  "home_no_products_message": "You haven't added any products yet. Start by adding your first product!",
+  "home_add_products_button": "Add Products"
 }

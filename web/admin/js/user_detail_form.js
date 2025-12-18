@@ -273,6 +273,18 @@ function generateUserFormHTML(data, userId) {
         return html;
     }
     
+    // Статус модерации
+    const moderationStatus = company.moderation_status || 'pending';
+    const isApproved = moderationStatus === 'approved';
+    const statusText = isApproved ? 'Aprobado' : 'En moderación';
+    const statusClass = isApproved ? 'alert-success' : 'alert-warning';
+    
+    html += '<div class="user-form-section">';
+    html += '<div class="alert ' + statusClass + '" style="margin-bottom: 20px;">';
+    html += '<strong>Estado de moderación:</strong> ' + statusText;
+    html += '</div>';
+    html += '</div>';
+    
     // Секция 1: Datos de la Empresa (только если есть данные компании)
     html += '<div class="user-form-section">';
     html += '<h4 class="section-title">1. Datos de la Empresa</h4>';
@@ -564,6 +576,12 @@ function generateUserFormHTML(data, userId) {
     // Кнопка Guardar
     html += '<div class="form-actions">';
     html += '<button type="button" class="btn btn-primary" onclick="saveUserFullData(' + userId + ')">Guardar</button>';
+    
+    // Кнопка подтверждения модерации (только для админов и если статус pending)
+    if (!isApproved) {
+        html += '<button type="button" class="btn btn-success" onclick="approveModeration(' + userId + ')" style="margin-left: 10px;">Confirmar datos</button>';
+    }
+    
     html += '<div id="save_message" style="margin-top: 10px;"></div>';
     html += '</div>';
     
@@ -930,5 +948,47 @@ function validateForm() {
     }
     
     return errors;
+}
+
+// Функция подтверждения модерации
+function approveModeration(userId) {
+    if (!confirm('¿Está seguro de que desea confirmar los datos de este usuario?')) {
+        return;
+    }
+    
+    const basePathValue = window.basePath || basePath || '';
+    const messageEl = document.getElementById('save_message');
+    
+    if (messageEl) {
+        messageEl.innerHTML = '<div class="alert alert-info">Confirmando datos...</div>';
+    }
+    
+    fetch(basePathValue + 'includes/users_approve_moderation_js.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.ok === 1) {
+            if (messageEl) {
+                messageEl.innerHTML = '<div class="alert alert-success">Datos confirmados correctamente. Recargando página...</div>';
+            }
+            // Перезагружаем страницу после успешного подтверждения
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        } else {
+            if (messageEl) {
+                messageEl.innerHTML = '<div class="alert alert-danger">Error: ' + (data.err || 'Error desconocido') + '</div>';
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error approving moderation:', error);
+        if (messageEl) {
+            messageEl.innerHTML = '<div class="alert alert-danger">Error de conexión</div>';
+        }
+    });
 }
 

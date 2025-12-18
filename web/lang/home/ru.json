@@ -27,5 +27,8 @@
   "product_yerba_mate": "Йерба мате",
   "product_peach_jam": "Натуральное персиковое варенье",
   "product_dulce_leche": "Артизанальный дульсе де лече",
-  "product_generic": "Продукт"
+  "product_generic": "Продукт",
+  "home_moderation_message": "Ваши данные находятся на модерации. Пожалуйста, дождитесь подтверждения администратора.",
+  "home_no_products_message": "Вы еще не добавили продукты. Начните с добавления вашего первого продукта!",
+  "home_add_products_button": "Добавить продукты"
 }

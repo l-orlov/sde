@@ -45,6 +45,23 @@ if ($stmt) {
     $taxId = '';
 }
 
+// Проверка статуса модерации и наличия данных компании
+$hasCompanyData = false;
+$moderationStatus = null;
+$query = "SELECT moderation_status FROM companies WHERE user_id = ? LIMIT 1";
+$stmt = mysqli_prepare($link, $query);
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'i', $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    if ($result && mysqli_num_rows($result) > 0) {
+        $moderationData = mysqli_fetch_assoc($result);
+        $hasCompanyData = true;
+        $moderationStatus = $moderationData['moderation_status'] ?? 'pending';
+    }
+    mysqli_stmt_close($stmt);
+}
+
 // Загрузка товаров пользователя
 require_once __DIR__ . '/FileManager.php';
 require_once __DIR__ . '/storage/StorageFactory.php';
@@ -245,14 +262,32 @@ $visibleProducts = min(4, $totalProducts);
           </div>
         </div>
         
-        <?php if (empty($products)): ?>
+        <?php if (!$hasCompanyData): ?>
+          <!-- Состояние 1: Пользователь не заполнял форму -->
           <div style="text-align: center; padding: 60px 20px;">
             <div style="font-size: 18px; color: #666; margin-bottom: 30px;">
               <p data-i18n="home_no_products_message">Aún no has agregado productos. ¡Comienza agregando tu primer producto!</p>
             </div>
-            <a href="?page=regfull" class="btn btn-show-more" style="text-decoration: none; display: inline-block;">
+            <button onclick="location.href='?page=regfull'" class="btn btn-show-more" style="cursor: pointer;">
               <span data-i18n="home_add_products_button">Agregar Productos</span>
-            </a>
+            </button>
+          </div>
+        <?php elseif ($moderationStatus === 'pending'): ?>
+          <!-- Состояние 2: Данные на модерации -->
+          <div style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 18px; color: #666; margin-bottom: 30px;">
+              <p data-i18n="home_moderation_message">Sus datos están en moderación. Por favor, espere la confirmación del administrador.</p>
+            </div>
+          </div>
+        <?php elseif (empty($products)): ?>
+          <!-- Состояние 3: Данные подтверждены, но товаров нет -->
+          <div style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 18px; color: #666; margin-bottom: 30px;">
+              <p data-i18n="home_no_products_message">Aún no has agregado productos. ¡Comienza agregando tu primer producto!</p>
+            </div>
+            <button onclick="location.href='?page=regfull'" class="btn btn-show-more" style="cursor: pointer;">
+              <span data-i18n="home_add_products_button">Agregar Productos</span>
+            </button>
           </div>
         <?php else: ?>
           <div class="home-products-grid">
