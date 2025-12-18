@@ -26,7 +26,7 @@ $busc = '';
 
 <!-- Begin Page Content -->
 
-<div class="container-fluid">
+<div class="container-fluid users-admin-container">
 
 	<h1 class="h3 mb-2 text-gray-800">Usuarios</h1>
 

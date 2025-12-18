@@ -444,3 +444,115 @@
 .user-row:hover {
     background-color: #f0f0f0 !important;
 }
+
+/* Адаптивность для экранов от 1200px и меньше (с учетом zoom) */
+@media (max-width: 1200px) {
+    /* Две колонки становятся вертикальными */
+    .users-admin-container .row {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    
+    .users-admin-container .row > .col-md-4,
+    .users-admin-container .row > .col-md-8 {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+    }
+    
+    /* Убираем отступы между колонками на маленьких экранах */
+    .users-admin-container .row > .col-md-4 {
+        margin-bottom: 20px;
+    }
+    
+    /* Контейнер на всю ширину */
+    .users-admin-container.container-fluid {
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+    }
+    
+    /* Адаптация поиска */
+    .adm_busc {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .adm_busc_input {
+        width: 100% !important;
+    }
+    
+    .adm_busc_bt {
+        width: 100%;
+    }
+    
+    /* Адаптация таблицы пользователей */
+    .table-responsive.users-simple {
+        grid-template-columns: 50px 1fr 30px 30px !important;
+        font-size: 11px;
+        overflow-x: auto;
+    }
+    
+    .adm_zag {
+        font-size: 11px;
+        padding: 3px 5px;
+    }
+    
+    .adm_list_txt {
+        font-size: 11px;
+        padding: 2px;
+    }
+    
+    /* Адаптация кнопки добавления */
+    .addnew_ico {
+        margin: 10px 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    
+    /* Адаптация формы добавления */
+    .addnew {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* Адаптация карточек */
+    .card-body {
+        padding: 15px;
+    }
+    
+    /* Адаптация детальной формы */
+    .user-detail-form {
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    /* Уменьшаем размеры элементов формы */
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-control {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* Адаптация кнопок */
+    .btn {
+        width: 100%;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+    }
+    
+    .form-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+}
