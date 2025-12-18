@@ -128,6 +128,17 @@ try {
     }
     mysqli_stmt_close($stmt);
     
+    // Синхронизация: обновляем users.company_name и users.tax_id
+    if (!empty($name) || !empty($taxId)) {
+        $query = "UPDATE users SET company_name = ?, tax_id = ? WHERE id = ?";
+        $stmt = mysqli_prepare($link, $query);
+        mysqli_stmt_bind_param($stmt, 'ssi', $name, $taxId, $userId);
+        if (!mysqli_stmt_execute($stmt)) {
+            throw new Exception("Error al sincronizar datos en users: " . mysqli_error($link));
+        }
+        mysqli_stmt_close($stmt);
+    }
+    
     // ========== 2. АДРЕСА ==========
     
     $query = "DELETE FROM company_addresses WHERE company_id = ?";

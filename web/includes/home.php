@@ -17,23 +17,32 @@ if (!$userData) {
     exit();
 }
 
-$companyName = htmlspecialchars($userData['company_name'] ?? '');
-$taxId = htmlspecialchars($userData['tax_id'] ?? '');
 $email = htmlspecialchars($userData['email'] ?? '');
 $phone = htmlspecialchars($userData['phone'] ?? '');
 
-// Если company_name не заполнено в users, берем из companies
-if (empty($companyName)) {
-    $query = "SELECT name FROM companies WHERE user_id = ? LIMIT 1";
-    $stmt = mysqli_prepare($link, $query);
+// Приоритет: сначала companies, потом users (COALESCE)
+$query = "SELECT COALESCE(c.name, u.company_name) as company_name,
+                 COALESCE(c.tax_id, u.tax_id) as tax_id
+          FROM users u
+          LEFT JOIN companies c ON c.user_id = u.id
+          WHERE u.id = ? LIMIT 1";
+$stmt = mysqli_prepare($link, $query);
+if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'i', $userId);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     if ($result && mysqli_num_rows($result) > 0) {
-        $company = mysqli_fetch_assoc($result);
-        $companyName = htmlspecialchars($company['name'] ?? '');
+        $data = mysqli_fetch_assoc($result);
+        $companyName = htmlspecialchars($data['company_name'] ?? '');
+        $taxId = htmlspecialchars($data['tax_id'] ?? '');
+    } else {
+        $companyName = '';
+        $taxId = '';
     }
     mysqli_stmt_close($stmt);
+} else {
+    $companyName = '';
+    $taxId = '';
 }
 
 // Загрузка товаров пользователя

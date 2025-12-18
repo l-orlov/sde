@@ -9,6 +9,18 @@ $companyDataJson = null;
 if (isset($_SESSION['uid'])) {
     $userId = intval($_SESSION['uid']);
     $companyId = null;
+    $userData = null;
+    
+    // Загрузка данных пользователя (для company_name и tax_id)
+    $query = "SELECT company_name, tax_id FROM users WHERE id = ? LIMIT 1";
+    $stmt = mysqli_prepare($link, $query);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $userId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $userData = mysqli_fetch_assoc($result);
+        mysqli_stmt_close($stmt);
+    }
     
     // Загрузка основных данных компании
     $query = "SELECT id, name, tax_id, legal_name, start_date, website, organization_type, main_activity 
@@ -37,6 +49,10 @@ if (isset($_SESSION['uid'])) {
             }
         }
     }
+    
+    // Используем COALESCE: сначала companies, потом users
+    $displayName = $companyData['name'] ?? $userData['company_name'] ?? '';
+    $displayTaxId = $companyData['tax_id'] ?? $userData['tax_id'] ?? '';
     
     // Загрузка адресов
     if ($companyId) {
@@ -105,10 +121,10 @@ function esc_attr($value) {
   <div class="form" novalidate>
     <!-- Nombre -->
     <div class="label"><label for="name" data-i18n="regfull_company_name">Nombre de la Empresa/Emprendimiento <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="name" name="name" value="<?= esc_attr($companyData['name'] ?? '') ?>" required></div>
+    <div class="field"><input type="search" id="name" name="name" value="<?= esc_attr($displayName) ?>" required></div>
     <!-- CUIT -->
     <div class="label"><label for="tax_id" data-i18n="regfull_cuit">CUIT / Identificación Fiscal <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="tax_id" name="tax_id" value="<?= esc_attr($companyData['tax_id'] ?? '') ?>" data-i18n-placeholder="regfull_cuit_placeholder" placeholder="XX-XXXXXXXX-X" required></div>
+    <div class="field"><input type="search" id="tax_id" name="tax_id" value="<?= esc_attr($displayTaxId) ?>" data-i18n-placeholder="regfull_cuit_placeholder" placeholder="XX-XXXXXXXX-X" required></div>
     <!-- Razón social -->
     <div class="label"><label for="legal_name" data-i18n="regfull_razon_social">Razón social <span class="req">*</span></label></div>
     <div class="field"><input type="search" id="legal_name" name="legal_name" value="<?= esc_attr($companyData['legal_name'] ?? '') ?>" required></div>
@@ -1030,14 +1046,13 @@ document.addEventListener('DOMContentLoaded', () => {
 <div style="text-align: center; margin: 40px 0;">
   <button type="button" class="btn btn-save-register" id="btnSaveRegister" data-i18n="regfull_save_register">Guardar</button>
   <div id="regfull_message" style="margin-top: 15px; display: none;"></div>
-  <div style="margin-top: 10px;">
-    <button type="button" id="btnFillTestData" style="padding: 5px 10px; font-size: 12px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer;">🧪 Заполнить тестовыми данными</button>
-  </div>
 </div>
 
 <script>
 // Глобальные функции для работы с localStorage
-const STORAGE_KEY = 'regfull_form_data';
+// Привязываем ключ к ID пользователя
+const userId = window.currentUserId || 0;
+const STORAGE_KEY = userId > 0 ? `regfull_form_data_${userId}` : 'regfull_form_data';
 
 function quickSave() {
   const formData = {};
@@ -1132,7 +1147,9 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSave.addEventListener('click', async function() {
       quickSave();
       
-      const STORAGE_KEY = 'regfull_form_data';
+      // Используем тот же ключ, что и в основном скрипте
+      const userId = window.currentUserId || 0;
+      const STORAGE_KEY = userId > 0 ? `regfull_form_data_${userId}` : 'regfull_form_data';
       const formData = {};
       
       document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], textarea').forEach(field => {
@@ -1744,7 +1761,10 @@ document.addEventListener('DOMContentLoaded', () => {
           msgEl.style.display = 'block';
           
           try {
-            const currentData = JSON.parse(localStorage.getItem('regfull_form_data') || '{}');
+            // Используем тот же ключ, что и в основном скрипте
+            const userId = window.currentUserId || 0;
+            const STORAGE_KEY = userId > 0 ? `regfull_form_data_${userId}` : 'regfull_form_data';
+            const currentData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
             const persistentData = {};
             
             if (currentData['differentiation_factors[]']) {
@@ -1763,13 +1783,15 @@ document.addEventListener('DOMContentLoaded', () => {
               persistentData['other_needs'] = currentData['other_needs'];
             }
             
-            localStorage.removeItem('regfull_form_data');
+            localStorage.removeItem(STORAGE_KEY);
             
             if (Object.keys(persistentData).length > 0) {
-              localStorage.setItem('regfull_form_data', JSON.stringify(persistentData));
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(persistentData));
             }
           } catch (e) {
-            localStorage.removeItem('regfull_form_data');
+            const userId = window.currentUserId || 0;
+            const STORAGE_KEY = userId > 0 ? `regfull_form_data_${userId}` : 'regfull_form_data';
+            localStorage.removeItem(STORAGE_KEY);
           }
           
           setTimeout(() => {
@@ -1881,7 +1903,10 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
 <!-- Auto-save form data to localStorage -->
 <script>
 (function() {
-  const STORAGE_KEY = 'regfull_form_data';
+  // Привязываем ключ localStorage к ID пользователя
+  const userId = window.currentUserId || 0;
+  const STORAGE_KEY = userId > 0 ? `regfull_form_data_${userId}` : 'regfull_form_data';
+  const hasCompanyDataInDB = window.hasCompanyDataInDB || false;
   
   function getFieldSelector(field) {
     const path = [];
@@ -2291,145 +2316,6 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     }
   }
   
-  function fillTestData() {
-    const textFields = {
-      'name': 'a',
-      'tax_id': '1',
-      'legal_name': 'a',
-      'start_date': '01/01/2001',
-      'website': 'http://a',
-      'street_legal': 'a',
-      'street_number_legal': '1',
-      'postal_code_legal': '1',
-      'floor_legal': '1',
-      'apartment_legal': 'a',
-      'street_admin': 'a',
-      'street_number_admin': '1',
-      'postal_code_admin': '1',
-      'floor_admin': '1',
-      'apartment_admin': 'a',
-      'contact_person': 'a',
-      'contact_position': 'a',
-      'contact_email': 'a@gmail.com',
-      'contact_area_code': '1',
-      'contact_phone': '1',
-      'main_product': 'a',
-      'tariff_code': '1',
-      'product_description': 'a',
-      'volume_amount': '1',
-      'annual_export': '1',
-      'certifications': 'a',
-      'export_2022': '1',
-      'export_2023': '1',
-      'export_2024': '1',
-      'company_history': 'a',
-      'awards_detail': 'a',
-      'commercial_references': 'a',
-      'estimated_term': '1',
-      'logistics_infrastructure': 'a',
-      'ports_airports': 'a',
-      'other_differentiation': 'a',
-      'other_needs': 'a'
-    };
-    
-    Object.keys(textFields).forEach(name => {
-      const field = document.querySelector(`[name="${name}"]`);
-      if (field && field.type !== 'file') {
-        field.value = textFields[name];
-        field.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-    });
-    
-    document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
-      const hiddenInput = dropdown.querySelector('input[type="hidden"]');
-      if (hiddenInput && hiddenInput.name) {
-        const options = dropdown.querySelectorAll('.dropdown-option');
-        for (let option of options) {
-          const value = option.dataset.value;
-          if (value && value !== '' && value !== '…') {
-            hiddenInput.value = value;
-            const selectedText = dropdown.querySelector('.selected-text');
-            if (selectedText) {
-              selectedText.textContent = option.textContent;
-            }
-            option.classList.add('selected');
-            hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
-            break;
-          }
-        }
-      }
-    });
-    
-    document.querySelectorAll('input[type="radio"]').forEach(radio => {
-      const name = radio.name;
-      if (name) {
-        const group = document.querySelectorAll(`input[type="radio"][name="${name}"]`);
-        let targetRadio = Array.from(group).find(r => r.value === 'si');
-        if (!targetRadio) {
-          targetRadio = group[0];
-        }
-        if (targetRadio) {
-          targetRadio.checked = true;
-          targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      }
-    });
-    
-    document.querySelectorAll('input[type="checkbox"]').forEach((checkbox, idx) => {
-      if (idx % 2 === 0) {
-        checkbox.checked = true;
-        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-    });
-    
-    const socialWrapper = document.getElementById('social-wrapper');
-    if (socialWrapper) {
-      const firstRow = socialWrapper.querySelector('.social_row');
-      if (firstRow) {
-        const urlInput = firstRow.querySelector('input[name="social_url[]"]');
-        if (urlInput) {
-          urlInput.value = 'http://a';
-        }
-        const hiddenInput = firstRow.querySelector('input.net');
-        if (hiddenInput) {
-          const dropdown = hiddenInput.closest('.custom-dropdown');
-          if (dropdown) {
-            const options = dropdown.querySelectorAll('.dropdown-option');
-            for (let option of options) {
-              const value = option.dataset.value;
-              if (value && value !== '' && value !== '…') {
-                hiddenInput.value = value;
-                const selectedText = dropdown.querySelector('.selected-text');
-                if (selectedText) {
-                  selectedText.textContent = option.textContent;
-                }
-                option.classList.add('selected');
-                hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
-                break;
-              }
-            }
-          }
-        }
-      }
-    }
-    
-    document.querySelectorAll('input[name*="[]"]').forEach(field => {
-      if (field.type !== 'file' && !field.hidden) {
-        if (field.name.includes('social_url')) {
-          field.value = 'http://a';
-        } else if (field.name.includes('secondary_products') || field.name.includes('tariff_code_sec') || field.name.includes('product_description_sec')) {
-          field.value = 'a';
-        } else if (field.name.includes('volume_amount_sec') || field.name.includes('annual_export_sec')) {
-          field.value = '1';
-        } else {
-          field.value = 'a';
-        }
-        field.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-    });
-    
-    quickSave();
-  }
   
   // Данные компании из БД для заполнения формы
   window.companyDataFromDB = {
@@ -2441,6 +2327,10 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     locality_admin: <?= json_encode($companyAddresses['admin']['locality'] ?? '') ?>,
     department_admin: <?= json_encode($companyAddresses['admin']['department'] ?? '') ?>
   };
+  
+  // ID пользователя для привязки localStorage
+  window.currentUserId = <?= isset($_SESSION['uid']) ? intval($_SESSION['uid']) : 0 ?>;
+  window.hasCompanyDataInDB = <?= !empty($companyData) ? 'true' : 'false' ?>;
   
   function fillDropdownsFromDB() {
     const data = window.companyDataFromDB;
@@ -2643,23 +2533,23 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   document.addEventListener('DOMContentLoaded', () => {
     const saved = localStorage.getItem(STORAGE_KEY);
     
-    const btnFillTest = document.getElementById('btnFillTestData');
-    if (btnFillTest) {
-      btnFillTest.addEventListener('click', () => {
-        fillTestData();
-      });
-    }
-    
     // Заполнить dropdown'ы и социальные сети из БД
     setTimeout(() => {
       fillDropdownsFromDB();
     }, 500);
     
     setTimeout(() => {
-      if (saved) {
-      restoreFormData();
+      // Если в БД есть данные компании, очищаем localStorage и загружаем из БД
+      if (hasCompanyDataInDB) {
+        // Данные уже загружены из БД в PHP (через value атрибуты полей)
+        // Очищаем localStorage, чтобы не перезаписывать данные из БД
+        localStorage.removeItem(STORAGE_KEY);
+        // Не восстанавливаем из localStorage и не заполняем тестовыми данными
       } else {
-        fillTestData();
+        // Если данных в БД нет, форма остается пустой для нового пользователя
+        // localStorage используется только для автосохранения во время заполнения
+        // НЕ восстанавливаем данные при загрузке страницы
+        // Форма должна быть пустой для нового пользователя
       }
     }, 1000);
     
@@ -2682,9 +2572,6 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     });
   });
   
-  window.clearRegfullFormData = function() {
-    localStorage.removeItem(STORAGE_KEY);
-  };
 })();
 </script>
 
