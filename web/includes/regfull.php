@@ -116,7 +116,7 @@ function esc_attr($value) {
 <div class="datos">
   <div class="datos_header">
     <h1 data-i18n="regfull_section1_title">1. Datos de la empresa</h1>
-    <img src="img/icons/datos.png">
+    <img src="img/icons/regfull_datos.svg">
   </div>
   <div class="form" novalidate>
     <!-- Nombre -->
@@ -353,7 +353,7 @@ function esc_attr($value) {
 <div class="datos">
   <div class="datos_header">
     <h1 data-i18n="regfull_section2_title">2. Clasificación de la Empresa</h1>
-    <img src="img/icons/clasificacion.png">
+    <img src="img/icons/regfull_clasificacion.svg">
   </div>
   <div class="form" novalidate>
     <div class="label"><label data-i18n="regfull_org_type">Tipo de Organización <span class="req">*</span></label></div>
@@ -512,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="datos">
   <div class="datos_header">
     <h1 data-i18n="regfull_section3_title">3. Información sobre Productos y Servicios</h1>
-    <img src="img/icons/sobre_productos.png">
+    <img src="img/icons/regfull_sobre_productos.svg">
   </div>
   <div class="form" novalidate>
     <div class="label"><span data-i18n="regfull_main_product">Producto o servicio principal <span class="req">*</span></span></div>
@@ -626,7 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="datos">
   <div class="datos_header">
     <h1 data-i18n="regfull_section4_title">4. Competitividad y Diferenciación</h1>
-    <img src="img/icons/competitividad.png">
+    <img src="img/icons/regfull_competitividad.svg">
   </div>
   <div class="form" novalidate>
     <div class="compet_blk">
@@ -715,7 +715,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="datos">
   <div class="datos_header">
     <h1 data-i18n="regfull_section5_title">5. Información Visual y Promocional</h1>
-    <img src="img/icons/visual.png">
+    <img src="img/icons/regfull_visual.svg">
   </div>
   <div class="form" novalidate>
     <div class="label"><span data-i18n="regfull_company_logo">Adjuntar Logo de la Empresa <span class="req">*</span></span></div>
@@ -817,7 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="datos">
   <div class="datos_header">
     <h1 data-i18n="regfull_section6_title">6. Logística y Distribución</h1>
-    <img src="img/icons/logistica.png">
+    <img src="img/icons/regfull_logistica.svg">
   </div>
   <div class="form" novalidate>
     <div class="label"><span data-i18n="regfull_export_capacity">Capacidad de Exportación Inmediata <span class="req">*</span></span></div>
@@ -848,7 +848,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="datos">
   <div class="datos_header">
     <h1 data-i18n="regfull_section7_title">7. Necesidades y Expectativas</h1>
-    <img src="img/icons/expectivas.png">
+    <img src="img/icons/regfull_expectivas.svg">
   </div>
   <div class="form" novalidate>
     <div class="needs-blk">
@@ -906,7 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="datos">
   <div class="datos_header">
     <h1 data-i18n="regfull_section8_title">8. Validación y Consentimiento</h1>
-    <img src="img/icons/validacion.png">
+    <img src="img/icons/regfull_validacion.svg">
   </div>
   <div class="form" novalidate>
     <div class="consent-blk">
