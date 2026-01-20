@@ -14,8 +14,6 @@ CREATE TABLE users (
     UNIQUE KEY `users_email_uidx` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- alter table users add column is_admin TINYINT(1) NOT NULL DEFAULT 0;
-
 -- Таблица компаний
 CREATE TABLE companies (
     id                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
@@ -36,11 +34,6 @@ CREATE TABLE companies (
     PRIMARY KEY (`id`),
     UNIQUE KEY `companies_user_uidx` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Миграция: добавить поля модерации (если таблица уже существует)
--- ALTER TABLE companies ADD COLUMN moderation_status ENUM('pending', 'approved') NOT NULL DEFAULT 'pending';
--- ALTER TABLE companies ADD COLUMN moderation_date INT UNSIGNED NULL;
--- ALTER TABLE companies ADD COLUMN moderated_by INT UNSIGNED NULL;
 
 -- Адреса компаний
 CREATE TABLE company_addresses (
@@ -106,30 +99,14 @@ CREATE TABLE company_data (
     UNIQUE KEY `company_data_company_uidx` (`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- История экспорта компаний
-CREATE TABLE company_export_history (
-    id          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
-    company_id  INT UNSIGNED    NOT NULL,
-    year        INT UNSIGNED    NOT NULL,
-    amount_usd  DECIMAL(15,2),
-    created_at  INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),
-
-    PRIMARY KEY (`id`),
-    KEY `company_export_company_idx` (`company_id`),
-    KEY `company_export_year_idx` (`year`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Таблица товаров (расширенная)
+-- Таблица товаров
 CREATE TABLE products (
     id                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     company_id          INT UNSIGNED,
     user_id             INT UNSIGNED    NOT NULL,
     is_main             BOOLEAN         NOT NULL DEFAULT FALSE,
     name                VARCHAR(255)    NOT NULL,
-    tariff_code         VARCHAR(50),
     description         TEXT,
-    volume_unit         VARCHAR(50),
-    volume_amount       VARCHAR(50),
     annual_export       VARCHAR(100),
     certifications      TEXT,
     created_at          INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),

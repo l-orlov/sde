@@ -55,7 +55,14 @@ class FileSystemStorage implements StorageInterface {
      */
     public function getUrl($path): string {
         $path = ltrim($path, '/');
-        return $this->baseUrl . '/' . $path;
+        // Убеждаемся, что baseUrl начинается с / для абсолютного пути от корня сайта
+        $baseUrl = trim($this->baseUrl, '/');
+        if (empty($baseUrl)) {
+            // Если baseUrl пустой, возвращаем путь от корня
+            return '/' . $path;
+        }
+        // Возвращаем абсолютный путь от корня сайта
+        return '/' . $baseUrl . '/' . $path;
     }
     
     /**

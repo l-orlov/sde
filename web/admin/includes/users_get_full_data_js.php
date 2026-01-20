@@ -132,52 +132,28 @@ try {
     mysqli_stmt_close($stmt);
     
     // 5. Продукты
-    $products = ['main' => null, 'secondary' => []];
-    $query = "SELECT id, is_main, name, tariff_code, description, volume_unit, volume_amount, annual_export, certifications
+    $products = ['main' => null];
+    $query = "SELECT id, is_main, name, description, annual_export, certifications
               FROM products
-              WHERE user_id = ?
-              ORDER BY is_main DESC, id ASC";
+              WHERE user_id = ? AND is_main = 1
+              LIMIT 1";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $userId);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
-    while ($row = mysqli_fetch_assoc($result)) {
-        $product = [
+    if ($row = mysqli_fetch_assoc($result)) {
+        $products['main'] = [
             'id' => intval($row['id']),
             'is_main' => (bool)$row['is_main'],
             'name' => $row['name'] ?? '',
-            'tariff_code' => $row['tariff_code'] ?? '',
             'description' => $row['description'] ?? '',
-            'volume_unit' => $row['volume_unit'] ?? '',
-            'volume_amount' => $row['volume_amount'] ?? '',
             'annual_export' => $row['annual_export'] ?? '',
             'certifications' => $row['certifications'] ?? ''
         ];
-        
-        if ($row['is_main']) {
-            $products['main'] = $product;
-        } else {
-            $products['secondary'][] = $product;
-        }
     }
     mysqli_stmt_close($stmt);
     
-    // 6. История экспорта
-    $exportHistory = [];
-    $query = "SELECT year, amount_usd 
-              FROM company_export_history 
-              WHERE company_id = ? 
-              ORDER BY year ASC";
-    $stmt = mysqli_prepare($link, $query);
-    mysqli_stmt_bind_param($stmt, 'i', $companyId);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    while ($row = mysqli_fetch_assoc($result)) {
-        $exportHistory[$row['year']] = $row['amount_usd'];
-    }
-    mysqli_stmt_close($stmt);
-    
-    // 7. Дополнительные данные (JSON)
+    // 6. Дополнительные данные (JSON)
     $companyDataJson = null;
     $query = "SELECT current_markets, target_markets, differentiation_factors, needs, 
                      competitiveness, logistics, expectations, consents
@@ -296,7 +272,6 @@ try {
         'contacts' => $contacts,
         'social_networks' => $socialNetworks,
         'products' => $products,
-        'export_history' => $exportHistory,
         'company_data' => $companyDataJson,
         'files' => $files,
         'has_company_data' => true

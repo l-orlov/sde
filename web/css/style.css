@@ -145,7 +145,7 @@ textarea::placeholder{font-size: 14px;}}
   white-space:normal;
 }
 .req { 
-  color: #EE3124 
+  color: #EE3124 !important;
 }
 .field {
   display:grid;

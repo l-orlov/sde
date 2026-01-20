@@ -13,6 +13,9 @@ if (isset($_SESSION['uid'])) {
     mysqli_stmt_close($stmt);
 }
 if (!$userData) {
+    // Очищаем сессию, если пользователь не найден в БД
+    session_destroy();
+    session_start();
     header('Location: ?page=login');
     exit();
 }
@@ -70,7 +73,7 @@ $products = [];
 $productPhotos = [];
 
 try {
-    $query = "SELECT id, is_main, name, tariff_code, description 
+    $query = "SELECT id, is_main, name, description 
               FROM products 
               WHERE user_id = ? 
               ORDER BY is_main DESC, id ASC";
@@ -84,7 +87,6 @@ try {
             'id' => intval($row['id']),
             'is_main' => (bool)$row['is_main'],
             'name' => htmlspecialchars($row['name'] ?? ''),
-            'tariff_code' => htmlspecialchars($row['tariff_code'] ?? ''),
             'description' => htmlspecialchars($row['description'] ?? '')
         ];
     }
@@ -297,7 +299,6 @@ $visibleProducts = min(4, $totalProducts);
               $imageSrc = $productImage ? $productImage : 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#f0f0f0"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="Arial" font-size="14" fill="#999">No img</text></svg>');
               $imageAlt = htmlspecialchars($product['name']);
               $productName = htmlspecialchars($product['name']);
-              $tariffCode = htmlspecialchars($product['tariff_code'] ?: '0000.00.00');
             ?>
             <div class="home-product-card <?php echo $isVisible ? 'home-product-visible' : 'home-product-hidden'; ?>">
               <div class="home-product-image">
@@ -305,7 +306,6 @@ $visibleProducts = min(4, $totalProducts);
               </div>
               <div class="home-product-info">
                 <div class="home-product-name"><?php echo $productName; ?></div>
-                <div class="home-product-code"><?php echo $tariffCode; ?></div>
               </div>
             </div>
             <?php endforeach; ?>

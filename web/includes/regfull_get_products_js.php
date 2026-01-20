@@ -25,44 +25,33 @@ $userId = intval($_SESSION['uid']);
 try {
     global $link;
     
-    $query = "SELECT id, is_main, name, tariff_code, description, volume_unit, volume_amount, annual_export, certifications
+    $query = "SELECT id, is_main, name, description, annual_export, certifications
               FROM products
-              WHERE user_id = ?
-              ORDER BY is_main DESC, id ASC";
+              WHERE user_id = ? AND is_main = 1
+              LIMIT 1";
     $stmt = $link->prepare($query);
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $result = $stmt->get_result();
     
     $mainProduct = null;
-    $secondaryProducts = [];
     
-    while ($row = $result->fetch_assoc()) {
-        $product = [
+    if ($row = $result->fetch_assoc()) {
+        $mainProduct = [
             'id' => intval($row['id']),
             'is_main' => (bool)$row['is_main'],
             'name' => $row['name'],
-            'tariff_code' => $row['tariff_code'] ?? '',
             'description' => $row['description'] ?? '',
-            'volume_unit' => $row['volume_unit'] ?? '',
-            'volume_amount' => $row['volume_amount'] ?? '',
             'annual_export' => $row['annual_export'] ?? '',
             'certifications' => $row['certifications'] ?? ''
         ];
-        
-        if ($row['is_main']) {
-            $mainProduct = $product;
-        } else {
-            $secondaryProducts[] = $product;
-        }
     }
     
     $stmt->close();
     
     $return['ok'] = 1;
     $return['products'] = [
-        'main' => $mainProduct,
-        'secondary' => $secondaryProducts
+        'main' => $mainProduct
     ];
     $return['res'] = 'Productos obtenidos correctamente';
     

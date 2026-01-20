@@ -20,22 +20,11 @@ function initChangeTracking(data) {
         main_activity: data.company?.main_activity || '',
         main_product: {
             name: data.products?.main?.name || '',
-            tariff_code: data.products?.main?.tariff_code || '',
             description: data.products?.main?.description || '',
-            volume_unit: data.products?.main?.volume_unit || '',
-            volume_amount: data.products?.main?.volume_amount || '',
             annual_export: data.products?.main?.annual_export || '',
             certifications: data.products?.main?.certifications || ''
         },
-        secondary_products: (data.products?.secondary || []).map(p => ({
-            id: p.id || null,
-            name: p.name || '',
-            tariff_code: p.tariff_code || '',
-            description: p.description || '',
-            volume_unit: p.volume_unit || '',
-            volume_amount: p.volume_amount || '',
-            annual_export: p.annual_export || ''
-        }))
+        current_markets: data.company_data?.current_markets || ''
     };
     
     // Если нет данных компании, не инициализируем отслеживание для полей компании
@@ -67,9 +56,9 @@ function initChangeTracking(data) {
                 mainActivityField.value = originalFormData.main_activity;
             }
             
-            const volumeUnitField = document.getElementById('form_main_product_volume_unit');
-            if (volumeUnitField && originalFormData.main_product?.volume_unit) {
-                volumeUnitField.value = originalFormData.main_product.volume_unit;
+            const currentMarketsField = document.getElementById('form_current_markets');
+            if (currentMarketsField && originalFormData.current_markets) {
+                currentMarketsField.value = originalFormData.current_markets;
             }
             
             // Добавляем обработчики событий для всех редактируемых полей
@@ -83,8 +72,8 @@ function setupChangeTracking() {
     const textFields = [
         'form_user_email', 'form_user_phone',
         'form_name', 'form_tax_id', 'form_legal_name', 'form_start_date', 'form_website',
-        'form_main_product_name', 'form_main_product_tariff_code', 'form_main_product_description',
-        'form_main_product_volume_amount', 'form_main_product_annual_export', 'form_certifications'
+        'form_main_product_name', 'form_main_product_description',
+        'form_main_product_annual_export', 'form_certifications'
     ];
     
     textFields.forEach(fieldId => {
@@ -115,7 +104,7 @@ function setupChangeTracking() {
     // Dropdown поля (select)
     const selectFields = [
         'form_user_is_admin',
-        'form_organization_type', 'form_main_activity', 'form_main_product_volume_unit'
+        'form_organization_type', 'form_main_activity', 'form_current_markets'
     ];
     
     selectFields.forEach(fieldId => {
@@ -135,23 +124,6 @@ function setupChangeTracking() {
         }
     });
     
-    // Обработка вторичных продуктов
-    document.querySelectorAll('.secondary-product-item input, .secondary-product-item select').forEach(field => {
-        field.addEventListener('input', () => {
-            const item = field.closest('.secondary-product-item');
-            if (item) {
-                const index = item.dataset.index;
-                markFieldChanged('secondary_product_' + index);
-            }
-        });
-        field.addEventListener('change', () => {
-            const item = field.closest('.secondary-product-item');
-            if (item) {
-                const index = item.dataset.index;
-                markFieldChanged('secondary_product_' + index);
-            }
-        });
-    });
 }
 
 // Помечает поле как измененное
@@ -178,12 +150,10 @@ function getOriginalValue(fieldId) {
         'form_organization_type': 'organization_type',
         'form_main_activity': 'main_activity',
         'form_main_product_name': 'main_product.name',
-        'form_main_product_tariff_code': 'main_product.tariff_code',
         'form_main_product_description': 'main_product.description',
-        'form_main_product_volume_unit': 'main_product.volume_unit',
-        'form_main_product_volume_amount': 'main_product.volume_amount',
         'form_main_product_annual_export': 'main_product.annual_export',
-        'form_certifications': 'main_product.certifications'
+        'form_certifications': 'main_product.certifications',
+        'form_current_markets': 'current_markets'
     };
     
     const path = fieldMap[fieldId];
@@ -225,7 +195,6 @@ function generateUserFormHTML(data, userId) {
     const contacts = data.contacts || {};
     const socialNetworks = data.social_networks || [];
     const products = data.products || {};
-    const exportHistory = data.export_history || {};
     const companyData = data.company_data || {};
     const files = data.files || {};
     
@@ -373,26 +342,11 @@ function generateUserFormHTML(data, userId) {
     html += '<div class="form-group"><label>Producto o servicio principal <span class="req">*</span></label>';
     html += '<input type="text" class="form-control" id="form_main_product_name" value="' + escapeHtml(mainProduct.name || '') + '" required></div>';
     
-    html += '<div class="form-group"><label>Código Arancelario <span class="req">*</span></label>';
-    html += '<input type="text" class="form-control" id="form_main_product_tariff_code" value="' + escapeHtml(mainProduct.tariff_code || '') + '" required></div>';
-    
     html += '<div class="form-group"><label>Descripción <span class="req">*</span></label>';
     html += '<input type="text" class="form-control" id="form_main_product_description" value="' + escapeHtml(mainProduct.description || '') + '" required></div>';
     
-    html += '<div class="form-group"><label>Unidad de Volumen <span class="req">*</span></label>';
-    html += '<select class="form-control" id="form_main_product_volume_unit" required>';
-    html += '<option value="">...</option>';
-    const units = ['kg', 'toneladas', 'litros', 'unidades', 'horas'];
-    units.forEach(unit => {
-        html += '<option value="' + escapeHtml(unit) + '"' + (mainProduct.volume_unit === unit ? ' selected' : '') + '>' + escapeHtml(unit) + '</option>';
-    });
-    html += '</select></div>';
-    
-    html += '<div class="form-group"><label>Cantidad de Volumen <span class="req">*</span></label>';
-    html += '<input type="text" class="form-control" id="form_main_product_volume_amount" value="' + escapeHtml(mainProduct.volume_amount || '') + '" required></div>';
-    
-    html += '<div class="form-group"><label>Exportación Anual (USD) <span class="req">*</span></label>';
-    html += '<input type="text" class="form-control" id="form_main_product_annual_export" value="' + escapeHtml(mainProduct.annual_export || '') + '" required></div>';
+    html += '<div class="form-group"><label>Exportación Anual (USD)</label>';
+    html += '<input type="text" class="form-control" id="form_main_product_annual_export" value="' + escapeHtml(mainProduct.annual_export || '') + '"></div>';
     
     // Фото основного продукта (только просмотр)
     if (files.product_photo && files.product_photo.length > 0) {
@@ -401,40 +355,30 @@ function generateUserFormHTML(data, userId) {
         html += '</div>';
     }
     
-    // Вторичные продукты
-    const secondaryProducts = products.secondary || [];
-    if (secondaryProducts.length > 0) {
-        html += '<div class="form-group"><label>Productos Secundarios</label>';
-        html += '<div id="secondary_products_list">';
-        secondaryProducts.forEach((product, index) => {
-            html += generateSecondaryProductHTML(product, index);
-        });
-        html += '</div></div>';
-    }
-    
     // Certificaciones
-    html += '<div class="form-group"><label>Certificaciones <span class="req">*</span></label>';
-    html += '<textarea class="form-control" id="form_certifications" required>' + escapeHtml(mainProduct.certifications || '') + '</textarea></div>';
+    html += '<div class="form-group"><label>Certificaciones</label>';
+    html += '<textarea class="form-control" id="form_certifications">' + escapeHtml(mainProduct.certifications || '') + '</textarea></div>';
     
-    // Exportación Anual (только чтение)
-    if (exportHistory['2022'] || exportHistory['2023'] || exportHistory['2024']) {
-        html += '<div class="form-group"><label>Exportación Anual (USD)</label>';
-        html += '<div class="readonly-field">';
-        html += '2022: ' + (exportHistory['2022'] || 'N/A') + ', ';
-        html += '2023: ' + (exportHistory['2023'] || 'N/A') + ', ';
-        html += '2024: ' + (exportHistory['2024'] || 'N/A');
-        html += '</div></div>';
-    }
+    // Mercados Actuales (редактируемое поле)
+    html += '<div class="form-group"><label>Mercados Actuales (Continente) <span class="req">*</span></label>';
+    html += '<select class="form-control" id="form_current_markets" required>';
+    html += '<option value="">...</option>';
+    const markets = ['América del Norte', 'América del Sur', 'Europa', 'Asia', 'África', 'Oceanía'];
+    const currentMarketsValue = companyData.current_markets || '';
+    // Если current_markets - массив (старый формат), берем первый элемент
+    const currentMarketsStr = Array.isArray(currentMarketsValue) ? (currentMarketsValue[0] || '') : currentMarketsValue;
+    markets.forEach(market => {
+        html += '<option value="' + escapeHtml(market) + '"' + (currentMarketsStr === market ? ' selected' : '') + '>' + escapeHtml(market) + '</option>';
+    });
+    html += '</select></div>';
     
-    // Mercados (только чтение)
-    if (companyData.current_markets && Array.isArray(companyData.current_markets)) {
-        html += '<div class="form-group"><label>Mercados Actuales</label>';
-        html += '<div class="readonly-field">' + companyData.current_markets.join(', ') + '</div></div>';
-    }
-    
+    // Mercados de Interés (только чтение)
     if (companyData.target_markets) {
-        html += '<div class="form-group"><label>Mercados de Interés</label>';
-        html += '<div class="readonly-field">' + escapeHtml(companyData.target_markets) + '</div></div>';
+        const targetMarketsDisplay = Array.isArray(companyData.target_markets) 
+            ? companyData.target_markets.join(', ') 
+            : escapeHtml(companyData.target_markets);
+        html += '<div class="form-group"><label>Mercados de Interés (Continente)</label>';
+        html += '<div class="readonly-field">' + targetMarketsDisplay + '</div></div>';
     }
     
     html += '</div>';
@@ -650,31 +594,6 @@ function saveUserBasicData(userId) {
     });
 }
 
-function generateSecondaryProductHTML(product, index) {
-    let html = '<div class="secondary-product-item" data-index="' + index + '">';
-    html += '<input type="hidden" class="sec-product-id" value="' + (product.id || '') + '">';
-    html += '<div class="form-group"><label>Nombre</label>';
-    html += '<input type="text" class="form-control sec-product-name" value="' + escapeHtml(product.name || '') + '"></div>';
-    html += '<div class="form-group"><label>Código Arancelario</label>';
-    html += '<input type="text" class="form-control sec-product-tariff" value="' + escapeHtml(product.tariff_code || '') + '"></div>';
-    html += '<div class="form-group"><label>Descripción</label>';
-    html += '<input type="text" class="form-control sec-product-desc" value="' + escapeHtml(product.description || '') + '"></div>';
-    html += '<div class="form-group"><label>Unidad</label>';
-    html += '<select class="form-control sec-product-unit">';
-    html += '<option value="">...</option>';
-    const units = ['kg', 'toneladas', 'litros', 'unidades', 'horas'];
-    units.forEach(unit => {
-        html += '<option value="' + escapeHtml(unit) + '"' + (product.volume_unit === unit ? ' selected' : '') + '>' + escapeHtml(unit) + '</option>';
-    });
-    html += '</select></div>';
-    html += '<div class="form-group"><label>Cantidad</label>';
-    html += '<input type="text" class="form-control sec-product-amount" value="' + escapeHtml(product.volume_amount || '') + '"></div>';
-    html += '<div class="form-group"><label>Exportación Anual (USD)</label>';
-    html += '<input type="text" class="form-control sec-product-export" value="' + escapeHtml(product.annual_export || '') + '"></div>';
-    html += '</div>';
-    return html;
-}
-
 function displayFiles(files) {
     if (!files || files.length === 0) return '';
     
@@ -737,36 +656,16 @@ function saveUserFullData(userId) {
         main_activity: isFieldChanged('form_main_activity') 
             ? (document.getElementById('form_main_activity')?.value || '') 
             : (originalFormData.main_activity || ''),
+        current_markets: isFieldChanged('form_current_markets') 
+            ? (document.getElementById('form_current_markets')?.value || '') 
+            : (originalFormData.current_markets || ''),
         main_product: {
             name: getFieldValue('form_main_product_name', originalFormData.main_product?.name || ''),
-            tariff_code: getFieldValue('form_main_product_tariff_code', originalFormData.main_product?.tariff_code || ''),
             description: getFieldValue('form_main_product_description', originalFormData.main_product?.description || ''),
-            volume_unit: isFieldChanged('form_main_product_volume_unit')
-                ? (document.getElementById('form_main_product_volume_unit')?.value || '')
-                : (originalFormData.main_product?.volume_unit || ''),
-            volume_amount: getFieldValue('form_main_product_volume_amount', originalFormData.main_product?.volume_amount || ''),
             annual_export: getFieldValue('form_main_product_annual_export', originalFormData.main_product?.annual_export || ''),
             certifications: getFieldValue('form_certifications', originalFormData.main_product?.certifications || '')
-        },
-        secondary_products: []
-    };
-    
-    // Сбор вторичных продуктов
-    document.querySelectorAll('.secondary-product-item').forEach(item => {
-        const secProduct = {
-            id: item.querySelector('.sec-product-id').value || null,
-            name: item.querySelector('.sec-product-name').value.trim(),
-            tariff_code: item.querySelector('.sec-product-tariff').value.trim(),
-            description: item.querySelector('.sec-product-desc').value.trim(),
-            volume_unit: item.querySelector('.sec-product-unit').value,
-            volume_amount: item.querySelector('.sec-product-amount').value.trim(),
-            annual_export: item.querySelector('.sec-product-export').value.trim()
-        };
-        
-        if (secProduct.name || secProduct.id) {
-            formData.secondary_products.push(secProduct);
         }
-    });
+    };
     
     // Отправка
     document.getElementById('save_message').innerHTML = '<div class="alert alert-info">Guardando...</div>';
@@ -904,13 +803,6 @@ function validateForm() {
         errors.push('Producto principal');
     }
     
-    const mainProductTariffValue = getFieldValue('form_main_product_tariff_code', mainProduct.tariff_code);
-    if (isFieldChanged('form_main_product_tariff_code')) {
-        if (!mainProductTariffValue) errors.push('Código Arancelario');
-    } else if (!mainProduct.tariff_code) {
-        errors.push('Código Arancelario');
-    }
-    
     const mainProductDescValue = getFieldValue('form_main_product_description', mainProduct.description);
     if (isFieldChanged('form_main_product_description')) {
         if (!mainProductDescValue) errors.push('Descripción del producto');
@@ -918,33 +810,15 @@ function validateForm() {
         errors.push('Descripción del producto');
     }
     
-    const mainProductUnitField = document.getElementById('form_main_product_volume_unit');
-    const mainProductUnitValue = isFieldChanged('form_main_product_volume_unit') ? (mainProductUnitField ? mainProductUnitField.value : '') : mainProduct.volume_unit;
-    if (isFieldChanged('form_main_product_volume_unit')) {
-        if (!mainProductUnitValue) errors.push('Unidad de Volumen');
-    } else if (!mainProduct.volume_unit) {
-        errors.push('Unidad de Volumen');
-    }
-    
-    const mainProductAmountValue = getFieldValue('form_main_product_volume_amount', mainProduct.volume_amount);
-    if (isFieldChanged('form_main_product_volume_amount')) {
-        if (!mainProductAmountValue) errors.push('Cantidad de Volumen');
-    } else if (!mainProduct.volume_amount) {
-        errors.push('Cantidad de Volumen');
-    }
-    
-    const mainProductExportValue = getFieldValue('form_main_product_annual_export', mainProduct.annual_export);
-    if (isFieldChanged('form_main_product_annual_export')) {
-        if (!mainProductExportValue) errors.push('Exportación Anual (USD)');
-    } else if (!mainProduct.annual_export) {
-        errors.push('Exportación Anual (USD)');
-    }
-    
-    const certificationsValue = getFieldValue('form_certifications', mainProduct.certifications);
-    if (isFieldChanged('form_certifications')) {
-        if (!certificationsValue) errors.push('Certificaciones');
-    } else if (!mainProduct.certifications) {
-        errors.push('Certificaciones');
+    // Mercados Actuales (обязательное поле)
+    const currentMarketsField = document.getElementById('form_current_markets');
+    const currentMarketsValue = isFieldChanged('form_current_markets') 
+        ? (currentMarketsField ? currentMarketsField.value : '') 
+        : (originalFormData.current_markets || '');
+    if (isFieldChanged('form_current_markets')) {
+        if (!currentMarketsValue) errors.push('Mercados Actuales (Continente)');
+    } else if (!originalFormData.current_markets) {
+        errors.push('Mercados Actuales (Continente)');
     }
     
     return errors;

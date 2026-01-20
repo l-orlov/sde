@@ -518,100 +518,43 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="label"><span data-i18n="regfull_main_product">Producto o servicio principal <span class="req">*</span></span></div>
     <div class="producto_grid">
       <input type="search" name="main_product" class="span_all">
-      <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario <span class="req">*</span></label>
-      <input type="search" name="tariff_code">
       <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
       <input type="search" name="product_description">
-      <label class="label_span" data-i18n="regfull_annual_volume">Volumen de Producción Anual <span class="req">*</span></label>
-      <div class="anual_inline">
-        <div class="field">
-          <div class="custom-dropdown">
-            <div class="dropdown-selected">
-              <span class="selected-text">…</span>
-              <span class="dropdown-arrow">▼</span>
-            </div>
-            <div class="dropdown-options">
-              <div class="dropdown-option" data-value="">…</div>
-              <div class="dropdown-option" data-value="kg">kg</div>
-              <div class="dropdown-option" data-value="toneladas">toneladas</div>
-              <div class="dropdown-option" data-value="litros">litros</div>
-              <div class="dropdown-option" data-value="unidades">unidades</div>
-              <div class="dropdown-option" data-value="horas">horas</div>
-            </div>
-            <input type="hidden" name="volume_unit" value="">
-          </div>
-        </div>
-        <input type="search" name="volume_amount">
-      </div>
-      <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD) <span class="req">*</span></label>
+      <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD)</label>
       <input type="search" name="annual_export">
-      <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto <span class="req">*</span></label>
+      <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto</label>
       <input type="file" class="file-ph" name="product_photo" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF) ">
     </div>
-    <div class="label"><span data-i18n="regfull_secondary_products">Lista de Productos/Servicios Secundarios</span></div>
-    <div class="producto_sec">
-      <div class="sec-list"></div>
-      <button type="button" class="add_more sec-add" data-i18n="regfull_add_more">agregar más</button>
-      <template class="sec-template">
-        <div class="sec_item">
-          <input type="hidden" name="product_id_sec[]" value="">
-          <div class="producto_grid">
-            <input type="search" name="secondary_products[]" class="span_all">
-            <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario <span class="req">*</span></label>
-            <input type="search" name="tariff_code_sec[]">
-            <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
-            <input type="search" name="product_description_sec[]">
-            <label class="label_span" data-i18n="regfull_annual_volume">Volumen de Producción Anual <span class="req">*</span></label>
-            <div class="anual_inline">
-              <div class="field">
-                <div class="custom-dropdown">
-                  <div class="dropdown-selected">
-                    <span class="selected-text">…</span>
-                    <span class="dropdown-arrow">▼</span>
-                  </div>
-                  <div class="dropdown-options">
-                    <div class="dropdown-option" data-value="">…</div>
-                    <div class="dropdown-option" data-value="kg">kg</div>
-                    <div class="dropdown-option" data-value="toneladas">toneladas</div>
-                    <div class="dropdown-option" data-value="litros">litros</div>
-                    <div class="dropdown-option" data-value="unidades">unidades</div>
-                    <div class="dropdown-option" data-value="horas">horas</div>
-                  </div>
-                  <input type="hidden" name="volume_unit_sec[]" value="">
-                </div>
-              </div>
-              <input type="search" name="volume_amount_sec[]">
-            </div>
-            <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD) <span class="req">*</span></label>
-            <input type="search" name="annual_export_sec[]">
-            <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto <span class="req">*</span></label>
-            <input type="file" class="file-ph" name="product_photo_sec[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF) ">
-          </div>
-          <div class="sec-actions">
-            <button type="button" class="sec-remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">×</button>
-          </div>
-        </div>
-      </template>
-    </div>
     <!-- Certificaciones -->
-    <div class="label"><span data-i18n="regfull_certifications">Certificaciones <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_certifications">Certificaciones</span></div>
     <div class="field">
       <input type="search" name="certifications" data-i18n-placeholder="regfull_certifications_placeholder" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
     </div>
-    <!-- Exportación Anual (USD) -->
-    <div class="label"><span data-i18n="regfull_annual_export_title">Exportación Anual (USD)</span></div>
-    <div class="field exp_anual">
-      <div class="exp_anual_grid">
-        <label class="label_span">2022 <span class="req">*</span></label>
-        <input type="search" name="export_2022">
-        <label class="label_span">2023 <span class="req">*</span></label>
-        <input type="search" name="export_2023">
-        <label class="label_span">2024 <span class="req">*</span></label>
-        <input type="search" name="export_2024">
+    <!-- Mercados Actuales (Continente) -->
+    <div class="label"><span data-i18n="regfull_current_markets">Mercados Actuales (Continente) <span class="req">*</span></span></div>
+    <div class="field">
+      <div class="custom-dropdown">
+        <div class="dropdown-selected">
+          <span class="selected-text">…</span>
+          <span class="dropdown-arrow">▼</span>
+        </div>
+        <div class="dropdown-options">
+          <div class="dropdown-option" data-value="">…</div>
+          <div class="dropdown-option" data-value="América del Norte">América del Norte</div>
+          <div class="dropdown-option" data-value="América del Sur">América del Sur</div>
+          <div class="dropdown-option" data-value="Europa">Europa</div>
+          <div class="dropdown-option" data-value="Asia">Asia</div>
+          <div class="dropdown-option" data-value="África">África</div>
+          <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
+        </div>
+        <input type="hidden" name="current_markets" value="">
       </div>
     </div>
-    <!-- Mercados Actuales (Continente) -->
-    <div class="label"><span data-i18n="regfull_current_markets">Mercados Actuales (Continente)</span></div>
+    <!-- Mercados de Interés (Continente) -->
+    <div class="label">
+      <span data-i18n="regfull_interest_markets">Mercados de Interés (Continente)</span>
+      <div class="sub" data-i18n="regfull_interest_markets_sub">(a donde le gustaría exportar)</div>
+    </div>
     <div class="field mercados_act">
       <div class="act-list"></div>
       <button type="button" class="add_more act-add" data-i18n="regfull_add_more">agregar más</button>
@@ -631,60 +574,16 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="dropdown-option" data-value="África">África</div>
               <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
             </div>
-            <input type="hidden" name="current_markets[]" value="">
+            <input type="hidden" name="target_markets[]" value="">
           </div>
           <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
         </div>
       </template>
     </div>
-    <!-- Mercados de Interés (Continente) -->
-    <div class="label">
-      <span data-i18n="regfull_interest_markets">Mercados de Interés (Continente) <span class="req">*</span></span>
-      <div class="sub" data-i18n="regfull_interest_markets_sub">(a donde le gustaría exportar)</div>
-    </div>
-    <div class="act-row">
-      <div class="custom-dropdown">
-        <div class="dropdown-selected">
-          <span class="selected-text">…</span>
-          <span class="dropdown-arrow">▼</span>
-        </div>
-        <div class="dropdown-options">
-          <div class="dropdown-option" data-value="">…</div>
-          <div class="dropdown-option" data-value="América del Norte">América del Norte</div>
-          <div class="dropdown-option" data-value="América del Sur">América del Sur</div>
-          <div class="dropdown-option" data-value="Europa">Europa</div>
-          <div class="dropdown-option" data-value="Asia">Asia</div>
-          <div class="dropdown-option" data-value="África">África</div>
-          <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
-        </div>
-        <input type="hidden" name="target_markets" value="">
-      </div>
-    </div>
   </div>
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.producto_sec').forEach(sec => {
-    const list = sec.querySelector('.sec-list');
-    const tpl  = sec.querySelector('.sec-template');
-    const add  = sec.querySelector('.sec-add');
-    function addCard(){
-      const node = tpl.content.firstElementChild.cloneNode(true);
-      node.querySelector('.sec-remove').addEventListener('click', () => node.remove());
-      
-      // Initialize custom dropdown in the new card
-      const dropdown = node.querySelector('.custom-dropdown');
-      if (dropdown) {
-        const hiddenInput = dropdown.querySelector('input[type="hidden"]');
-        if (hiddenInput) {
-          initCustomDropdown(dropdown, hiddenInput);
-        }
-      }
-      
-      list.appendChild(node);
-    }
-    add.addEventListener('click', addCard);
-  });
   document.querySelectorAll('.mercados_act').forEach(box => {
     const list = box.querySelector('.act-list');
     const tpl  = box.querySelector('.act-item-tpl');
@@ -1188,22 +1087,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       Object.assign(formData, checkboxValues);
       
-      const secList = document.querySelector('.sec-list');
-      if (secList && secList.children.length > 0) {
-        formData['_sec_items_count'] = secList.children.length;
-        secList.querySelectorAll('.sec_item').forEach((item, idx) => {
-          item.querySelectorAll('input[type="text"], input[type="search"]').forEach((input, inputIdx) => {
-            if (input.value) {
-              formData[`_sec_${idx}_input_${inputIdx}`] = input.value;
-            }
-          });
-          const dropdown = item.querySelector('.custom-dropdown input[type="hidden"]');
-          if (dropdown && dropdown.value) {
-            formData[`_sec_${idx}_dropdown`] = dropdown.value;
-          }
-        });
-      }
-      
       const actList = document.querySelector('.act-list');
       if (actList && actList.children.length > 0) {
         formData['_act_items_count'] = actList.children.length;
@@ -1396,19 +1279,8 @@ document.addEventListener('DOMContentLoaded', () => {
       checkDropdown('main_activity', 'Actividad Principal');
       
       checkRequired('main_product', 'Producto o servicio principal');
-      checkRequired('tariff_code', 'Código Arancelario');
       checkRequired('product_description', 'Descripción del producto');
-      checkDropdown('volume_unit', 'Unidad de Volumen');
-      checkRequired('volume_amount', 'Cantidad de Volumen');
-      checkRequired('annual_export', 'Exportación Anual (USD)');
-      
-      checkFile('product_photo', 'product_photo', 'Foto del Producto principal');
-      
-      checkRequired('certifications', 'Certificaciones');
-      checkRequired('export_2022', 'Exportación 2022');
-      checkRequired('export_2023', 'Exportación 2023');
-      checkRequired('export_2024', 'Exportación 2024');
-      checkDropdown('target_markets', 'Mercados de Interés');
+      checkDropdown('current_markets', 'Mercados Actuales');
       
       checkRequired('company_history', 'Historia de la Empresa');
       const awards = document.querySelector('input[name="awards"]:checked');
@@ -2031,22 +1903,6 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       }
     });
     
-    const secList = document.querySelector('.sec-list');
-    if (secList && secList.children.length > 0) {
-      formData['_sec_items_count'] = secList.children.length;
-      secList.querySelectorAll('.sec_item').forEach((item, idx) => {
-        item.querySelectorAll('input[type="text"], input[type="search"]').forEach((input, inputIdx) => {
-          if (input.value) {
-            formData[`_sec_${idx}_input_${inputIdx}`] = input.value;
-          }
-        });
-        const dropdown = item.querySelector('.custom-dropdown input[type="hidden"]');
-        if (dropdown && dropdown.value) {
-          formData[`_sec_${idx}_dropdown`] = dropdown.value;
-        }
-      });
-    }
-    
     const actList = document.querySelector('.act-list');
     if (actList && actList.children.length > 0) {
       formData['_act_items_count'] = actList.children.length;
@@ -2219,41 +2075,6 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
                   if (otherInput) {
                     otherInput.value = formData[otherKey];
                     otherInput.hidden = false;
-                  }
-                }
-              });
-            }, 200);
-          }
-        }
-        
-        if (formData['_sec_items_count'] && formData['_sec_items_count'] > 0) {
-          const secList = document.querySelector('.sec-list');
-          const secAdd = document.querySelector('.sec-add');
-          if (secList && secAdd) {
-            const currentItems = secList.children.length;
-            for (let i = currentItems; i < formData['_sec_items_count']; i++) {
-              secAdd.click();
-            }
-            setTimeout(() => {
-              secList.querySelectorAll('.sec_item').forEach((item, idx) => {
-                item.querySelectorAll('input[type="text"], input[type="search"]').forEach((input, inputIdx) => {
-                  const key = `_sec_${idx}_input_${inputIdx}`;
-                  if (formData[key]) {
-                    input.value = formData[key];
-                  }
-                });
-                const dropdownKey = `_sec_${idx}_dropdown`;
-                if (formData[dropdownKey]) {
-                  const dropdown = item.querySelector('.custom-dropdown input[type="hidden"]');
-                  if (dropdown) {
-                    dropdown.value = formData[dropdownKey];
-                    const selectedText = dropdown.closest('.custom-dropdown').querySelector('.selected-text');
-                    const option = dropdown.closest('.custom-dropdown').querySelector(`[data-value="${formData[dropdownKey]}"]`);
-                    if (selectedText && option) {
-                      selectedText.textContent = option.textContent;
-                      option.classList.add('selected');
-                    }
-                    dropdown.dispatchEvent(new Event('change', { bubbles: true }));
                   }
                 }
               });
@@ -2945,48 +2766,15 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
           loadedProductIds.add(main.id);
         }
         
-        if (secondary && Array.isArray(secondary)) {
-          secondary.forEach(product => {
-            if (product.id) {
-              loadedProductIds.add(product.id);
-            }
-          });
-        }
-        
         if (main) {
           const mainProductInput = document.querySelector('input[name="main_product"]');
           if (mainProductInput) {
             mainProductInput.value = main.name || '';
           }
           
-          const tariffCodeInput = document.querySelector('input[name="tariff_code"]');
-          if (tariffCodeInput) {
-            tariffCodeInput.value = main.tariff_code || '';
-          }
-          
           const descriptionInput = document.querySelector('input[name="product_description"]');
           if (descriptionInput) {
             descriptionInput.value = main.description || '';
-          }
-          
-          const volumeUnitDropdown = document.querySelector('input[name="volume_unit"]');
-          if (volumeUnitDropdown && main.volume_unit) {
-            volumeUnitDropdown.value = main.volume_unit;
-            const dropdown = volumeUnitDropdown.closest('.custom-dropdown');
-            if (dropdown) {
-              const selectedText = dropdown.querySelector('.selected-text');
-              const option = dropdown.querySelector(`[data-value="${main.volume_unit}"]`);
-              if (selectedText && option) {
-                selectedText.textContent = option.textContent;
-                option.classList.add('selected');
-              }
-              volumeUnitDropdown.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-          }
-          
-          const volumeAmountInput = document.querySelector('input[name="volume_amount"]');
-          if (volumeAmountInput) {
-            volumeAmountInput.value = main.volume_amount || '';
           }
           
           const annualExportInput = document.querySelector('input[name="annual_export"]');
@@ -2997,103 +2785,6 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
           const certificationsInput = document.querySelector('input[name="certifications"]');
           if (certificationsInput) {
             certificationsInput.value = main.certifications || '';
-          }
-        }
-        
-        if (secondary && Array.isArray(secondary) && secondary.length > 0) {
-          const secList = document.querySelector('.sec-list');
-          const secTemplate = document.querySelector('.sec-template');
-          const secAdd = document.querySelector('.sec-add');
-          
-          if (secList && secTemplate && secAdd) {
-            const promises = secondary.map((product, index) => {
-              return new Promise((resolve) => {
-                const node = secTemplate.content.firstElementChild.cloneNode(true);
-                
-                const productIdInput = node.querySelector('input[name="product_id_sec[]"]');
-                if (productIdInput) {
-                  productIdInput.value = String(product.id || '');
-                }
-                
-                const nameInput = node.querySelector('input[name="secondary_products[]"]');
-                if (nameInput) {
-                  nameInput.value = product.name || '';
-                }
-                
-                const tariffCodeInput = node.querySelector('input[name="tariff_code_sec[]"]');
-                if (tariffCodeInput) {
-                  tariffCodeInput.value = product.tariff_code || '';
-                }
-                
-                const descriptionInput = node.querySelector('input[name="product_description_sec[]"]');
-                if (descriptionInput) {
-                  descriptionInput.value = product.description || '';
-                }
-                
-                const volumeUnitDropdown = node.querySelector('input[name="volume_unit_sec[]"]');
-                if (volumeUnitDropdown && product.volume_unit) {
-                  volumeUnitDropdown.value = product.volume_unit;
-                  const dropdown = volumeUnitDropdown.closest('.custom-dropdown');
-                  if (dropdown) {
-                    const selectedText = dropdown.querySelector('.selected-text');
-                    const option = dropdown.querySelector(`[data-value="${product.volume_unit}"]`);
-                    if (selectedText && option) {
-                      selectedText.textContent = option.textContent;
-                      option.classList.add('selected');
-                    }
-                  }
-                }
-                
-                const volumeAmountInput = node.querySelector('input[name="volume_amount_sec[]"]');
-                if (volumeAmountInput) {
-                  volumeAmountInput.value = product.volume_amount || '';
-                }
-                
-                const annualExportInput = node.querySelector('input[name="annual_export_sec[]"]');
-                if (annualExportInput) {
-                  annualExportInput.value = product.annual_export || '';
-                }
-                
-                const removeBtn = node.querySelector('.sec-remove');
-                if (removeBtn) {
-                  removeBtn.addEventListener('click', () => node.remove());
-                }
-                
-                secList.appendChild(node);
-                
-                const dropdown = node.querySelector('.custom-dropdown');
-                if (dropdown) {
-                  const hiddenInput = dropdown.querySelector('input[type="hidden"]');
-                  if (hiddenInput && typeof initCustomDropdown === 'function') {
-                    setTimeout(() => {
-                      initCustomDropdown(dropdown, hiddenInput);
-                      if (product.volume_unit) {
-                        hiddenInput.value = product.volume_unit;
-                        const selectedText = dropdown.querySelector('.selected-text');
-                        const option = dropdown.querySelector(`[data-value="${product.volume_unit}"]`);
-                        if (selectedText && option) {
-                          selectedText.textContent = option.textContent;
-                          option.classList.add('selected');
-                        }
-                      }
-                      resolve();
-                    }, 50);
-                  } else {
-                    resolve();
-                  }
-                } else {
-                  resolve();
-                }
-              });
-            });
-            
-            await Promise.all(promises);
-            
-            await new Promise((resolve) => {
-              setTimeout(() => {
-                resolve();
-              }, 100);
-            });
           }
         }
       }
