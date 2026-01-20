@@ -1,8 +1,0 @@
-{
-    "login_tax_id_placeholder": "Введите ваш CUIL/CUIT",
-    "login_pass_placeholder": "Введите ваш пароль",
-    "login_title": "ВХОД",
-    "login_button": "ВХОД",
-    "login_register": "РЕГИСТРАЦИЯ",
-    "login_forgot": "ЗАБЫЛИ ПАРОЛЬ"
-}

@@ -86,7 +86,7 @@ $busc = '';
 						</div>
 
 						<div class="form-field-group" style="text-align:right; margin-top: 10px;">
-							<button type="button" onclick="user_create()" style="background: #0082C6; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+							<button type="button" onclick="user_create()" style="background: #003399; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
 								Guardar
 							</button>
 						</div>
@@ -328,6 +328,59 @@ function displayUserForm(data, userId) {
 	
 	const form = generateUserFormHTML(data, userId);
 	document.getElementById('user_detail_form').innerHTML = form;
+	
+	// Инициализация обработчиков для новых полей
+	setupFormEventHandlers();
+}
+
+function setupFormEventHandlers() {
+	// Обработчик для чекбокса "Otros" в Factores de Diferenciación
+	const otrosDiffCheckbox = document.querySelector('.diff-factor[value="Otros"]');
+	const otrosDiffInput = document.getElementById('form_other_differentiation');
+	if (otrosDiffCheckbox && otrosDiffInput) {
+		otrosDiffCheckbox.addEventListener('change', function() {
+			otrosDiffInput.disabled = !this.checked;
+			if (!this.checked) {
+				otrosDiffInput.value = '';
+			}
+		});
+	}
+	
+	// Обработчик для чекбокса "Otros" в Necesidades
+	const otrosNeedsCheckbox = document.querySelector('.need-option[value="Otros"]');
+	const otrosNeedsInput = document.getElementById('form_other_needs');
+	if (otrosNeedsCheckbox && otrosNeedsInput) {
+		otrosNeedsCheckbox.addEventListener('change', function() {
+			otrosNeedsInput.disabled = !this.checked;
+			if (!this.checked) {
+				otrosNeedsInput.value = '';
+			}
+		});
+	}
+	
+	// Обработчик для кнопки добавления продукта
+	const addProductBtn = document.getElementById('add_product_btn');
+	if (addProductBtn) {
+		addProductBtn.addEventListener('click', function() {
+			const container = document.getElementById('products_list_container');
+			if (!container) return;
+			
+			const productItems = container.querySelectorAll('.product-item-admin');
+			const newIndex = productItems.length;
+			
+			const newProductHtml = '<div class="product-item-admin" data-product-id="" data-product-index="' + newIndex + '">' +
+				'<h5 style="margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Producto ' + (newIndex + 1) + '</h5>' +
+				'<div class="form-group"><label>Producto <span class="req">*</span></label>' +
+				'<input type="text" class="form-control product-name" data-index="' + newIndex + '" value="" required></div>' +
+				'<div class="form-group"><label>Descripción <span class="req">*</span></label>' +
+				'<input type="text" class="form-control product-description" data-index="' + newIndex + '" value="" required></div>' +
+				'<div class="form-group"><label>Exportación Anual (USD)</label>' +
+				'<input type="text" class="form-control product-export" data-index="' + newIndex + '" value=""></div>' +
+				'</div>';
+			
+			container.insertAdjacentHTML('beforeend', newProductHtml);
+		});
+	}
 }
 
 user_list(0, '');

@@ -126,6 +126,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $companyId = $company ? $company['id'] : null;
         
+        // Синхронизация email в company_contacts
+        if (!empty($email) && $companyId) {
+            $query = "UPDATE company_contacts SET email = ? WHERE company_id = ?";
+            $stmt = mysqli_prepare($link, $query);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'si', $email, $companyId);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+        }
+        
         if (!empty($companyName)) {
             if ($companyId) {
                 $query = "UPDATE companies SET name = ?, tax_id = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?";

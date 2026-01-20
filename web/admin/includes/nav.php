@@ -8,7 +8,7 @@ if (!isset($basePath)) {
 
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="<?= $basePath ?>index.php">
                 <div class="site-logo">
-                    <img src="<?= $basePath ?>img/logo.png">
+                    <img src="<?= $basePath ?>img/logo.svg">
                 </div>
             </a>
 

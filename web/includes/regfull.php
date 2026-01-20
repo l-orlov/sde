@@ -11,8 +11,8 @@ if (isset($_SESSION['uid'])) {
     $companyId = null;
     $userData = null;
     
-    // Загрузка данных пользователя (для company_name и tax_id)
-    $query = "SELECT company_name, tax_id FROM users WHERE id = ? LIMIT 1";
+    // Загрузка данных пользователя (для company_name, tax_id и email)
+    $query = "SELECT company_name, tax_id, email FROM users WHERE id = ? LIMIT 1";
     $stmt = mysqli_prepare($link, $query);
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'i', $userId);
@@ -81,6 +81,14 @@ if (isset($_SESSION['uid'])) {
             mysqli_stmt_close($stmt);
         }
         
+        // Если email нет в company_contacts, берем из users
+        if (empty($companyContacts['email']) && isset($userData['email'])) {
+            if (!$companyContacts) {
+                $companyContacts = [];
+            }
+            $companyContacts['email'] = $userData['email'];
+        }
+        
         // Загрузка социальных сетей
         $query = "SELECT network_type, url 
                   FROM company_social_networks WHERE company_id = ? 
@@ -95,6 +103,83 @@ if (isset($_SESSION['uid'])) {
             }
             mysqli_stmt_close($stmt);
         }
+        
+        // Загрузка данных из company_data
+        $query = "SELECT current_markets, target_markets, differentiation_factors, needs, 
+                         competitiveness, logistics, expectations, consents 
+                  FROM company_data WHERE company_id = ? LIMIT 1";
+        $stmt = mysqli_prepare($link, $query);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $companyId);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $companyDataRow = mysqli_fetch_assoc($result);
+            mysqli_stmt_close($stmt);
+            
+            if ($companyDataRow) {
+                // Распарсить JSON поля
+                $companyDataJson = [
+                    'current_markets' => !empty($companyDataRow['current_markets']) ? json_decode($companyDataRow['current_markets'], true) : '',
+                    'target_markets' => !empty($companyDataRow['target_markets']) ? json_decode($companyDataRow['target_markets'], true) : [],
+                    'differentiation_factors' => !empty($companyDataRow['differentiation_factors']) ? json_decode($companyDataRow['differentiation_factors'], true) : [],
+                    'needs' => !empty($companyDataRow['needs']) ? json_decode($companyDataRow['needs'], true) : [],
+                    'competitiveness' => !empty($companyDataRow['competitiveness']) ? json_decode($companyDataRow['competitiveness'], true) : [],
+                    'logistics' => !empty($companyDataRow['logistics']) ? json_decode($companyDataRow['logistics'], true) : null,
+                    'expectations' => !empty($companyDataRow['expectations']) ? json_decode($companyDataRow['expectations'], true) : null,
+                    'consents' => !empty($companyDataRow['consents']) ? json_decode($companyDataRow['consents'], true) : null
+                ];
+                
+                // Нормализация данных (если current_markets это строка, а не JSON)
+                if (is_string($companyDataJson['current_markets']) && !empty($companyDataJson['current_markets'])) {
+                    $decoded = json_decode($companyDataJson['current_markets'], true);
+                    if ($decoded !== null) {
+                        $companyDataJson['current_markets'] = $decoded;
+                    }
+                }
+                
+                // Если competitiveness, logistics, expectations, consents не массивы, сделать пустыми массивами
+                if (!is_array($companyDataJson['competitiveness'])) $companyDataJson['competitiveness'] = [];
+                if (!is_array($companyDataJson['logistics'])) {
+                    // Если logistics это null или не массив, делаем пустым массивом
+                    $companyDataJson['logistics'] = [];
+                }
+                if (!is_array($companyDataJson['expectations'])) $companyDataJson['expectations'] = [];
+                if (!is_array($companyDataJson['consents'])) $companyDataJson['consents'] = [];
+            } else {
+                $companyDataJson = [
+                    'current_markets' => '',
+                    'target_markets' => [],
+                    'differentiation_factors' => [],
+                    'needs' => [],
+                    'competitiveness' => [],
+                    'logistics' => [],
+                    'expectations' => [],
+                    'consents' => []
+                ];
+            }
+        } else {
+            $companyDataJson = [
+                'current_markets' => '',
+                'target_markets' => [],
+                'differentiation_factors' => [],
+                'needs' => [],
+                'competitiveness' => [],
+                'logistics' => [],
+                'expectations' => [],
+                'consents' => []
+            ];
+        }
+    } else {
+        $companyDataJson = [
+            'current_markets' => '',
+            'target_markets' => [],
+            'differentiation_factors' => [],
+            'needs' => [],
+            'competitiveness' => [],
+            'logistics' => [],
+            'expectations' => [],
+            'consents' => []
+        ];
     }
 }
 
@@ -110,7 +195,6 @@ function esc_attr($value) {
   <ul id="regfull_lang_menu" class="regfull_lang_menu hidden">
     <li onclick="setLang('regfull', 'es')">Español</li>
     <li onclick="setLang('regfull', 'en')">English</li>
-    <!-- <li onclick="setLang('regfull', 'ru')">Русский</li> -->
   </ul>
 </div>
 <div class="datos">
@@ -501,6 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const hiddenInput = dropdown.querySelector('input[type="hidden"]');
     if (hiddenInput) {
+      // Инициализируем dropdown (значение будет установлено через fillDropdownsFromDB для main_activity)
       initCustomDropdown(dropdown, hiddenInput);
     }
   });
@@ -515,16 +600,52 @@ document.addEventListener('DOMContentLoaded', () => {
     <img src="img/icons/regfull_sobre_productos.svg">
   </div>
   <div class="form" novalidate>
-    <div class="label"><span data-i18n="regfull_main_product">Producto o servicio principal <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_main_product">Producto <span class="req">*</span></span></div>
+    <div class="field productos_field">
+      <div class="products-container">
+        <div class="product-item">
     <div class="producto_grid">
-      <input type="search" name="main_product" class="span_all">
+            <input type="search" name="product_name[]" class="span_all">
       <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
-      <input type="search" name="product_description">
+            <input type="search" name="product_description[]">
       <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD)</label>
-      <input type="search" name="annual_export">
+            <input type="search" name="annual_export[]">
       <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto</label>
-      <input type="file" class="file-ph" name="product_photo" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF) ">
+            <div class="file-ph-wrapper">
+              <input type="file" class="file-ph" name="product_photo[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
+              <div class="file-ph-display">
+                <img class="file-preview-img" src="" alt="" style="display: none;">
+                <span class="file-ph-placeholder" data-i18n="regfull_upload_file">subir archivo (JPG, PNG, PDF)</span>
+                <button type="button" class="file-ph-remove" style="display: none;" aria-label="Eliminar">&times;</button>
     </div>
+            </div>
+            <button type="button" class="remove remove-product" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="add_more add-product" data-i18n="regfull_add_more">agregar más</button>
+    </div>
+    <template class="product-item-tpl">
+      <div class="product-item">
+        <div class="producto_grid">
+          <input type="search" name="product_name[]" class="span_all">
+          <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
+          <input type="search" name="product_description[]">
+          <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD)</label>
+          <input type="search" name="annual_export[]">
+          <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto</label>
+          <div class="file-ph-wrapper">
+            <input type="file" class="file-ph" name="product_photo[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
+            <div class="file-ph-display">
+              <img class="file-preview-img" src="" alt="" style="display: none;">
+              <span class="file-ph-placeholder" data-i18n="regfull_upload_file">subir archivo (JPG, PNG, PDF)</span>
+              <button type="button" class="file-ph-remove" style="display: none;" aria-label="Eliminar">&times;</button>
+            </div>
+          </div>
+          <button type="button" class="remove remove-product" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
+        </div>
+      </div>
+    </template>
     <!-- Certificaciones -->
     <div class="label"><span data-i18n="regfull_certifications">Certificaciones</span></div>
     <div class="field">
@@ -547,7 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="dropdown-option" data-value="África">África</div>
           <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
         </div>
-        <input type="hidden" name="current_markets" value="">
+        <input type="hidden" name="current_markets" value="<?= esc_attr($companyDataJson['current_markets'] ?? '') ?>">
       </div>
     </div>
     <!-- Mercados de Interés (Continente) -->
@@ -620,6 +741,212 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+<script>
+// Управление продуктами: добавление и удаление
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.querySelector('.products-container');
+  const template = document.querySelector('.product-item-tpl');
+  const productosField = document.querySelector('.productos_field');
+  
+  if (!container || !template) return;
+  
+  function updateRemoveButtons() {
+    const items = container.querySelectorAll('.product-item');
+    items.forEach((item, index) => {
+      const removeBtn = item.querySelector('.remove-product');
+      if (removeBtn) {
+        // Первый продукт - скрыть, остальные - показать
+        removeBtn.hidden = (index === 0);
+      }
+    });
+  }
+  
+  function updateAddButtons() {
+    // Кнопка add-product теперь всегда видна и находится вне product-item
+    // Функция оставлена для обратной совместимости, но ничего не делает
+  }
+  
+  function bindFileInputEvents(item) {
+    const fileInput = item.querySelector('input.file-ph');
+    const fileDisplay = item.querySelector('.file-ph-display');
+    const fileRemove = item.querySelector('.file-ph-remove');
+    
+    if (!fileInput || !fileDisplay) return;
+    
+    // Клик по display открывает выбор файла
+    if (!fileDisplay._bound) {
+      fileDisplay.addEventListener('click', (e) => {
+        // Не открывать выбор, если клик по кнопке удаления
+        if (e.target === fileRemove || e.target.closest('.file-ph-remove')) {
+          return;
+        }
+        fileInput.click();
+      });
+      fileDisplay._bound = true;
+    }
+    
+    // Обработка выбора файла
+    if (!fileInput._bound) {
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          const file = e.target.files[0];
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              updateFileDisplay(fileInput, event.target.result, file.name);
+            };
+            reader.readAsDataURL(file);
+          } else {
+            updateFileDisplay(fileInput, null, file.name);
+          }
+        }
+      });
+      fileInput._bound = true;
+    }
+    
+    // Обработка удаления файла
+    if (fileRemove && !fileRemove._bound) {
+      fileRemove.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.value = '';
+        updateFileDisplay(fileInput, null, null);
+        
+        // Удалить из fileState если есть
+        if (window.getFileState) {
+          const fileState = window.getFileState();
+          const productItem = fileInput.closest('.product-item');
+          const items = container.querySelectorAll('.product-item');
+          const index = Array.from(items).indexOf(productItem);
+          
+          if (index >= 0) {
+            const fileKey = index === 0 ? 'product_photo' : `product_photo_index_${index}`;
+            delete fileState.newFiles[fileKey];
+          }
+        }
+      });
+      fileRemove._bound = true;
+    }
+  }
+  
+  function updateFileDisplay(input, url, name) {
+    const wrapper = input.closest('.file-ph-wrapper');
+    if (!wrapper) return;
+    
+    const display = wrapper.querySelector('.file-ph-display');
+    const img = display.querySelector('img.file-preview-img');
+    const video = display.querySelector('video.file-preview-img');
+    const placeholder = display.querySelector('.file-ph-placeholder');
+    const removeBtn = display.querySelector('.file-ph-remove');
+    
+    if (url && name) {
+      const isVideo = name.toLowerCase().match(/\.(mp4|mkv|avi|mov|webm)$/i) || url.toLowerCase().match(/\.(mp4|mkv|avi|mov|webm)$/i);
+      
+      if (isVideo && video) {
+        video.src = url;
+        video.style.display = 'block';
+        if (img) img.style.display = 'none';
+      } else if (img) {
+        img.src = url;
+        img.alt = name;
+        img.style.display = 'block';
+        if (video) video.style.display = 'none';
+      }
+      
+      placeholder.style.display = 'none';
+      removeBtn.style.display = 'flex';
+      display.classList.add('has-image');
+    } else {
+      if (img) {
+        img.style.display = 'none';
+        img.src = '';
+      }
+      if (video) {
+        video.style.display = 'none';
+        video.src = '';
+      }
+      placeholder.style.display = 'block';
+      removeBtn.style.display = 'none';
+      display.classList.remove('has-image');
+    }
+  }
+  
+  function bindProductItemEvents(item) {
+    const removeBtn = item.querySelector('.remove-product');
+    
+    // Привязать обработчики для файлового поля
+    bindFileInputEvents(item);
+    
+    if (removeBtn && !removeBtn._bound) {
+      removeBtn.addEventListener('click', () => {
+        const items = container.querySelectorAll('.product-item');
+        // Минимум один продукт
+        if (items.length <= 1) return;
+        
+        item.remove();
+        updateRemoveButtons();
+      });
+      removeBtn._bound = true;
+    }
+  }
+  
+  // Привязать обработчик к кнопке "agregar más" (находится в productos_field)
+  const addProductBtn = productosField ? productosField.querySelector('.add-product') : document.querySelector('.add-product');
+  if (addProductBtn && !addProductBtn._bound) {
+    addProductBtn.addEventListener('click', () => {
+      const newProduct = template.content.firstElementChild.cloneNode(true);
+      
+      // Сбросить значения полей
+      newProduct.querySelectorAll('input').forEach(input => {
+        if (input.type === 'file') {
+          input.value = '';
+        } else {
+          input.value = '';
+        }
+      });
+      
+      // Сбросить отображение файла
+      const fileDisplay = newProduct.querySelector('.file-ph-display');
+      if (fileDisplay) {
+        const img = fileDisplay.querySelector('.file-preview-img');
+        const placeholder = fileDisplay.querySelector('.file-ph-placeholder');
+        const removeBtn = fileDisplay.querySelector('.file-ph-remove');
+        if (img) img.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'block';
+        if (removeBtn) removeBtn.style.display = 'none';
+        fileDisplay.classList.remove('has-image');
+      }
+      
+      // Вставить в конец контейнера (перед кнопкой "agregar más")
+      if (productosField) {
+        productosField.insertBefore(newProduct, addProductBtn);
+      } else {
+        container.appendChild(newProduct);
+      }
+      
+      // Привязать обработчики к новому продукту
+      bindProductItemEvents(newProduct);
+      
+      // Обновить видимость кнопок удаления
+      updateRemoveButtons();
+    });
+    addProductBtn._bound = true;
+  }
+  
+  // Привязать обработчики к существующим продуктам
+  container.querySelectorAll('.product-item').forEach(item => {
+    bindProductItemEvents(item);
+  });
+  
+  // Обновить видимость кнопок при загрузке
+  updateRemoveButtons();
+  
+  // Экспортировать функции для использования в других местах
+  window.updateFileDisplay = updateFileDisplay;
+  window.updateRemoveButtons = updateRemoveButtons;
+  window.updateAddButtons = updateAddButtons;
+  window.bindProductItemEvents = bindProductItemEvents;
+});
+</script>
 <!-- PRODUCTOS -->
 
 <!-- competitividad -->
@@ -636,43 +963,50 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="field">
         <div class="factors_grid">
-          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Calidad"><span data-i18n="regfull_quality">Calidad</span></label>
-          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Innovación"><span data-i18n="regfull_innovation">Innovación</span></label>
-          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Origen territorial"><span data-i18n="regfull_territorial_origin">Origen territorial</span></label>
-          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Trazabilidad"><span data-i18n="regfull_traceability">Trazabilidad</span></label>
-          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Precio competitivo"><span data-i18n="regfull_competitive_price">Precio competitivo</span></label>
+          <?php 
+          $diffFactors = $companyDataJson['differentiation_factors'] ?? [];
+          $otherDiff = $companyDataJson['competitiveness']['other_differentiation'] ?? '';
+          ?>
+          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Calidad" <?= in_array('Calidad', $diffFactors) ? 'checked' : '' ?>><span data-i18n="regfull_quality">Calidad</span></label>
+          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Innovación" <?= in_array('Innovación', $diffFactors) ? 'checked' : '' ?>><span data-i18n="regfull_innovation">Innovación</span></label>
+          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Origen territorial" <?= in_array('Origen territorial', $diffFactors) ? 'checked' : '' ?>><span data-i18n="regfull_territorial_origin">Origen territorial</span></label>
+          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Trazabilidad" <?= in_array('Trazabilidad', $diffFactors) ? 'checked' : '' ?>><span data-i18n="regfull_traceability">Trazabilidad</span></label>
+          <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Precio competitivo" <?= in_array('Precio competitivo', $diffFactors) ? 'checked' : '' ?>><span data-i18n="regfull_competitive_price">Precio competitivo</span></label>
           <div class="other">
-            <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Otros" class="otros_cb"><span data-i18n="regfull_others">Otros</span></label>
-            <input type="search" name="other_differentiation" class="otros_inp" placeholder="" disabled>
+            <label class="chk"><input type="checkbox" name="differentiation_factors[]" value="Otros" class="otros_cb" <?= in_array('Otros', $diffFactors) ? 'checked' : '' ?>><span data-i18n="regfull_others">Otros</span></label>
+            <input type="search" name="other_differentiation" class="otros_inp" placeholder="" value="<?= esc_attr($otherDiff) ?>" <?= in_array('Otros', $diffFactors) ? '' : 'disabled' ?>>
           </div>
         </div>
       </div>
       <!-- 2) Historia -->
       <div class="label"><label data-i18n="regfull_company_history">Historia de la Empresa y del Producto <span class="req">*</span></label></div>
-      <div class="field"><textarea name="company_history" class="ta" rows="4"></textarea></div>
+      <div class="field"><textarea name="company_history" class="ta" rows="4"><?= esc_attr($companyDataJson['competitiveness']['company_history'] ?? '') ?></textarea></div>
       <!-- 3) Premios -->
       <div class="label"><label data-i18n="regfull_awards">Premios <span class="req">*</span></label></div>
       <div class="field">
         <div class="yesno_line with_input">
-          <label class="yn"><input type="radio" name="awards" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="awards" value="no"><span data-i18n="regfull_no">No</span></label>
-          <input type="search" name="awards_detail" class="detail">
+          <?php $awards = $companyDataJson['competitiveness']['awards'] ?? ''; ?>
+          <label class="yn"><input type="radio" name="awards" value="si" <?= $awards === 'si' ? 'checked' : '' ?>><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="awards" value="no" <?= $awards === 'no' ? 'checked' : '' ?>><span data-i18n="regfull_no">No</span></label>
+          <input type="search" name="awards_detail" class="detail" value="<?= esc_attr($companyDataJson['competitiveness']['awards_detail'] ?? '') ?>">
         </div>
       </div>
       <!-- 4) Ferias -->
       <div class="label"><label data-i18n="regfull_fairs">Ferias <span class="req">*</span></label></div>
       <div class="field">
         <div class="yesno_line">
-          <label class="yn"><input type="radio" name="fairs" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="fairs" value="no"><span data-i18n="regfull_no">No</span></label>
+          <?php $fairs = $companyDataJson['competitiveness']['fairs'] ?? ''; ?>
+          <label class="yn"><input type="radio" name="fairs" value="si" <?= $fairs === 'si' ? 'checked' : '' ?>><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="fairs" value="no" <?= $fairs === 'no' ? 'checked' : '' ?>><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <!-- 5) Rondas -->
       <div class="label"><label data-i18n="regfull_rounds">Rondas <span class="req">*</span></label></div>
       <div class="field">
         <div class="yesno_line">
-          <label class="yn"><input type="radio" name="rounds" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="rounds" value="no"><span data-i18n="regfull_no">No</span></label>
+          <?php $rounds = $companyDataJson['competitiveness']['rounds'] ?? ''; ?>
+          <label class="yn"><input type="radio" name="rounds" value="si" <?= $rounds === 'si' ? 'checked' : '' ?>><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="rounds" value="no" <?= $rounds === 'no' ? 'checked' : '' ?>><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <!-- 6) Experiencia Exportadora previa -->
@@ -689,12 +1023,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="dropdown-option" data-value="Hemos exportado ocasionalmente">Hemos exportado ocasionalmente</div>
             <div class="dropdown-option" data-value="Nunca exportamos">Nunca exportamos</div>
           </div>
-          <input type="hidden" name="export_experience" value="">
+          <input type="hidden" name="export_experience" value="<?= esc_attr($companyDataJson['competitiveness']['export_experience'] ?? '') ?>">
         </div>
       </div>
       <!-- 7) Referencias comerciales -->
       <div class="label"><label data-i18n="regfull_commercial_references">Referencias comerciales <span class="req">*</span></label></div>
-      <div class="field"><textarea name="commercial_references" class="ta" rows="4"></textarea></div>
+      <div class="field"><textarea name="commercial_references" class="ta" rows="4"><?= esc_attr($companyDataJson['competitiveness']['commercial_references'] ?? '') ?></textarea></div>
     </div>
   </div>
 </div>
@@ -722,7 +1056,14 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="field visual-row">
       <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)" data-accept="image/jpeg,image/png,application/pdf" data-name="company_logo[]">
         <div class="file-item">
+          <div class="file-ph-wrapper">
           <input type="file" class="file-ph" name="company_logo[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
+            <div class="file-ph-display">
+              <img class="file-preview-img" src="" alt="" style="display: none;">
+              <span class="file-ph-placeholder" data-i18n="regfull_upload_file">subir archivo (JPG, PNG, PDF)</span>
+              <button type="button" class="file-ph-remove" style="display: none;" aria-label="Eliminar">&times;</button>
+            </div>
+          </div>
           <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
         </div>
       </div>
@@ -732,7 +1073,14 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="field visual-row">
       <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)" data-accept="image/jpeg,image/png,application/pdf" data-name="process_photos[]">
         <div class="file-item">
+          <div class="file-ph-wrapper">
           <input type="file" class="file-ph" name="process_photos[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
+            <div class="file-ph-display">
+              <img class="file-preview-img" src="" alt="" style="display: none;">
+              <span class="file-ph-placeholder" data-i18n="regfull_upload_file">subir archivo (JPG, PNG, PDF)</span>
+              <button type="button" class="file-ph-remove" style="display: none;" aria-label="Eliminar">&times;</button>
+            </div>
+          </div>
           <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
         </div>
       </div>
@@ -742,7 +1090,14 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="field visual-row">
       <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)" data-accept="image/jpeg,image/png,application/pdf" data-name="digital_catalog[]">
         <div class="file-item">
+          <div class="file-ph-wrapper">
           <input type="file" class="file-ph" name="digital_catalog[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
+            <div class="file-ph-display">
+              <img class="file-preview-img" src="" alt="" style="display: none;">
+              <span class="file-ph-placeholder" data-i18n="regfull_upload_file">subir archivo (JPG, PNG, PDF)</span>
+              <button type="button" class="file-ph-remove" style="display: none;" aria-label="Eliminar">&times;</button>
+            </div>
+          </div>
           <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
         </div>
       </div>
@@ -752,7 +1107,15 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="field visual-row">
       <div class="files-list" data-ph="subir archivo (MP4, MKV, AVI)" data-accept="video/mp4,video/x-matroska,video/x-msvideo" data-name="institutional_video">
         <div class="file-item">
+          <div class="file-ph-wrapper">
           <input type="file" class="file-ph" name="institutional_video" accept="video/mp4,video/x-matroska,video/x-msvideo" data-i18n-placeholder="regfull_upload_video" placeholder="subir archivo (MP4, MKV, AVI)">
+            <div class="file-ph-display">
+              <video class="file-preview-img" src="" style="display: none;" controls preload="metadata"></video>
+              <img class="file-preview-img" src="" alt="" style="display: none;">
+              <span class="file-ph-placeholder" data-i18n="regfull_upload_video">subir archivo (MP4, MKV, AVI)</span>
+              <button type="button" class="file-ph-remove" style="display: none;" aria-label="Eliminar">&times;</button>
+            </div>
+          </div>
           <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
         </div>
       </div>
@@ -765,6 +1128,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const list   = row.querySelector('.files-list');
     const addBtn = row.querySelector('.add_more');
     const ph     = list?.getAttribute('data-ph') || '';
+    const acceptAttr = list.getAttribute('data-accept') || 'image/jpeg,image/png,application/pdf';
+    const nameAttr = list.getAttribute('data-name') || 'file[]';
+    const isVideo = nameAttr === 'institutional_video';
+    
     function updateRemoveButtons(){
       const items = list.querySelectorAll('.file-item');
       items.forEach((it, i) => {
@@ -773,41 +1140,168 @@ document.addEventListener('DOMContentLoaded', () => {
         rm.hidden = (i === 0);
       });
     }
+    
+    function updateAddButtons(){
+      const items = list.querySelectorAll('.file-item');
+      if (addBtn) {
+        // Показывать кнопку только у последнего элемента (кроме видео - там только один)
+        addBtn.hidden = (items.length === 0 || (isVideo && items.length > 0));
+        if (!isVideo && items.length > 0) {
+          // Переместить кнопку после последнего элемента
+          const lastItem = items[items.length - 1];
+          if (lastItem.nextSibling !== addBtn) {
+            lastItem.after(addBtn);
+          }
+        }
+      }
+    }
+    
+    function bindFileInputEvents(item) {
+      const fileInput = item.querySelector('input.file-ph');
+      const fileDisplay = item.querySelector('.file-ph-display');
+      const fileRemove = item.querySelector('.file-ph-remove');
+      
+      if (!fileInput || !fileDisplay) return;
+      
+      // Клик по display открывает выбор файла
+      if (!fileDisplay._bound) {
+        fileDisplay.addEventListener('click', (e) => {
+          if (e.target === fileRemove || e.target.closest('.file-ph-remove')) {
+            return;
+          }
+          fileInput.click();
+        });
+        fileDisplay._bound = true;
+      }
+      
+      // Обработка выбора файла
+      if (!fileInput._bound) {
+        fileInput.addEventListener('change', (e) => {
+          if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            if (file.type.startsWith('image/')) {
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                if (window.updateFileDisplay) {
+                  window.updateFileDisplay(fileInput, event.target.result, file.name);
+                }
+              };
+              reader.readAsDataURL(file);
+            } else if (file.type.startsWith('video/')) {
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                if (window.updateFileDisplay) {
+                  window.updateFileDisplay(fileInput, event.target.result, file.name);
+                }
+              };
+              reader.readAsDataURL(file);
+            } else {
+              if (window.updateFileDisplay) {
+                window.updateFileDisplay(fileInput, null, file.name);
+              }
+            }
+          }
+        });
+        fileInput._bound = true;
+      }
+      
+      // Обработка удаления файла
+      if (fileRemove && !fileRemove._bound) {
+        fileRemove.addEventListener('click', (e) => {
+          e.stopPropagation();
+          fileInput.value = '';
+          if (window.updateFileDisplay) {
+            window.updateFileDisplay(fileInput, null, null);
+          }
+        });
+        fileRemove._bound = true;
+      }
+    }
+    
     function bindRemove(btn, item){
+      if (btn._bound) return;
       btn.addEventListener('click', () => {
         item.remove();
         updateRemoveButtons();
+        updateAddButtons();
       });
+      btn._bound = true;
     }
-    if (addBtn){
+    
+    if (addBtn && !addBtn._bound){
       addBtn.addEventListener('click', () => {
         const item = document.createElement('div');
         item.className = 'file-item';
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = 'file-ph-wrapper';
+        
         const input = document.createElement('input');
         input.type = 'file';
         input.className = 'file-ph';
-        input.placeholder = ph;
-        // Определяем accept в зависимости от типа файлов
-        const acceptAttr = list.getAttribute('data-accept') || 'image/jpeg,image/png,application/pdf';
         input.accept = acceptAttr;
-        // Определяем name в зависимости от родительского контейнера
-        const nameAttr = list.getAttribute('data-name') || 'file[]';
         input.name = nameAttr;
+        
+        const display = document.createElement('div');
+        display.className = 'file-ph-display';
+        
+        if (isVideo) {
+          const video = document.createElement('video');
+          video.className = 'file-preview-img';
+          video.style.display = 'none';
+          video.controls = true;
+          video.preload = 'metadata';
+          display.appendChild(video);
+        }
+        
+        const img = document.createElement('img');
+        img.className = 'file-preview-img';
+        img.style.display = 'none';
+        img.alt = '';
+        display.appendChild(img);
+        
+        const placeholder = document.createElement('span');
+        placeholder.className = 'file-ph-placeholder';
+        placeholder.textContent = ph;
+        display.appendChild(placeholder);
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'file-ph-remove';
+        removeBtn.style.display = 'none';
+        removeBtn.setAttribute('aria-label', 'Eliminar');
+        removeBtn.textContent = '×';
+        display.appendChild(removeBtn);
+        
+        wrapper.appendChild(input);
+        wrapper.appendChild(display);
+        item.appendChild(wrapper);
+        
         const rm = document.createElement('button');
         rm.type = 'button';
         rm.className = 'remove';
-        rm.setAttribute('aria-label','Eliminar');
+        rm.setAttribute('aria-label', 'Eliminar');
         rm.textContent = '×';
-        item.append(input, rm);
+        item.appendChild(rm);
+        
         list.appendChild(item);
+        bindFileInputEvents(item);
         bindRemove(rm, item);
         updateRemoveButtons();
+        updateAddButtons();
       });
+      addBtn._bound = true;
     }
-    list.querySelectorAll('.file-item .remove').forEach((btn) => {
-      bindRemove(btn, btn.closest('.file-item'));
+    
+    // Привязать обработчики к существующим элементам
+    list.querySelectorAll('.file-item').forEach((item) => {
+      bindFileInputEvents(item);
+      const rm = item.querySelector('.remove');
+      if (rm) bindRemove(rm, item);
     });
+    
     updateRemoveButtons();
+    updateAddButtons();
   });
 });
 </script>
@@ -824,19 +1318,31 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="field logi-right">
       <div class="cap-row">
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="export_capacity" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="export_capacity" value="no"><span data-i18n="regfull_no">No</span></label>
+          <?php 
+          $exportCapacity = '';
+          if (isset($companyDataJson['logistics']) && is_array($companyDataJson['logistics']) && isset($companyDataJson['logistics']['export_capacity'])) {
+              $exportCapacity = $companyDataJson['logistics']['export_capacity'];
+          }
+          ?>
+          <label class="yn"><input type="radio" name="export_capacity" value="si" <?= $exportCapacity === 'si' ? 'checked' : '' ?>><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="export_capacity" value="no" <?= $exportCapacity === 'no' ? 'checked' : '' ?>><span data-i18n="regfull_no">No</span></label>
         </div>
         <label class="lbl plazo-lbl" data-i18n="regfull_estimated_term">Plazo estimado <span class="req">*</span></label>
-        <input name="estimated_term" class="fld plazo" data-i18n-placeholder="regfull_months" placeholder="meses">
+        <?php 
+        $estimatedTerm = '';
+        if (isset($companyDataJson['logistics']) && is_array($companyDataJson['logistics']) && isset($companyDataJson['logistics']['estimated_term'])) {
+            $estimatedTerm = $companyDataJson['logistics']['estimated_term'];
+        }
+        ?>
+        <input type="text" name="estimated_term" class="fld plazo" data-i18n-placeholder="regfull_months" placeholder="meses" value="<?= esc_attr($estimatedTerm) ?>">
       </div>
     </div>
     <div class="label"><span data-i18n="regfull_logistics_infrastructure">Infraestructura Logística Disponible <span class="req">*</span></span></div>
     <div class="field">
-      <input type="search" name="logistics_infrastructure" data-i18n-placeholder="regfull_logistics_placeholder" placeholder="ejemplo: frigoríficos, transporte propio, alianzas logísticas, etc.">
+      <input type="search" name="logistics_infrastructure" data-i18n-placeholder="regfull_logistics_placeholder" placeholder="ejemplo: frigoríficos, transporte propio, alianzas logísticas, etc." value="<?= esc_attr($companyDataJson['logistics']['logistics_infrastructure'] ?? '') ?>">
     </div>
     <div class="label"><span data-i18n="regfull_ports_airports">Puertos/Aeropuertos de Salida habituales o posibles <span class="req">*</span></span></div>
-    <div class="field"><textarea name="ports_airports" class="ta" rows="4"></textarea></div>
+    <div class="field"><textarea name="ports_airports" class="ta" rows="4"><?= esc_attr($companyDataJson['logistics']['ports_airports'] ?? '') ?></textarea></div>
   </div>
 </div>
 <script>
@@ -857,14 +1363,18 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="field">
         <div class="needs-grid">
-          <label class="chk"><input type="checkbox" name="needs[]" value="Capacitación"><span data-i18n="regfull_training">Capacitación</span></label>
-          <label class="chk"><input type="checkbox" name="needs[]" value="Acceso a ferias"><span data-i18n="regfull_fair_access">Acceso a ferias</span></label>
-          <label class="chk"><input type="checkbox" name="needs[]" value="Certificaciones"><span data-i18n="regfull_certifications_need">Certificaciones</span></label>
-          <label class="chk"><input type="checkbox" name="needs[]" value="Financiamiento"><span data-i18n="regfull_financing">Financiamiento</span></label>
-          <label class="chk"><input type="checkbox" name="needs[]" value="Socios comerciales"><span data-i18n="regfull_commercial_partners">Socios comerciales</span></label>
+          <?php 
+          $needs = $companyDataJson['needs'] ?? [];
+          $otherNeeds = $companyDataJson['expectations']['other_needs'] ?? '';
+          ?>
+          <label class="chk"><input type="checkbox" name="needs[]" value="Capacitación" <?= in_array('Capacitación', $needs) ? 'checked' : '' ?>><span data-i18n="regfull_training">Capacitación</span></label>
+          <label class="chk"><input type="checkbox" name="needs[]" value="Acceso a ferias" <?= in_array('Acceso a ferias', $needs) ? 'checked' : '' ?>><span data-i18n="regfull_fair_access">Acceso a ferias</span></label>
+          <label class="chk"><input type="checkbox" name="needs[]" value="Certificaciones" <?= in_array('Certificaciones', $needs) ? 'checked' : '' ?>><span data-i18n="regfull_certifications_need">Certificaciones</span></label>
+          <label class="chk"><input type="checkbox" name="needs[]" value="Financiamiento" <?= in_array('Financiamiento', $needs) ? 'checked' : '' ?>><span data-i18n="regfull_financing">Financiamiento</span></label>
+          <label class="chk"><input type="checkbox" name="needs[]" value="Socios comerciales" <?= in_array('Socios comerciales', $needs) ? 'checked' : '' ?>><span data-i18n="regfull_commercial_partners">Socios comerciales</span></label>
           <div class="other">
-            <label class="chk"><input type="checkbox" name="needs[]" value="Otros" class="otros-cb"><span data-i18n="regfull_others">Otros</span></label>
-            <input name="other_needs" class="fld otros-inp" type="text" placeholder="" disabled>
+            <label class="chk"><input type="checkbox" name="needs[]" value="Otros" class="otros-cb" <?= in_array('Otros', $needs) ? 'checked' : '' ?>><span data-i18n="regfull_others">Otros</span></label>
+            <input name="other_needs" class="fld otros-inp" type="text" placeholder="" value="<?= esc_attr($otherNeeds) ?>" <?= in_array('Otros', $needs) ? '' : 'disabled' ?>>
           </div>
         </div>
       </div>
@@ -873,8 +1383,9 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="field">
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="interest_participate" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="interest_participate" value="no"><span data-i18n="regfull_no">No</span></label>
+          <?php $interestParticipate = $companyDataJson['expectations']['interest_participate'] ?? ''; ?>
+          <label class="yn"><input type="radio" name="interest_participate" value="si" <?= $interestParticipate === 'si' ? 'checked' : '' ?>><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="interest_participate" value="no" <?= $interestParticipate === 'no' ? 'checked' : '' ?>><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <div class="label">
@@ -882,8 +1393,9 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="field">
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="training_availability" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="training_availability" value="no"><span data-i18n="regfull_no">No</span></label>
+          <?php $trainingAvailability = $companyDataJson['expectations']['training_availability'] ?? ''; ?>
+          <label class="yn"><input type="radio" name="training_availability" value="si" <?= $trainingAvailability === 'si' ? 'checked' : '' ?>><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="training_availability" value="no" <?= $trainingAvailability === 'no' ? 'checked' : '' ?>><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
     </div>
@@ -915,8 +1427,9 @@ document.addEventListener('DOMContentLoaded', () => {
           Autorización para Difundir la Información Cargada en la Plataforma Provincial <span class="req">*</span>
         </div>
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="authorization_publish" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="authorization_publish" value="no"><span data-i18n="regfull_no">No</span></label>
+          <?php $authorizationPublish = $companyDataJson['consents']['authorization_publish'] ?? ''; ?>
+          <label class="yn"><input type="radio" name="authorization_publish" value="si" <?= $authorizationPublish === 'si' ? 'checked' : '' ?>><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="authorization_publish" value="no" <?= $authorizationPublish === 'no' ? 'checked' : '' ?>><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <div class="consent-row">
@@ -924,8 +1437,9 @@ document.addEventListener('DOMContentLoaded', () => {
           Autorizo la Publicación de mi Información para Promoción Exportadora <span class="req">*</span>
         </div>
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="authorization_publication" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="authorization_publication" value="no"><span data-i18n="regfull_no">No</span></label>
+          <?php $authorizationPublication = $companyDataJson['consents']['authorization_publication'] ?? ''; ?>
+          <label class="yn"><input type="radio" name="authorization_publication" value="si" <?= $authorizationPublication === 'si' ? 'checked' : '' ?>><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="authorization_publication" value="no" <?= $authorizationPublication === 'no' ? 'checked' : '' ?>><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
       <div class="consent-row">
@@ -933,8 +1447,9 @@ document.addEventListener('DOMContentLoaded', () => {
           Acepto ser Contactado por Organismos de Promoción y Compradores Internacionales <span class="req">*</span>
         </div>
         <div class="yn-line">
-          <label class="yn"><input type="radio" name="accept_contact" value="si"><span data-i18n="regfull_yes">Si</span></label>
-          <label class="yn"><input type="radio" name="accept_contact" value="no"><span data-i18n="regfull_no">No</span></label>
+          <?php $acceptContact = $companyDataJson['consents']['accept_contact'] ?? ''; ?>
+          <label class="yn"><input type="radio" name="accept_contact" value="si" <?= $acceptContact === 'si' ? 'checked' : '' ?>><span data-i18n="regfull_yes">Si</span></label>
+          <label class="yn"><input type="radio" name="accept_contact" value="no" <?= $acceptContact === 'no' ? 'checked' : '' ?>><span data-i18n="regfull_no">No</span></label>
         </div>
       </div>
     </div>
@@ -954,17 +1469,44 @@ const userId = window.currentUserId || 0;
 const STORAGE_KEY = userId > 0 ? `regfull_form_data_${userId}` : 'regfull_form_data';
 
 function quickSave() {
+  const userId = window.currentUserId || 0;
+  const STORAGE_KEY = userId > 0 ? `regfull_form_data_${userId}` : 'regfull_form_data';
   const formData = {};
   
+  // Текстовые поля (включая массивы)
   document.querySelectorAll('input[type="text"], input[type="search"], input:not([type]), input[type="email"], input[type="url"], textarea').forEach(field => {
-    if (field.type !== 'file' && !field.hidden && field.name && field.value.trim()) {
-      formData[field.name] = field.value.trim();
+    if (field.type !== 'file' && !field.hidden && field.name) {
+      const value = field.value.trim();
+      if (value) {
+        if (field.name.includes('[]')) {
+          // Массивы
+          const key = field.name;
+          if (!formData[key]) {
+            formData[key] = [];
+          }
+          formData[key].push(value);
+        } else {
+          formData[field.name] = value;
+        }
+      }
     }
   });
   
+  // Скрытые поля (dropdown'ы)
   document.querySelectorAll('input[type="hidden"]').forEach(field => {
     if (field.name) {
+      if (field.name.includes('[]')) {
+        const key = field.name;
+        if (!formData[key]) {
+          formData[key] = [];
+        }
+        if (field.value && field.value !== '…') {
+          formData[key].push(field.value);
+        }
+      } else {
       formData[field.name] = field.value;
+      }
+      
       const dropdown = field.closest('.custom-dropdown');
       if (dropdown) {
         const selectedText = dropdown.querySelector('.selected-text');
@@ -975,50 +1517,31 @@ function quickSave() {
     }
   });
   
+  // Радио-кнопки
   document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
     if (radio.name) {
       formData[radio.name] = radio.value;
     }
   });
   
-  document.querySelectorAll('input[name="estimated_term"]').forEach(field => {
-    if (field.value || field.value === '0') {
-      formData['estimated_term'] = field.value;
-    }
-  });
-  
+  // Чекбоксы
   const checkboxValues = {};
-  document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+  document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
     if (checkbox.name) {
       if (!checkboxValues[checkbox.name]) {
         checkboxValues[checkbox.name] = [];
       }
+      if (checkbox.checked) {
       checkboxValues[checkbox.name].push(checkbox.value || 'checked');
+      }
     }
   });
   Object.assign(formData, checkboxValues);
   
-  document.querySelectorAll('input[name="differentiation_factors[]"]').forEach(checkbox => {
-    if (!formData['differentiation_factors[]']) {
-      formData['differentiation_factors[]'] = [];
-    }
-    if (checkbox.checked) {
-      const value = (checkbox.value || 'checked').trim();
-      if (!formData['differentiation_factors[]'].includes(value)) {
-        formData['differentiation_factors[]'].push(value);
-      }
-    }
-  });
-  
-  document.querySelectorAll('input[name="needs[]"]').forEach(checkbox => {
-    if (!formData['needs[]']) {
-      formData['needs[]'] = [];
-    }
-    if (checkbox.checked) {
-      const value = (checkbox.value || 'checked').trim();
-      if (!formData['needs[]'].includes(value)) {
-        formData['needs[]'].push(value);
-      }
+  // Специальные поля
+  document.querySelectorAll('input[name="estimated_term"]').forEach(field => {
+    if (field.value || field.value === '0') {
+      formData['estimated_term'] = field.value;
     }
   });
   
@@ -1033,6 +1556,46 @@ function quickSave() {
       formData['other_needs'] = field.value.trim();
     }
   });
+  
+  // Количество продуктов
+  const productItems = document.querySelectorAll('.product-item');
+  if (productItems.length > 0) {
+    formData['_products_count'] = productItems.length;
+    productItems.forEach((item, index) => {
+      const nameInput = item.querySelector('input[name="product_name[]"]');
+      const descInput = item.querySelector('input[name="product_description[]"]');
+      const exportInput = item.querySelector('input[name="annual_export[]"]');
+      if (nameInput) formData[`_product_${index}_name`] = nameInput.value.trim();
+      if (descInput) formData[`_product_${index}_description`] = descInput.value.trim();
+      if (exportInput) formData[`_product_${index}_export`] = exportInput.value.trim();
+    });
+  }
+  
+  // Количество социальных сетей
+  const socialRows = document.querySelectorAll('.social_row');
+  if (socialRows.length > 0) {
+    formData['_social_rows_count'] = socialRows.length;
+    socialRows.forEach((row, idx) => {
+      const tipo = row.querySelector('input.net')?.value || '';
+      const url = row.querySelector('input[name="social_url[]"]')?.value || '';
+      const other = row.querySelector('input.net-other')?.value || '';
+      formData[`_social_${idx}_tipo`] = tipo;
+      formData[`_social_${idx}_url`] = url;
+      formData[`_social_${idx}_other`] = other;
+    });
+  }
+  
+  // Количество рынков интереса
+  const actList = document.querySelector('.act-list');
+  if (actList && actList.children.length > 0) {
+    formData['_act_items_count'] = actList.children.length;
+    actList.querySelectorAll('.act-row').forEach((row, idx) => {
+      const dropdown = row.querySelector('.custom-dropdown input[type="hidden"]');
+      if (dropdown && dropdown.value) {
+        formData[`_act_${idx}_value`] = dropdown.value;
+      }
+    });
+  }
   
   localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
 }
@@ -1278,8 +1841,131 @@ document.addEventListener('DOMContentLoaded', () => {
       checkDropdown('organization_type', 'Tipo de Organización');
       checkDropdown('main_activity', 'Actividad Principal');
       
-      checkRequired('main_product', 'Producto o servicio principal');
-      checkRequired('product_description', 'Descripción del producto');
+      // Валидация продуктов (массив)
+      const productItems = document.querySelectorAll('.product-item');
+      productItems.forEach((item, index) => {
+        const productName = item.querySelector('input[name="product_name[]"]');
+        const productDesc = item.querySelector('input[name="product_description[]"]');
+        const productPhoto = item.querySelector('input[name="product_photo[]"]');
+        
+        if (!productName || !productName.value || !productName.value.trim()) {
+          errors.push(`Producto ${index + 1}: Nombre es obligatorio`);
+          if (productName) {
+            productName.style.borderColor = '#f44336';
+            productName.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else {
+          if (productName) productName.style.borderColor = '';
+        }
+        
+        if (!productDesc || !productDesc.value || !productDesc.value.trim()) {
+          errors.push(`Producto ${index + 1}: Descripción es obligatoria`);
+          if (productDesc) {
+            productDesc.style.borderColor = '#f44336';
+            productDesc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else {
+          if (productDesc) productDesc.style.borderColor = '';
+        }
+        
+        // Проверка файла продукта
+        const fileState = window.getFileState ? window.getFileState() : { existingFiles: {}, newFiles: {} };
+        let hasFile = false;
+        
+        // Проверка выбранного файла в input
+        if (productPhoto && productPhoto.files && productPhoto.files.length > 0) {
+          hasFile = true;
+        }
+        
+        // Проверка preview в новой структуре (.file-ph-display)
+        if (!hasFile) {
+          const fileDisplay = item.querySelector('.file-ph-display');
+          if (fileDisplay) {
+            const img = fileDisplay.querySelector('img.file-preview-img');
+            const video = fileDisplay.querySelector('video.file-preview-img');
+            if (img && img.src && img.style.display !== 'none') {
+              hasFile = true;
+            } else if (video && video.src && video.style.display !== 'none') {
+              hasFile = true;
+            } else if (fileDisplay.classList.contains('has-image')) {
+              hasFile = true;
+            }
+          }
+        }
+        
+        // Проверка старой структуры preview (для обратной совместимости)
+        if (!hasFile) {
+          const preview = item.querySelector('.file-preview');
+          if (preview && preview.style.display !== 'none') {
+            hasFile = true;
+          }
+        }
+        
+        // Проверка существующих файлов
+        if (!hasFile) {
+          // Проверяем разные форматы ключей
+          const fileKey1 = index === 0 ? 'product_photo' : `product_photo_index_${index}`;
+          const fileKey2 = `index_${index}`;
+          
+          // Проверка по основному ключу
+          let existingFiles = fileState.existingFiles[fileKey1];
+          if (!existingFiles && fileState.existingFiles['product_photo']) {
+            const productPhotoData = fileState.existingFiles['product_photo'];
+            // Если это объект с индексами
+            if (typeof productPhotoData === 'object' && !Array.isArray(productPhotoData)) {
+              existingFiles = productPhotoData[fileKey2] || productPhotoData[index] || productPhotoData[String(index)];
+            } else if (Array.isArray(productPhotoData) && index < productPhotoData.length) {
+              existingFiles = productPhotoData[index];
+            } else if (index === 0 && productPhotoData) {
+              existingFiles = Array.isArray(productPhotoData) ? productPhotoData[0] : productPhotoData;
+            }
+          }
+          
+          if (existingFiles) {
+            if (Array.isArray(existingFiles) && existingFiles.length > 0) {
+              hasFile = true;
+            } else if (existingFiles && existingFiles.id) {
+              hasFile = true;
+            } else if (existingFiles && existingFiles.url) {
+              hasFile = true;
+            }
+          }
+        }
+        
+        // Проверка новых файлов
+        if (!hasFile) {
+          const newFiles = fileState.newFiles;
+          for (const key in newFiles) {
+            if (key === 'product_photo' && index === 0) {
+              hasFile = true;
+              break;
+            } else if (key === `product_photo_index_${index}`) {
+              hasFile = true;
+              break;
+            } else if (key.startsWith('product_photo_index_') && key.endsWith(`_${index}`)) {
+              hasFile = true;
+              break;
+            }
+          }
+        }
+        
+        if (!hasFile && productPhoto) {
+          errors.push(`Producto ${index + 1}: Foto del Producto es obligatoria`);
+          const fileDisplay = item.querySelector('.file-ph-display');
+          if (fileDisplay) {
+            fileDisplay.style.borderColor = '#f44336';
+            fileDisplay.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            productPhoto.style.borderColor = '#f44336';
+            productPhoto.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else {
+          if (productPhoto) productPhoto.style.borderColor = '';
+          const fileDisplay = item.querySelector('.file-ph-display');
+          if (fileDisplay) fileDisplay.style.borderColor = '';
+        }
+      });
+      
       checkDropdown('current_markets', 'Mercados Actuales');
       
       checkRequired('company_history', 'Historia de la Empresa');
@@ -1490,15 +2176,46 @@ document.addEventListener('DOMContentLoaded', () => {
           formDataToSend.append(name, value);
         };
         
-        document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], textarea').forEach(field => {
-          if (field.type !== 'file' && !field.hidden && field.name && field.value) {
+        document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], input:not([type]), textarea').forEach(field => {
+          if (field.type !== 'file' && !field.hidden && field.name) {
+            // Для estimated_term отправляем даже если значение пустое
+            if (field.name === 'estimated_term') {
+              appendToFormData(field.name, field.value || '');
+            } else if (field.value) {
             appendToFormData(field.name, field.value);
+            }
           }
         });
         
         document.querySelectorAll('input[type="hidden"]').forEach(field => {
-          if (field.name && field.value) {
-            appendToFormData(field.name, field.value);
+          if (field.name) {
+            // Для main_activity отправляем только валидные значения
+            if (field.name === 'main_activity') {
+              // Проверяем и value, и атрибут value, и также проверяем визуальное отображение
+              let value = (field.value || field.getAttribute('value') || '').trim();
+              
+              // Если значение пустое, проверяем визуальное отображение dropdown
+              if (!value || value === '') {
+                const dropdown = field.closest('.custom-dropdown');
+                if (dropdown) {
+                  const selectedOption = dropdown.querySelector('.dropdown-option.selected');
+                  if (selectedOption && selectedOption.dataset.value) {
+                    value = selectedOption.dataset.value.trim();
+                  }
+                }
+              }
+              
+              // Всегда отправляем значение, даже если оно пустое (но не "0" или "…")
+              if (value !== '0' && value !== '…') {
+                appendToFormData(field.name, value);
+                // Отладка
+                console.log('Sending main_activity:', value, 'from field.value:', field.value, 'from attribute:', field.getAttribute('value'));
+              } else {
+                console.log('Skipping main_activity (invalid value):', value);
+              }
+            } else if (field.value) {
+              appendToFormData(field.name, field.value);
+            }
           }
         });
         
@@ -1584,8 +2301,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
               }
             });
+          } else if (fileType === 'product_photo' && typeof existing === 'object' && !Array.isArray(existing)) {
+            // Обработка product_photo с индексами продуктов
+            Object.keys(existing).forEach(key => {
+              let index = null;
+              if (key.startsWith('index_')) {
+                index = parseInt(key.replace('index_', ''), 10);
+              } else {
+                index = parseInt(key, 10);
+                if (isNaN(index)) return;
+              }
+              
+              const fileKey = `product_photo_index_${index}`;
+              // Отправляем существующий файл только если нет нового файла
+              if (!fileState.newFiles[fileKey] && !fileState.newFiles['product_photo']) {
+                const fileData = existing[key];
+                const file = Array.isArray(fileData) ? fileData[0] : fileData;
+                if (file && file.id) {
+                  appendToFormData('existing_file_' + fileKey, file.id);
+                }
+              }
+            });
           } else if (existing && (Array.isArray(existing) ? existing.length > 0 : existing)) {
-            // Обработка остальных типов файлов (product_photo, logo, process_photo, etc.)
+            // Обработка остальных типов файлов (logo, process_photo, etc.)
             const fileKey = fileType;
             // Отправляем существующий файл только если нет нового файла
             if (!fileState.newFiles[fileKey]) {
@@ -1632,43 +2370,17 @@ document.addEventListener('DOMContentLoaded', () => {
           msgEl.textContent = result.res || 'Datos guardados correctamente';
           msgEl.style.display = 'block';
           
+          // Обновляем localStorage актуальными данными перед перезагрузкой
           try {
-            // Используем тот же ключ, что и в основном скрипте
-            const userId = window.currentUserId || 0;
-            const STORAGE_KEY = userId > 0 ? `regfull_form_data_${userId}` : 'regfull_form_data';
-            const currentData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-            const persistentData = {};
-            
-            if (currentData['differentiation_factors[]']) {
-              persistentData['differentiation_factors[]'] = currentData['differentiation_factors[]'];
-            }
-            if (currentData['needs[]']) {
-              persistentData['needs[]'] = currentData['needs[]'];
-            }
-            if (currentData['estimated_term']) {
-              persistentData['estimated_term'] = currentData['estimated_term'];
-            }
-            if (currentData['other_differentiation']) {
-              persistentData['other_differentiation'] = currentData['other_differentiation'];
-            }
-            if (currentData['other_needs']) {
-              persistentData['other_needs'] = currentData['other_needs'];
-            }
-            
-            localStorage.removeItem(STORAGE_KEY);
-            
-            if (Object.keys(persistentData).length > 0) {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(persistentData));
-            }
+            quickSave();
           } catch (e) {
-            const userId = window.currentUserId || 0;
-            const STORAGE_KEY = userId > 0 ? `regfull_form_data_${userId}` : 'regfull_form_data';
-            localStorage.removeItem(STORAGE_KEY);
+            console.error('Error saving to localStorage:', e);
           }
           
+          // Перенаправляем на страницу home после успешного сохранения
           setTimeout(() => {
             window.location.href = '?page=home';
-          }, 2000);
+          }, 1500);
         } else {
           msgEl.className = 'err';
           msgEl.textContent = result.err || 'Error al guardar los datos';
@@ -1699,6 +2411,32 @@ function initCustomDropdown(dropdown, hiddenInput) {
   const selectedText = dropdown.querySelector('.selected-text');
   const options = dropdown.querySelectorAll('.dropdown-option');
   
+  // Если у поля уже есть значение из БД (например, main_activity), обновляем визуальное отображение
+  const currentValue = hiddenInput.value ? hiddenInput.value.trim() : '';
+  // Проверяем, что значение не пустое и не "0" (которое может быть ошибкой)
+  if (currentValue && currentValue !== '' && currentValue !== '…' && currentValue !== '0') {
+    // Удаляем selected у всех опций
+    options.forEach(opt => opt.classList.remove('selected'));
+    
+    // Ищем соответствующую опцию
+    let found = false;
+    for (let option of options) {
+      if (option.dataset.value === currentValue) {
+        if (selectedText) {
+          selectedText.textContent = option.textContent;
+        }
+        option.classList.add('selected');
+        found = true;
+        break;
+      }
+    }
+    
+    // Если опция не найдена, но значение есть, оставляем значение в скрытом поле
+    if (!found && selectedText) {
+      selectedText.textContent = currentValue;
+    }
+  }
+  
   // Handle dropdown toggle
   if (selected) {
     selected.addEventListener('click', (e) => {
@@ -1714,12 +2452,24 @@ function initCustomDropdown(dropdown, hiddenInput) {
       const value = option.dataset.value;
       const text = option.textContent;
       
-      // Update selected text
-      selectedText.textContent = text;
+      // Игнорируем пустое значение и "…"
+      if (!value || value === '' || value === '…') {
+        dropdown.classList.remove('open');
+        return;
+      }
       
-      // Update hidden input
+      // Update selected text
+      if (selectedText) {
+      selectedText.textContent = text;
+      }
+      
+      // Update hidden input value
+      if (hiddenInput) {
       hiddenInput.value = value;
-      hiddenInput.dispatchEvent(new Event('change'));
+        // Принудительно обновляем атрибут value для надежности
+        hiddenInput.setAttribute('value', value);
+        hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
       
       // Update visual selection
       options.forEach(opt => opt.classList.remove('selected'));
@@ -1930,6 +2680,245 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
   }
   
+  // Функция для заполнения пустых полей из localStorage (приоритет у данных из БД)
+  function mergeDBAndLocalStorage() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) {
+      return;
+    }
+    
+    try {
+      const formData = JSON.parse(saved);
+      let mergedCount = 0;
+      
+      // Обработка обычных текстовых полей
+      Object.keys(formData).forEach(key => {
+        if (key.startsWith('_') || key.endsWith('_sel') || key.endsWith('_text')) return;
+        
+        let field = null;
+        if (key.includes('[') || key.includes(']')) {
+          const fields = document.querySelectorAll(`[name="${key}"]`);
+          if (fields.length > 0) {
+            field = fields[0];
+          }
+        } else {
+          field = document.querySelector(`[name="${key}"], #${key}`);
+        }
+        
+        if (field && field.type !== 'file' && field.type !== 'checkbox' && field.type !== 'radio' && !field.hidden) {
+          const dbValue = (field.value || '').trim();
+          const localValue = formData[key];
+          
+          // Заполняем только если поле пустое в БД, но есть значение в localStorage
+          if (!dbValue && localValue !== undefined && localValue !== null && localValue !== '') {
+            field.value = localValue;
+            mergedCount++;
+          }
+        }
+      });
+      
+      // Обработка скрытых полей (dropdown'ы)
+      document.querySelectorAll('input[type="hidden"]').forEach(field => {
+        if (field.name && !field.name.startsWith('product_id')) {
+          const dbValue = (field.value || '').trim();
+          const localValue = formData[field.name];
+          
+          // Заполняем только если поле пустое в БД
+          if (!dbValue && localValue && localValue !== '' && localValue !== '…') {
+            field.value = localValue;
+            const dropdown = field.closest('.custom-dropdown');
+            if (dropdown) {
+              const selectedText = dropdown.querySelector('.selected-text');
+              if (selectedText) {
+                if (formData[field.name + '_text']) {
+                  selectedText.textContent = formData[field.name + '_text'];
+                } else {
+                  const option = dropdown.querySelector(`[data-value="${localValue}"]`);
+                  if (option) {
+                    selectedText.textContent = option.textContent;
+                    option.classList.add('selected');
+                  }
+                }
+              }
+              setTimeout(() => {
+                field.dispatchEvent(new Event('change', { bubbles: true }));
+              }, 100);
+            }
+            mergedCount++;
+          }
+        }
+      });
+      
+      // Обработка чекбоксов (только если не выбраны в БД)
+      document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        if (checkbox.name) {
+          const savedValues = formData[checkbox.name];
+          if (Array.isArray(savedValues)) {
+            // Проверяем, не выбран ли уже в БД
+            if (!checkbox.checked) {
+              const shouldBeChecked = savedValues.includes(checkbox.value || 'checked');
+              if (shouldBeChecked) {
+                checkbox.checked = true;
+                mergedCount++;
+              }
+            }
+          }
+        } else {
+          let key = checkbox.id;
+          if (!key) {
+            const parent = checkbox.closest('.factors_grid, .needs-grid');
+            if (parent) {
+              const allCheckboxes = parent.querySelectorAll('input[type="checkbox"]');
+              const index = Array.from(allCheckboxes).indexOf(checkbox);
+              key = `checkbox_${parent.className.split(' ')[0]}_${index}`;
+            }
+          }
+          if (key && !checkbox.checked && formData[key] !== undefined && formData[key]) {
+            checkbox.checked = true;
+            mergedCount++;
+          }
+        }
+      });
+      
+      // Обработка радио-кнопок (только если не выбраны в БД)
+      document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        if (radio.name && !document.querySelector(`input[name="${radio.name}"]:checked`)) {
+          if (formData[radio.name] === radio.value) {
+            radio.checked = true;
+            mergedCount++;
+          }
+        }
+      });
+      
+      // Обработка продуктов (только если их нет в БД)
+      setTimeout(() => {
+        const productItems = document.querySelectorAll('.product-item');
+        const dbProductsCount = productItems.length;
+        const localProductsCount = formData['_products_count'] || 0;
+        
+        if (localProductsCount > dbProductsCount) {
+          const container = document.querySelector('.products-container');
+          const template = document.querySelector('.product-item-tpl');
+          if (container && template) {
+            for (let i = dbProductsCount; i < localProductsCount; i++) {
+              const addBtn = document.querySelector('.add-product');
+              if (addBtn) {
+                addBtn.click();
+              }
+            }
+            setTimeout(() => {
+              container.querySelectorAll('.product-item').forEach((item, idx) => {
+                const nameKey = `_product_${idx}_name`;
+                const descKey = `_product_${idx}_description`;
+                const exportKey = `_product_${idx}_export`;
+                
+                // Заполняем только если поле пустое
+                if (formData[nameKey]) {
+                  const nameInput = item.querySelector('input[name="product_name[]"]');
+                  if (nameInput && !nameInput.value.trim()) {
+                    nameInput.value = formData[nameKey];
+                  }
+                }
+                if (formData[descKey]) {
+                  const descInput = item.querySelector('input[name="product_description[]"]');
+                  if (descInput && !descInput.value.trim()) {
+                    descInput.value = formData[descKey];
+                  }
+                }
+                if (formData[exportKey]) {
+                  const exportInput = item.querySelector('input[name="annual_export[]"]');
+                  if (exportInput && !exportInput.value.trim()) {
+                    exportInput.value = formData[exportKey];
+                  }
+                }
+              });
+              if (window.updateRemoveButtons) window.updateRemoveButtons();
+              if (window.updateAddButtons) window.updateAddButtons();
+            }, 200);
+          }
+        }
+        
+        // Обработка социальных сетей (только если их нет в БД)
+        const socialRows = document.querySelectorAll('.social_row');
+        const dbSocialCount = socialRows.length;
+        const localSocialCount = formData['_social_rows_count'] || 0;
+        
+        if (localSocialCount > dbSocialCount) {
+          const wrapper = document.getElementById('social-wrapper');
+          const addBtn = document.getElementById('add-social');
+          if (wrapper && addBtn) {
+            for (let i = dbSocialCount; i < localSocialCount; i++) {
+              addBtn.click();
+            }
+            setTimeout(() => {
+              document.querySelectorAll('.social_row').forEach((row, idx) => {
+                const tipoKey = `_social_${idx}_tipo`;
+                const urlKey = `_social_${idx}_url`;
+                const otherKey = `_social_${idx}_other`;
+                
+                if (formData[tipoKey]) {
+                  const hiddenInput = row.querySelector('input.net');
+                  if (hiddenInput && !hiddenInput.value) {
+                    hiddenInput.value = formData[tipoKey];
+                    hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                }
+                if (formData[urlKey]) {
+                  const urlInput = row.querySelector('input[name="social_url[]"]');
+                  if (urlInput && !urlInput.value.trim()) {
+                    urlInput.value = formData[urlKey];
+                  }
+                }
+                if (formData[otherKey]) {
+                  const otherInput = row.querySelector('input.net-other');
+                  if (otherInput && !otherInput.value.trim()) {
+                    otherInput.value = formData[otherKey];
+                    otherInput.hidden = false;
+                  }
+                }
+              });
+            }, 200);
+          }
+        }
+        
+        // Обработка рынков интереса (только если их нет в БД)
+        const actList = document.querySelector('.act-list');
+        const dbActCount = actList ? actList.children.length : 0;
+        const localActCount = formData['_act_items_count'] || 0;
+        
+        if (localActCount > dbActCount && actList) {
+          const actAdd = document.querySelector('.act-add');
+          if (actAdd) {
+            for (let i = dbActCount; i < localActCount; i++) {
+              actAdd.click();
+            }
+            setTimeout(() => {
+              actList.querySelectorAll('.act-row').forEach((row, idx) => {
+                const valueKey = `_act_${idx}_value`;
+                if (formData[valueKey]) {
+                  const dropdown = row.querySelector('.custom-dropdown input[type="hidden"]');
+                  if (dropdown && !dropdown.value) {
+                    dropdown.value = formData[valueKey];
+                    const selectedText = dropdown.closest('.custom-dropdown').querySelector('.selected-text');
+                    const option = dropdown.closest('.custom-dropdown').querySelector(`[data-value="${formData[valueKey]}"]`);
+                    if (selectedText && option) {
+                      selectedText.textContent = option.textContent;
+                      option.classList.add('selected');
+                    }
+                    dropdown.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                }
+              });
+            }, 200);
+          }
+        }
+      }, 800);
+      
+    } catch (e) {
+      console.error('Error merging DB and localStorage:', e);
+    }
+  }
+  
   function restoreFormData() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) {
@@ -2043,6 +3032,44 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       });
       
       setTimeout(() => {
+        // Восстановление продуктов
+        if (formData['_products_count'] && formData['_products_count'] > 1) {
+          const container = document.querySelector('.products-container');
+          const template = document.querySelector('.product-item-tpl');
+          if (container && template) {
+            const currentItems = container.querySelectorAll('.product-item').length;
+            for (let i = currentItems; i < formData['_products_count']; i++) {
+              const addBtn = document.querySelector('.add-product');
+              if (addBtn) {
+                addBtn.click();
+              }
+            }
+            setTimeout(() => {
+              container.querySelectorAll('.product-item').forEach((item, idx) => {
+                const nameKey = `_product_${idx}_name`;
+                const descKey = `_product_${idx}_description`;
+                const exportKey = `_product_${idx}_export`;
+                
+                if (formData[nameKey]) {
+                  const nameInput = item.querySelector('input[name="product_name[]"]');
+                  if (nameInput) nameInput.value = formData[nameKey];
+                }
+                if (formData[descKey]) {
+                  const descInput = item.querySelector('input[name="product_description[]"]');
+                  if (descInput) descInput.value = formData[descKey];
+                }
+                if (formData[exportKey]) {
+                  const exportInput = item.querySelector('input[name="annual_export[]"]');
+                  if (exportInput) exportInput.value = formData[exportKey];
+                }
+              });
+              if (window.updateRemoveButtons) window.updateRemoveButtons();
+              if (window.updateAddButtons) window.updateAddButtons();
+            }, 200);
+          }
+        }
+        
+        // Восстановление социальных сетей
         if (formData['_social_rows_count'] && formData['_social_rows_count'] > 1) {
           const wrapper = document.getElementById('social-wrapper');
           const addBtn = document.getElementById('add-social');
@@ -2082,6 +3109,7 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
           }
         }
         
+        // Восстановление рынков интереса
         if (formData['_act_items_count'] && formData['_act_items_count'] > 0) {
           const actList = document.querySelector('.act-list');
           const actAdd = document.querySelector('.act-add');
@@ -2141,17 +3169,113 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   // Данные компании из БД для заполнения формы
   window.companyDataFromDB = {
     organization_type: <?= json_encode($companyData['organization_type'] ?? '') ?>,
-    main_activity: <?= json_encode($companyData['main_activity'] ?? '') ?>,
+    main_activity: <?= json_encode(($companyData['main_activity'] ?? '') !== '0' ? ($companyData['main_activity'] ?? '') : '') ?>,
     social_networks: <?= json_encode($companySocialNetworks) ?>,
     locality_legal: <?= json_encode($companyAddresses['legal']['locality'] ?? '') ?>,
     department_legal: <?= json_encode($companyAddresses['legal']['department'] ?? '') ?>,
     locality_admin: <?= json_encode($companyAddresses['admin']['locality'] ?? '') ?>,
-    department_admin: <?= json_encode($companyAddresses['admin']['department'] ?? '') ?>
+    department_admin: <?= json_encode($companyAddresses['admin']['department'] ?? '') ?>,
+    current_markets: <?= json_encode($companyDataJson['current_markets'] ?? '') ?>,
+    target_markets: <?= json_encode($companyDataJson['target_markets'] ?? []) ?>,
+    export_experience: <?= json_encode($companyDataJson['competitiveness']['export_experience'] ?? '') ?>,
   };
   
   // ID пользователя для привязки localStorage
   window.currentUserId = <?= isset($_SESSION['uid']) ? intval($_SESSION['uid']) : 0 ?>;
   window.hasCompanyDataInDB = <?= !empty($companyData) ? 'true' : 'false' ?>;
+  
+  function fillCompanyDataFromDB() {
+    const data = window.companyDataFromDB;
+    
+    
+    // Заполнение current_markets dropdown
+    if (data.current_markets) {
+      const currentMarketsInput = document.querySelector('input[name="current_markets"]');
+      if (currentMarketsInput) {
+        currentMarketsInput.value = data.current_markets;
+        const dropdown = currentMarketsInput.closest('.custom-dropdown');
+        if (dropdown) {
+          const options = dropdown.querySelectorAll('.dropdown-option');
+          for (let option of options) {
+            if (option.dataset.value === data.current_markets) {
+              const selectedText = dropdown.querySelector('.selected-text');
+              if (selectedText) {
+                selectedText.textContent = option.textContent;
+              }
+              option.classList.add('selected');
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Заполнение export_experience dropdown
+    if (data.export_experience) {
+      const exportExperienceInput = document.querySelector('input[name="export_experience"]');
+      if (exportExperienceInput) {
+        exportExperienceInput.value = data.export_experience;
+        const dropdown = exportExperienceInput.closest('.custom-dropdown');
+        if (dropdown) {
+          const options = dropdown.querySelectorAll('.dropdown-option');
+          for (let option of options) {
+            if (option.dataset.value === data.export_experience) {
+              const selectedText = dropdown.querySelector('.selected-text');
+              if (selectedText) {
+                selectedText.textContent = option.textContent;
+              }
+              option.classList.add('selected');
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Заполнение target_markets (динамический список)
+    if (data.target_markets && Array.isArray(data.target_markets) && data.target_markets.length > 0) {
+      const actList = document.querySelector('.act-list');
+      const actAdd = document.querySelector('.act-add');
+      if (actList && actAdd) {
+        // Очистить существующие элементы, кроме первого
+        const existingRows = actList.querySelectorAll('.act-row');
+        for (let i = 1; i < existingRows.length; i++) {
+          existingRows[i].remove();
+        }
+        
+        // Создать элементы для каждого рынка
+        data.target_markets.forEach((market, index) => {
+          let row;
+          if (index === 0) {
+            row = actList.querySelector('.act-row');
+          } else {
+            // Добавить новый элемент
+            actAdd.click();
+            row = actList.querySelectorAll('.act-row')[index];
+          }
+          
+          if (row) {
+            const dropdown = row.querySelector('.custom-dropdown');
+            const hiddenInput = row.querySelector('input[type="hidden"]');
+            if (dropdown && hiddenInput && market) {
+              hiddenInput.value = market;
+              const options = dropdown.querySelectorAll('.dropdown-option');
+              for (let option of options) {
+                if (option.dataset.value === market) {
+                  const selectedText = dropdown.querySelector('.selected-text');
+                  if (selectedText) {
+                    selectedText.textContent = option.textContent;
+                  }
+                  option.classList.add('selected');
+                  break;
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+  }
   
   function fillDropdownsFromDB() {
     const data = window.companyDataFromDB;
@@ -2160,45 +3284,64 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     if (data.organization_type) {
       const orgTypeDropdown = document.querySelector('input[name="organization_type"]');
       if (orgTypeDropdown) {
+        // Всегда устанавливаем значение из БД
+        orgTypeDropdown.value = data.organization_type;
         const dropdown = orgTypeDropdown.closest('.custom-dropdown');
         if (dropdown) {
           const options = dropdown.querySelectorAll('.dropdown-option');
           for (let option of options) {
             if (option.dataset.value === data.organization_type) {
-              orgTypeDropdown.value = data.organization_type;
               const selectedText = dropdown.querySelector('.selected-text');
               if (selectedText) {
                 selectedText.textContent = option.textContent;
               }
               option.classList.add('selected');
+              // Удаляем selected у других опций
+              options.forEach(opt => {
+                if (opt !== option) {
+                  opt.classList.remove('selected');
+                }
+              });
               break;
             }
           }
+          // Триггерим событие change для обновления dropdown
+          orgTypeDropdown.dispatchEvent(new Event('change', { bubbles: true }));
         }
       }
     }
     
-    // Заполнение main_activity
+    // Заполнение main_activity (аналогично organization_type)
     if (data.main_activity) {
       const mainActivityDropdown = document.querySelector('input[name="main_activity"]');
       if (mainActivityDropdown) {
+        // Всегда устанавливаем значение из БД
+        mainActivityDropdown.value = data.main_activity;
         const dropdown = mainActivityDropdown.closest('.custom-dropdown');
         if (dropdown) {
           const options = dropdown.querySelectorAll('.dropdown-option');
           for (let option of options) {
             if (option.dataset.value === data.main_activity) {
-              mainActivityDropdown.value = data.main_activity;
               const selectedText = dropdown.querySelector('.selected-text');
               if (selectedText) {
                 selectedText.textContent = option.textContent;
               }
               option.classList.add('selected');
+              // Удаляем selected у других опций
+              options.forEach(opt => {
+                if (opt !== option) {
+                  opt.classList.remove('selected');
+                }
+              });
               break;
             }
           }
+          // Триггерим событие change для обновления dropdown
+          mainActivityDropdown.dispatchEvent(new Event('change', { bubbles: true }));
         }
       }
     }
+    
     
     // Заполнение locality_legal
     if (data.locality_legal) {
@@ -2352,26 +3495,27 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   }
   
   document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    
     // Заполнить dropdown'ы и социальные сети из БД
     setTimeout(() => {
       fillDropdownsFromDB();
+      fillCompanyDataFromDB();
     }, 500);
     
-    setTimeout(() => {
-      // Если в БД есть данные компании, очищаем localStorage и загружаем из БД
+    setTimeout(async () => {
+      // Загружаем данные только из БД
       if (hasCompanyDataInDB) {
         // Данные уже загружены из БД в PHP (через value атрибуты полей)
-        // Очищаем localStorage, чтобы не перезаписывать данные из БД
-        localStorage.removeItem(STORAGE_KEY);
-        // Не восстанавливаем из localStorage и не заполняем тестовыми данными
-      } else {
-        // Если данных в БД нет, форма остается пустой для нового пользователя
-        // localStorage используется только для автосохранения во время заполнения
-        // НЕ восстанавливаем данные при загрузке страницы
-        // Форма должна быть пустой для нового пользователя
+        // Загружаем продукты и файлы из БД
+        if (typeof loadExistingProducts === 'function') {
+          await loadExistingProducts();
+        }
+        setTimeout(async () => {
+          if (typeof loadExistingFiles === 'function') {
+            await loadExistingFiles();
+          }
+        }, 300);
       }
+      // Если данных в БД нет, поля остаются пустыми (не загружаем из localStorage)
     }, 1000);
     
     const form = document.querySelector('.form') || document;
@@ -2406,7 +3550,8 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   
   function getFileTypeFromInput(input) {
     const name = input.name;
-    if (name === 'product_photo') return 'product_photo';
+    if (name === 'product_photo[]') return 'product_photo';
+    if (name === 'product_photo') return 'product_photo'; // для обратной совместимости
     if (name === 'product_photo_sec[]') return 'product_photo_sec';
     if (name === 'company_logo[]') return 'logo';
     if (name === 'process_photos[]') return 'process_photo';
@@ -2416,6 +3561,16 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   }
   
   function getProductIdFromInput(input) {
+    // Проверяем product-item (новые продукты)
+    const productItem = input.closest('.product-item');
+    if (productItem) {
+      const hiddenInput = productItem.querySelector('input[type="hidden"][name="product_id[]"]');
+      if (hiddenInput && hiddenInput.value) {
+        return hiddenInput.value;
+      }
+    }
+    
+    // Проверяем sec_item (старые вторичные продукты)
     const secItem = input.closest('.sec_item');
     if (secItem) {
       const hiddenInput = secItem.querySelector('input[type="hidden"][name="product_id_sec[]"]');
@@ -2425,6 +3580,15 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   }
   
   function getProductIndexFromInput(input) {
+    // Для новых продуктов (product-item)
+    const productItem = input.closest('.product-item');
+    if (productItem) {
+      const allProductItems = Array.from(document.querySelectorAll('.product-item'));
+      const index = allProductItems.indexOf(productItem);
+      return index >= 0 ? index : null;
+    }
+    
+    // Для старых вторичных продуктов (sec_item)
     const secItem = input.closest('.sec_item');
     if (secItem) {
       const allSecItems = Array.from(document.querySelectorAll('.sec_item'));
@@ -2448,12 +3612,23 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     formData.append('file_type', fileType);
     
     const productId = getProductIdFromInput(input);
-    const productIndex = fileType === 'product_photo_sec' ? getProductIndexFromInput(input) : null;
+    let productIndex = null;
+    
+    // Определяем индекс продукта для product_photo
+    if (fileType === 'product_photo') {
+      productIndex = getProductIndexFromInput(input);
+    } else if (fileType === 'product_photo_sec') {
+      productIndex = getProductIndexFromInput(input);
+    }
     
     console.log('uploadFile: productId:', productId, 'productIndex:', productIndex);
     
     if (productId && productId.trim() !== '') {
       formData.append('product_id', productId);
+    }
+    
+    if (productIndex !== null) {
+      formData.append('product_index', productIndex);
     }
     
     try {
@@ -2469,6 +3644,8 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
         let fileKey;
         if (productId && productId.trim() !== '') {
           fileKey = `${fileType}_${productId}`;
+        } else if (productIndex !== null && fileType === 'product_photo') {
+          fileKey = `product_photo_index_${productIndex}`;
         } else if (productIndex !== null && fileType === 'product_photo_sec') {
           fileKey = `${fileType}_index_${productIndex}`;
         } else {
@@ -2486,7 +3663,13 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
         };
         
         setTimeout(() => {
+          // Для product_photo и файлов секции 5 используем updateFileDisplay
+          if ((fileType === 'product_photo' || fileType === 'logo' || fileType === 'process_photo' || 
+               fileType === 'digital_catalog' || fileType === 'institutional_video') && window.updateFileDisplay) {
+            window.updateFileDisplay(input, result.url, result.name);
+          } else {
           displayFilePreview(input, result.url, result.name, true);
+          }
         }, 100);
         hideExistingFile(input, fileType, productId);
       } else {
@@ -2502,6 +3685,20 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   function displayFilePreview(input, url, name, isNew) {
     console.log('displayFilePreview: input:', input.name, 'url:', url, 'name:', name, 'isNew:', isNew);
     
+    // Для product_photo и файлов секции 5 используем новую функцию updateFileDisplay
+    if (input.name === 'product_photo[]' || input.name === 'product_photo' ||
+        input.name === 'company_logo[]' || input.name === 'process_photos[]' ||
+        input.name === 'digital_catalog[]' || input.name === 'institutional_video') {
+      if (window.updateFileDisplay) {
+        window.updateFileDisplay(input, url, name);
+      } else {
+        // Fallback: используем старую логику если функция не доступна
+        updateFileDisplayFallback(input, url, name);
+      }
+      return;
+    }
+    
+    // Для остальных типов файлов используем старую логику
     let container = input.closest('.file-item');
     if (!container) {
       container = input.closest('.producto_grid');
@@ -2593,6 +3790,48 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     console.log('displayFilePreview: Preview element created and appended');
   }
   
+  function updateFileDisplayFallback(input, url, name) {
+    const wrapper = input.closest('.file-ph-wrapper');
+    if (!wrapper) return;
+    
+    const display = wrapper.querySelector('.file-ph-display');
+    const img = display.querySelector('img.file-preview-img');
+    const video = display.querySelector('video.file-preview-img');
+    const placeholder = display.querySelector('.file-ph-placeholder');
+    const removeBtn = display.querySelector('.file-ph-remove');
+    
+    if (url && name) {
+      const isVideo = name.toLowerCase().match(/\.(mp4|mkv|avi|mov|webm)$/i) || url.toLowerCase().match(/\.(mp4|mkv|avi|mov|webm)$/i);
+      
+      if (isVideo && video) {
+        video.src = url;
+        video.style.display = 'block';
+        if (img) img.style.display = 'none';
+      } else if (img) {
+        img.src = url;
+        img.alt = name;
+        img.style.display = 'block';
+        if (video) video.style.display = 'none';
+      }
+      
+      placeholder.style.display = 'none';
+      removeBtn.style.display = 'flex';
+      display.classList.add('has-image');
+    } else {
+      if (img) {
+        img.style.display = 'none';
+        img.src = '';
+      }
+      if (video) {
+        video.style.display = 'none';
+        video.src = '';
+      }
+      placeholder.style.display = 'block';
+      removeBtn.style.display = 'none';
+      display.classList.remove('has-image');
+    }
+  }
+  
   function hideExistingFile(input, fileType, productId) {
     const container = input.closest('.file-item') || input.parentElement;
     const existingPreview = container.querySelector('.existing-file');
@@ -2602,6 +3841,7 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   }
   
   async function loadExistingFiles() {
+    window.loadExistingFiles = loadExistingFiles;
     try {
       const response = await fetch('includes/regfull_get_files_js.php');
       const result = await response.json();
@@ -2620,22 +3860,86 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   function displayExistingFiles() {
     const files = fileState.existingFiles;
     
-    // Product photo (main)
-    if (files.product_photo && Array.isArray(files.product_photo) && files.product_photo.length > 0) {
-      const input = document.querySelector('input[name="product_photo"]');
+    // Product photos (массив продуктов)
+    if (files.product_photo) {
+      const productItems = document.querySelectorAll('.product-item');
+      
+      if (Array.isArray(files.product_photo)) {
+        // Старый формат: массив файлов - для первого продукта
+        if (files.product_photo.length > 0 && productItems.length > 0) {
+          const input = productItems[0].querySelector('input[name="product_photo[]"]');
       if (input) {
         const file = files.product_photo[0];
+            if (window.updateFileDisplay) {
+              window.updateFileDisplay(input, file.url, file.name);
+            } else {
         displayFilePreview(input, file.url, file.name, false);
+      }
+    }
+        }
+      } else if (typeof files.product_photo === 'object') {
+        // Новый формат: объект с ключами product_id или индексами
+        // Сначала создаем карту product_id -> индекс продукта
+        const productIdToIndex = new Map();
+        productItems.forEach((item, index) => {
+          const hiddenInput = item.querySelector('input[type="hidden"][name="product_id[]"]');
+          if (hiddenInput && hiddenInput.value) {
+            const productId = parseInt(hiddenInput.value, 10);
+            if (!isNaN(productId)) {
+              productIdToIndex.set(productId, index);
+            }
+          }
+        });
+        
+        Object.keys(files.product_photo).forEach(key => {
+          let productId = null;
+          let index = null;
+          
+          // Проверяем, является ли ключ product_id (число)
+          const keyAsNum = parseInt(key, 10);
+          if (!isNaN(keyAsNum) && productIdToIndex.has(keyAsNum)) {
+            // Ключ - это product_id
+            productId = keyAsNum;
+            index = productIdToIndex.get(productId);
+          } else if (key.startsWith('index_')) {
+            // Старый формат с индексом
+            index = parseInt(key.replace('index_', ''), 10);
+          } else {
+            // Пытаемся интерпретировать как индекс
+            index = parseInt(key, 10);
+            if (isNaN(index)) return;
+          }
+          
+          if (index !== null && index >= 0 && productItems[index]) {
+            const input = productItems[index].querySelector('input[name="product_photo[]"]');
+      if (input) {
+              const fileData = files.product_photo[key];
+              const file = Array.isArray(fileData) ? fileData[0] : fileData;
+              if (file && file.url) {
+                if (window.updateFileDisplay) {
+                  window.updateFileDisplay(input, file.url, file.name);
+                } else {
+        displayFilePreview(input, file.url, file.name, false);
+                }
+              }
+            }
+          }
+        });
       }
     }
     
     // Company logo
     if (files.logo && Array.isArray(files.logo) && files.logo.length > 0) {
-      const input = document.querySelector('input[name="company_logo[]"]');
-      if (input) {
-        const file = files.logo[0];
-        displayFilePreview(input, file.url, file.name, false);
-      }
+      files.logo.forEach((file, index) => {
+        const inputs = document.querySelectorAll('input[name="company_logo[]"]');
+        if (inputs[index]) {
+          if (window.updateFileDisplay) {
+            window.updateFileDisplay(inputs[index], file.url, file.name);
+          } else {
+            displayFilePreview(inputs[index], file.url, file.name, false);
+          }
+        }
+      });
     }
     
     // Process photos
@@ -2643,18 +3947,27 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       files.process_photo.forEach((file, index) => {
         const inputs = document.querySelectorAll('input[name="process_photos[]"]');
         if (inputs[index]) {
+          if (window.updateFileDisplay) {
+            window.updateFileDisplay(inputs[index], file.url, file.name);
+          } else {
           displayFilePreview(inputs[index], file.url, file.name, false);
+          }
         }
       });
     }
     
     // Digital catalog
     if (files.digital_catalog && Array.isArray(files.digital_catalog) && files.digital_catalog.length > 0) {
-      const input = document.querySelector('input[name="digital_catalog[]"]');
-      if (input) {
-        const file = files.digital_catalog[0];
-        displayFilePreview(input, file.url, file.name, false);
-      }
+      files.digital_catalog.forEach((file, index) => {
+        const inputs = document.querySelectorAll('input[name="digital_catalog[]"]');
+        if (inputs[index]) {
+          if (window.updateFileDisplay) {
+            window.updateFileDisplay(inputs[index], file.url, file.name);
+          } else {
+            displayFilePreview(inputs[index], file.url, file.name, false);
+          }
+        }
+      });
     }
     
     // Institutional video
@@ -2662,7 +3975,11 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       const input = document.querySelector('input[name="institutional_video"]');
       if (input) {
         const file = files.institutional_video[0];
+        if (window.updateFileDisplay) {
+          window.updateFileDisplay(input, file.url, file.name);
+        } else {
         displayFilePreview(input, file.url, file.name, false);
+        }
       }
     }
     
@@ -2753,6 +4070,7 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   let loadedProductIds = new Set();
   
   async function loadExistingProducts() {
+    window.loadExistingProducts = loadExistingProducts;
     try {
       const response = await fetch('includes/regfull_get_products_js.php');
       const result = await response.json();
@@ -2760,36 +4078,154 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       loadedProductIds.clear();
       
       if (result.ok === 1 && result.products) {
+        // Используем новый формат с массивом all, или старый формат для обратной совместимости
+        let allProducts = [];
+        if (result.products.all && Array.isArray(result.products.all)) {
+          allProducts = result.products.all;
+        } else {
+          // Обратная совместимость со старым форматом
         const { main, secondary } = result.products;
-        
-        if (main && main.id) {
-          loadedProductIds.add(main.id);
+          if (main) {
+            allProducts.push(main);
+          }
+          if (secondary && Array.isArray(secondary)) {
+            allProducts.push(...secondary);
+          }
         }
         
-        if (main) {
-          const mainProductInput = document.querySelector('input[name="main_product"]');
-          if (mainProductInput) {
-            mainProductInput.value = main.name || '';
+        // Сохраняем ID всех продуктов
+        allProducts.forEach(prod => {
+          if (prod && prod.id) {
+            loadedProductIds.add(prod.id);
+          }
+        });
+        
+        // Заполняем форму продуктами
+        const container = document.querySelector('.products-container');
+        if (!container) return;
+        
+        const productItems = container.querySelectorAll('.product-item');
+        
+        allProducts.forEach((product, index) => {
+          let productItem;
+          
+          if (index === 0 && productItems.length > 0) {
+            // Используем первый существующий product-item
+            productItem = productItems[0];
+          } else {
+            // Создаем новый product-item
+            const template = document.querySelector('.product-item-tpl');
+            if (!template) return;
+            
+            productItem = template.content.firstElementChild.cloneNode(true);
+            container.appendChild(productItem);
+            
+          // Привязать обработчики к новому продукту
+          if (window.bindProductItemEvents) {
+            window.bindProductItemEvents(productItem);
+          } else {
+            // Fallback: простая инициализация
+            const removeBtn = productItem.querySelector('.remove-product');
+            if (removeBtn) {
+              removeBtn.addEventListener('click', () => {
+                const items = container.querySelectorAll('.product-item');
+                if (items.length > 1) {
+                  productItem.remove();
+                  if (window.updateRemoveButtons) window.updateRemoveButtons();
+                }
+              });
+            }
           }
           
-          const descriptionInput = document.querySelector('input[name="product_description"]');
-          if (descriptionInput) {
-            descriptionInput.value = main.description || '';
+          // Привязать обработчики для файлового поля
+          const fileInput = productItem.querySelector('input.file-ph');
+          const fileDisplay = productItem.querySelector('.file-ph-display');
+          if (fileInput && fileDisplay && !fileDisplay._bound) {
+            fileDisplay.addEventListener('click', (e) => {
+              const fileRemove = productItem.querySelector('.file-ph-remove');
+              if (e.target === fileRemove || e.target.closest('.file-ph-remove')) {
+                return;
+              }
+              fileInput.click();
+            });
+            fileDisplay._bound = true;
+            
+            fileInput.addEventListener('change', (e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                const file = e.target.files[0];
+                if (file.type.startsWith('image/')) {
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                    if (window.updateFileDisplay) {
+                      window.updateFileDisplay(fileInput, event.target.result, file.name);
+                    }
+                  };
+                  reader.readAsDataURL(file);
+                } else {
+                  if (window.updateFileDisplay) {
+                    window.updateFileDisplay(fileInput, null, file.name);
+                  }
+                }
+              }
+            });
+            
+            const fileRemove = productItem.querySelector('.file-ph-remove');
+            if (fileRemove && !fileRemove._bound) {
+              fileRemove.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.value = '';
+                if (window.updateFileDisplay) {
+                  window.updateFileDisplay(fileInput, null, null);
+                }
+              });
+              fileRemove._bound = true;
+            }
+          }
           }
           
-          const annualExportInput = document.querySelector('input[name="annual_export"]');
-          if (annualExportInput) {
-            annualExportInput.value = main.annual_export || '';
-          }
+          // Заполняем поля продукта
+          const nameInput = productItem.querySelector('input[name="product_name[]"]');
+          const descInput = productItem.querySelector('input[name="product_description[]"]');
+          const exportInput = productItem.querySelector('input[name="annual_export[]"]');
           
+          if (nameInput) nameInput.value = product.name || '';
+          if (descInput) descInput.value = product.description || '';
+          if (exportInput) exportInput.value = product.annual_export || '';
+          
+          // Сохраняем product_id для связи с файлами
+          if (product.id) {
+            let hiddenInput = productItem.querySelector('input[type="hidden"][name="product_id[]"]');
+            if (!hiddenInput) {
+              hiddenInput = document.createElement('input');
+              hiddenInput.type = 'hidden';
+              hiddenInput.name = 'product_id[]';
+              productItem.querySelector('.producto_grid').appendChild(hiddenInput);
+            }
+            hiddenInput.value = product.id;
+          }
+        });
+        
+        // Заполняем certifications (общее для всех продуктов)
+        // Берем из первого продукта, если есть
+        if (allProducts.length > 0 && allProducts[0].certifications) {
           const certificationsInput = document.querySelector('input[name="certifications"]');
           if (certificationsInput) {
-            certificationsInput.value = main.certifications || '';
+            certificationsInput.value = allProducts[0].certifications || '';
           }
         }
+        
+        // Обновить видимость кнопок
+        setTimeout(() => {
+          if (window.updateRemoveButtons) {
+            window.updateRemoveButtons();
+          }
+          if (window.updateAddButtons) {
+            window.updateAddButtons();
+          }
+        }, 100);
       }
     } catch (error) {
-      // Ошибка загрузки продуктов - не критично
+      console.error('Error loading products:', error);
     }
   }
   
@@ -2854,4 +4290,5 @@ if (originalSetLang) {
   };
 }
 </script>
+<!-- validacion -->
 <!-- validacion -->

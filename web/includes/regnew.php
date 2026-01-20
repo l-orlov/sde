@@ -2,7 +2,7 @@
 	<div class="login_main_box">
     <div class="login_box">
         <div class="login_logo">
-            <img src="img/logo.png">
+            <img src="img/logo.svg">
         </div>
 		<div class="login_lang" onclick="toggleLangMenu()">
 			<img src="img/icons/lang.png" />

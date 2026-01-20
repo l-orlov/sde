@@ -117,54 +117,84 @@ try {
     }
     mysqli_stmt_close($stmt);
     
-    // 2. Обновление основного продукта
-    if (isset($input['main_product'])) {
-        $mainProduct = $input['main_product'];
-        
-        // Загружаем текущие данные основного продукта из БД
-        $query = "SELECT id, name, description, annual_export, certifications 
-                  FROM products WHERE user_id = ? AND is_main = 1 LIMIT 1";
+    // 2. Обновление продуктов (массив)
+    $certifications = isset($input['certifications']) ? htmlspecialchars(trim($input['certifications'])) : '';
+    
+    if (isset($input['products']) && is_array($input['products'])) {
+        // Загружаем все существующие продукты
+        $query = "SELECT id FROM products WHERE user_id = ? ORDER BY id ASC";
         $stmt = mysqli_prepare($link, $query);
         mysqli_stmt_bind_param($stmt, 'i', $userId);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
-        $currentMainProduct = mysqli_fetch_assoc($result);
+        $existingProductIds = [];
+        while ($row = mysqli_fetch_assoc($result)) {
+            $existingProductIds[] = intval($row['id']);
+        }
         mysqli_stmt_close($stmt);
         
-        $mainProductId = $currentMainProduct ? intval($currentMainProduct['id']) : null;
+        $submittedProductIds = [];
         
-        // Объединяем текущие данные с изменениями из формы
-        $mainName = isset($mainProduct['name']) && $mainProduct['name'] !== '' ? htmlspecialchars(trim($mainProduct['name'])) : ($currentMainProduct['name'] ?? '');
-        $mainDescription = isset($mainProduct['description']) && $mainProduct['description'] !== '' ? htmlspecialchars(trim($mainProduct['description'])) : ($currentMainProduct['description'] ?? '');
-        $mainAnnualExport = isset($mainProduct['annual_export']) && $mainProduct['annual_export'] !== '' ? htmlspecialchars(trim($mainProduct['annual_export'])) : ($currentMainProduct['annual_export'] ?? '');
-        $mainCertifications = isset($mainProduct['certifications']) && $mainProduct['certifications'] !== '' ? htmlspecialchars(trim($mainProduct['certifications'])) : ($currentMainProduct['certifications'] ?? '');
+        // Обрабатываем каждый продукт из формы
+        foreach ($input['products'] as $index => $product) {
+            $productId = isset($product['id']) && $product['id'] !== null && $product['id'] !== '' ? intval($product['id']) : null;
+            $productName = isset($product['name']) ? htmlspecialchars(trim($product['name'])) : '';
+            $productDescription = isset($product['description']) ? htmlspecialchars(trim($product['description'])) : '';
+            $productAnnualExport = isset($product['annual_export']) ? htmlspecialchars(trim($product['annual_export'])) : '';
+            
+            if ($productId && in_array($productId, $existingProductIds)) {
+                // Обновляем существующий продукт
+                $query = "UPDATE products SET name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?, updated_at = UNIX_TIMESTAMP()
+                          WHERE id = ?";
+                $isMain = ($index === 0) ? 1 : 0;
+                $stmt = mysqli_prepare($link, $query);
+                mysqli_stmt_bind_param($stmt, 'ssssii', $productName, $productDescription, $productAnnualExport, $certifications, $isMain, $productId);
+                
+                if (!mysqli_stmt_execute($stmt)) {
+                    throw new Exception("Error al actualizar producto: " . mysqli_error($link));
+                }
+                mysqli_stmt_close($stmt);
+                
+                $submittedProductIds[] = $productId;
+            } else {
+                // Создаем новый продукт
+                $isMain = ($index === 0) ? 1 : 0;
+                $query = "INSERT INTO products (company_id, user_id, is_main, name, description, annual_export, certifications) 
+                          VALUES (?, ?, ?, ?, ?, ?, ?)";
+                $stmt = mysqli_prepare($link, $query);
+                mysqli_stmt_bind_param($stmt, 'iisssss', $companyId, $userId, $isMain, $productName, $productDescription, $productAnnualExport, $certifications);
+                
+                if (!mysqli_stmt_execute($stmt)) {
+                    throw new Exception("Error al crear producto: " . mysqli_error($link));
+                }
+                $newProductId = mysqli_insert_id($link);
+                mysqli_stmt_close($stmt);
+                
+                if ($newProductId) {
+                    $submittedProductIds[] = $newProductId;
+                }
+            }
+        }
         
-        if ($mainProductId) {
-            // Обновляем существующий
-            $query = "UPDATE products SET name = ?, description = ?, annual_export = ?, certifications = ?, updated_at = UNIX_TIMESTAMP()
-                      WHERE id = ?";
+        // Удаляем продукты, которые не были отправлены в форме
+        if (!empty($submittedProductIds)) {
+            $placeholders = implode(',', array_fill(0, count($submittedProductIds), '?'));
+            $query = "DELETE FROM products WHERE user_id = ? AND id NOT IN ($placeholders)";
             $stmt = mysqli_prepare($link, $query);
-            mysqli_stmt_bind_param($stmt, 'ssssi', $mainName, $mainDescription, $mainAnnualExport, $mainCertifications, $mainProductId);
+            $params = array_merge([$userId], $submittedProductIds);
+            $types = str_repeat('i', count($params));
+            mysqli_stmt_bind_param($stmt, $types, ...$params);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
         } else {
-            // Создаем новый
-            $query = "INSERT INTO products (company_id, user_id, is_main, name, description, annual_export, certifications) 
-                      VALUES (?, ?, 1, ?, ?, ?, ?)";
+            // Если нет продуктов в форме, удаляем все
+            $query = "DELETE FROM products WHERE user_id = ?";
             $stmt = mysqli_prepare($link, $query);
-            mysqli_stmt_bind_param($stmt, 'iissss', $companyId, $userId, $mainName, $mainDescription, $mainAnnualExport, $mainCertifications);
+            mysqli_stmt_bind_param($stmt, 'i', $userId);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
         }
-        
-        if (!mysqli_stmt_execute($stmt)) {
-            throw new Exception("Error al guardar producto principal: " . mysqli_error($link));
-        }
-        mysqli_stmt_close($stmt);
     }
-    
-    // 3. Удаляем все вторичные продукты (они больше не используются)
-    $query = "DELETE FROM products WHERE user_id = ? AND is_main = 0";
-    $stmt = mysqli_prepare($link, $query);
-    mysqli_stmt_bind_param($stmt, 'i', $userId);
-    mysqli_stmt_execute($stmt);
-    mysqli_stmt_close($stmt);
     
     // 4. Обновляем users.company_name синхронизированно с companies.name
     $query = "UPDATE users SET company_name = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?";
@@ -175,76 +205,148 @@ try {
     }
     mysqli_stmt_close($stmt);
     
-    // 5. Обновление current_markets в company_data
-    if (isset($input['current_markets'])) {
-        // Загружаем текущие данные company_data
-        $query = "SELECT current_markets, target_markets, differentiation_factors, needs, 
-                         competitiveness, logistics, expectations, consents
-                  FROM company_data WHERE company_id = ? LIMIT 1";
+    // 5. Обновление company_data (все поля)
+    // Загружаем текущие данные company_data
+    $query = "SELECT current_markets, target_markets, differentiation_factors, needs, 
+                     competitiveness, logistics, expectations, consents
+              FROM company_data WHERE company_id = ? LIMIT 1";
+    $stmt = mysqli_prepare($link, $query);
+    mysqli_stmt_bind_param($stmt, 'i', $companyId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $currentCompanyData = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+    
+    // Парсим текущие JSON данные
+    $currentCompetitiveness = $currentCompanyData && $currentCompanyData['competitiveness'] 
+        ? json_decode($currentCompanyData['competitiveness'], true) 
+        : [];
+    $currentLogistics = $currentCompanyData && $currentCompanyData['logistics'] 
+        ? json_decode($currentCompanyData['logistics'], true) 
+        : [];
+    $currentExpectations = $currentCompanyData && $currentCompanyData['expectations'] 
+        ? json_decode($currentCompanyData['expectations'], true) 
+        : [];
+    $currentConsents = $currentCompanyData && $currentCompanyData['consents'] 
+        ? json_decode($currentCompanyData['consents'], true) 
+        : [];
+    
+    // Обновляем competitiveness
+    if (isset($input['differentiation_factors'])) {
+        $currentCompetitiveness['differentiation_factors'] = $input['differentiation_factors'];
+    }
+    if (isset($input['other_differentiation'])) {
+        $currentCompetitiveness['other_differentiation'] = htmlspecialchars(trim($input['other_differentiation']));
+    }
+    if (isset($input['company_history'])) {
+        $currentCompetitiveness['company_history'] = htmlspecialchars(trim($input['company_history']));
+    }
+    if (isset($input['awards'])) {
+        $currentCompetitiveness['awards'] = htmlspecialchars(trim($input['awards']));
+    }
+    if (isset($input['awards_detail'])) {
+        $currentCompetitiveness['awards_detail'] = htmlspecialchars(trim($input['awards_detail']));
+    }
+    if (isset($input['fairs'])) {
+        $currentCompetitiveness['fairs'] = htmlspecialchars(trim($input['fairs']));
+    }
+    if (isset($input['rounds'])) {
+        $currentCompetitiveness['rounds'] = htmlspecialchars(trim($input['rounds']));
+    }
+    if (isset($input['export_experience'])) {
+        $currentCompetitiveness['export_experience'] = htmlspecialchars(trim($input['export_experience']));
+    }
+    if (isset($input['commercial_references'])) {
+        $currentCompetitiveness['commercial_references'] = htmlspecialchars(trim($input['commercial_references']));
+    }
+    
+    // Обновляем logistics
+    if (isset($input['export_capacity'])) {
+        $currentLogistics['export_capacity'] = htmlspecialchars(trim($input['export_capacity']));
+    }
+    if (isset($input['estimated_term'])) {
+        $currentLogistics['estimated_term'] = htmlspecialchars(trim($input['estimated_term']));
+    }
+    if (isset($input['logistics_infrastructure'])) {
+        $currentLogistics['logistics_infrastructure'] = htmlspecialchars(trim($input['logistics_infrastructure']));
+    }
+    if (isset($input['ports_airports'])) {
+        $currentLogistics['ports_airports'] = htmlspecialchars(trim($input['ports_airports']));
+    }
+    
+    // Обновляем expectations
+    if (isset($input['needs'])) {
+        $currentExpectations['needs'] = $input['needs'];
+    }
+    if (isset($input['other_needs'])) {
+        $currentExpectations['other_needs'] = htmlspecialchars(trim($input['other_needs']));
+    }
+    if (isset($input['interest_participate'])) {
+        $currentExpectations['interest_participate'] = htmlspecialchars(trim($input['interest_participate']));
+    }
+    if (isset($input['training_availability'])) {
+        $currentExpectations['training_availability'] = htmlspecialchars(trim($input['training_availability']));
+    }
+    
+    // Обновляем consents
+    if (isset($input['authorization_publish'])) {
+        $currentConsents['authorization_publish'] = htmlspecialchars(trim($input['authorization_publish']));
+    }
+    if (isset($input['authorization_publication'])) {
+        $currentConsents['authorization_publication'] = htmlspecialchars(trim($input['authorization_publication']));
+    }
+    if (isset($input['accept_contact'])) {
+        $currentConsents['accept_contact'] = htmlspecialchars(trim($input['accept_contact']));
+    }
+    
+    // Подготавливаем JSON для всех полей
+    $currentMarkets = isset($input['current_markets']) && $input['current_markets'] !== '' 
+        ? htmlspecialchars(trim($input['current_markets'])) 
+        : ($currentCompanyData && $currentCompanyData['current_markets'] ? json_decode($currentCompanyData['current_markets'], true) : '');
+    $currentMarketsJson = json_encode($currentMarkets, JSON_UNESCAPED_UNICODE);
+    
+    $targetMarketsJson = $currentCompanyData && $currentCompanyData['target_markets'] 
+        ? $currentCompanyData['target_markets'] 
+        : '[]';
+    
+    $diffFactorsJson = isset($input['differentiation_factors']) && is_array($input['differentiation_factors'])
+        ? json_encode($input['differentiation_factors'], JSON_UNESCAPED_UNICODE)
+        : ($currentCompanyData && $currentCompanyData['differentiation_factors'] ? $currentCompanyData['differentiation_factors'] : '[]');
+    
+    $needsJson = isset($input['needs']) && is_array($input['needs'])
+        ? json_encode($input['needs'], JSON_UNESCAPED_UNICODE)
+        : ($currentCompanyData && $currentCompanyData['needs'] ? $currentCompanyData['needs'] : '[]');
+    
+    $competitivenessJson = json_encode($currentCompetitiveness, JSON_UNESCAPED_UNICODE);
+    $logisticsJson = json_encode($currentLogistics, JSON_UNESCAPED_UNICODE);
+    $expectationsJson = json_encode($currentExpectations, JSON_UNESCAPED_UNICODE);
+    $consentsJson = json_encode($currentConsents, JSON_UNESCAPED_UNICODE);
+    
+    if ($currentCompanyData) {
+        // Обновляем существующую запись
+        $query = "UPDATE company_data SET current_markets = ?, target_markets = ?, differentiation_factors = ?, needs = ?, 
+                         competitiveness = ?, logistics = ?, expectations = ?, consents = ?, updated_at = UNIX_TIMESTAMP() 
+                  WHERE company_id = ?";
         $stmt = mysqli_prepare($link, $query);
-        mysqli_stmt_bind_param($stmt, 'i', $companyId);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-        $currentCompanyData = mysqli_fetch_assoc($result);
-        mysqli_stmt_close($stmt);
-        
-        // Обработка current_markets (строка, один вариант)
-        $currentMarkets = '';
-        if (isset($input['current_markets']) && $input['current_markets'] !== '') {
-            $currentMarkets = htmlspecialchars(trim($input['current_markets']));
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'ssssssssi', $currentMarketsJson, $targetMarketsJson, $diffFactorsJson, $needsJson, 
+                                  $competitivenessJson, $logisticsJson, $expectationsJson, $consentsJson, $companyId);
+            if (!mysqli_stmt_execute($stmt)) {
+                throw new Exception("Error al actualizar company_data: " . mysqli_error($link));
+            }
+            mysqli_stmt_close($stmt);
         }
-        
-        // Подготавливаем JSON для current_markets (строка)
-        $currentMarketsJson = json_encode($currentMarkets, JSON_UNESCAPED_UNICODE);
-        if ($currentMarketsJson === false || $currentMarketsJson === null) $currentMarketsJson = '""';
-        $currentMarketsJson = (string)$currentMarketsJson;
-        
-        // Сохраняем остальные поля из текущих данных или используем значения по умолчанию
-        $targetMarketsJson = $currentCompanyData && $currentCompanyData['target_markets'] 
-            ? $currentCompanyData['target_markets'] 
-            : '[]';
-        $diffFactorsJson = $currentCompanyData && $currentCompanyData['differentiation_factors'] 
-            ? $currentCompanyData['differentiation_factors'] 
-            : '[]';
-        $needsJson = $currentCompanyData && $currentCompanyData['needs'] 
-            ? $currentCompanyData['needs'] 
-            : '[]';
-        $competitivenessJson = $currentCompanyData && $currentCompanyData['competitiveness'] 
-            ? $currentCompanyData['competitiveness'] 
-            : '{}';
-        $logisticsJson = $currentCompanyData && $currentCompanyData['logistics'] 
-            ? $currentCompanyData['logistics'] 
-            : '{}';
-        $expectationsJson = $currentCompanyData && $currentCompanyData['expectations'] 
-            ? $currentCompanyData['expectations'] 
-            : '{}';
-        $consentsJson = $currentCompanyData && $currentCompanyData['consents'] 
-            ? $currentCompanyData['consents'] 
-            : '{}';
-        
-        if ($currentCompanyData) {
-            // Обновляем существующую запись
-            $query = "UPDATE company_data SET current_markets = ?, updated_at = UNIX_TIMESTAMP() WHERE company_id = ?";
-            $stmt = mysqli_prepare($link, $query);
-            if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'si', $currentMarketsJson, $companyId);
-                if (!mysqli_stmt_execute($stmt)) {
-                    throw new Exception("Error al actualizar current_markets: " . mysqli_error($link));
-                }
-                mysqli_stmt_close($stmt);
+    } else {
+        // Создаем новую запись
+        $query = "INSERT INTO company_data (company_id, current_markets, target_markets, differentiation_factors, needs, competitiveness, logistics, expectations, consents) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $stmt = mysqli_prepare($link, $query);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'issssssss', $companyId, $currentMarketsJson, $targetMarketsJson, $diffFactorsJson, $needsJson, $competitivenessJson, $logisticsJson, $expectationsJson, $consentsJson);
+            if (!mysqli_stmt_execute($stmt)) {
+                throw new Exception("Error al crear company_data: " . mysqli_error($link));
             }
-        } else {
-            // Создаем новую запись
-            $query = "INSERT INTO company_data (company_id, current_markets, target_markets, differentiation_factors, needs, competitiveness, logistics, expectations, consents) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            $stmt = mysqli_prepare($link, $query);
-            if ($stmt) {
-                mysqli_stmt_bind_param($stmt, 'issssssss', $companyId, $currentMarketsJson, $targetMarketsJson, $diffFactorsJson, $needsJson, $competitivenessJson, $logisticsJson, $expectationsJson, $consentsJson);
-                if (!mysqli_stmt_execute($stmt)) {
-                    throw new Exception("Error al crear company_data: " . mysqli_error($link));
-                }
-                mysqli_stmt_close($stmt);
-            }
+            mysqli_stmt_close($stmt);
         }
     }
     

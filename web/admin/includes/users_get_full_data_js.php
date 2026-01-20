@@ -131,18 +131,20 @@ try {
     }
     mysqli_stmt_close($stmt);
     
-    // 5. Продукты
-    $products = ['main' => null];
+    // 5. Продукты (загружаем все продукты, не только main)
+    $products = ['all' => [], 'main' => null];
     $query = "SELECT id, is_main, name, description, annual_export, certifications
               FROM products
-              WHERE user_id = ? AND is_main = 1
-              LIMIT 1";
+              WHERE user_id = ?
+              ORDER BY id ASC";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $userId);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
-    if ($row = mysqli_fetch_assoc($result)) {
-        $products['main'] = [
+    
+    $allProducts = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $productData = [
             'id' => intval($row['id']),
             'is_main' => (bool)$row['is_main'],
             'name' => $row['name'] ?? '',
@@ -150,8 +152,16 @@ try {
             'annual_export' => $row['annual_export'] ?? '',
             'certifications' => $row['certifications'] ?? ''
         ];
+        $allProducts[] = $productData;
+        
+        // Для обратной совместимости сохраняем первый продукт как main
+        if ($products['main'] === null) {
+            $products['main'] = $productData;
+        }
     }
     mysqli_stmt_close($stmt);
+    
+    $products['all'] = $allProducts;
     
     // 6. Дополнительные данные (JSON)
     $companyDataJson = null;
@@ -165,16 +175,83 @@ try {
     $companyDataJson = mysqli_fetch_assoc($result);
     mysqli_stmt_close($stmt);
     
-    // Парсинг JSON полей
+    // Парсинг JSON полей с правильной обработкой
     if ($companyDataJson) {
-        foreach ($companyDataJson as $key => $value) {
-            if ($value) {
-                $decoded = json_decode($value, true);
-                $companyDataJson[$key] = $decoded !== null ? $decoded : $value;
-            } else {
-                $companyDataJson[$key] = null;
-            }
+        // current_markets может быть строкой или JSON
+        if (!empty($companyDataJson['current_markets'])) {
+            $decoded = json_decode($companyDataJson['current_markets'], true);
+            $companyDataJson['current_markets'] = ($decoded !== null) ? $decoded : $companyDataJson['current_markets'];
+        } else {
+            $companyDataJson['current_markets'] = '';
         }
+        
+        // target_markets - массив
+        if (!empty($companyDataJson['target_markets'])) {
+            $decoded = json_decode($companyDataJson['target_markets'], true);
+            $companyDataJson['target_markets'] = ($decoded !== null && is_array($decoded)) ? $decoded : [];
+        } else {
+            $companyDataJson['target_markets'] = [];
+        }
+        
+        // differentiation_factors - массив
+        if (!empty($companyDataJson['differentiation_factors'])) {
+            $decoded = json_decode($companyDataJson['differentiation_factors'], true);
+            $companyDataJson['differentiation_factors'] = ($decoded !== null && is_array($decoded)) ? $decoded : [];
+        } else {
+            $companyDataJson['differentiation_factors'] = [];
+        }
+        
+        // needs - массив
+        if (!empty($companyDataJson['needs'])) {
+            $decoded = json_decode($companyDataJson['needs'], true);
+            $companyDataJson['needs'] = ($decoded !== null && is_array($decoded)) ? $decoded : [];
+        } else {
+            $companyDataJson['needs'] = [];
+        }
+        
+        // competitiveness - объект
+        if (!empty($companyDataJson['competitiveness'])) {
+            $decoded = json_decode($companyDataJson['competitiveness'], true);
+            $companyDataJson['competitiveness'] = ($decoded !== null && is_array($decoded)) ? $decoded : [];
+        } else {
+            $companyDataJson['competitiveness'] = [];
+        }
+        
+        // logistics - объект
+        if (!empty($companyDataJson['logistics'])) {
+            $decoded = json_decode($companyDataJson['logistics'], true);
+            $companyDataJson['logistics'] = ($decoded !== null && is_array($decoded)) ? $decoded : [];
+        } else {
+            $companyDataJson['logistics'] = [];
+        }
+        
+        // expectations - объект
+        if (!empty($companyDataJson['expectations'])) {
+            $decoded = json_decode($companyDataJson['expectations'], true);
+            $companyDataJson['expectations'] = ($decoded !== null && is_array($decoded)) ? $decoded : [];
+        } else {
+            $companyDataJson['expectations'] = [];
+        }
+        
+        // consents - объект
+        if (!empty($companyDataJson['consents'])) {
+            $decoded = json_decode($companyDataJson['consents'], true);
+            $companyDataJson['consents'] = ($decoded !== null && is_array($decoded)) ? $decoded : [];
+        } else {
+            $companyDataJson['consents'] = [];
+        }
+    } else {
+        // Если нет данных, создаем пустую структуру
+        $companyDataJson = [
+            'current_markets' => '',
+            'target_markets' => [],
+            'differentiation_factors' => [],
+            'needs' => [],
+            'competitiveness' => [],
+            'logistics' => [],
+            'expectations' => [],
+            'consents' => []
+        ];
     }
     
     // 8. Файлы (загружаем классы только здесь, когда они нужны)
@@ -199,7 +276,7 @@ try {
     }
     
     $query = "SELECT f.id, f.product_id, f.file_type, f.file_name, f.file_path, f.storage_type, f.mime_type,
-                     p.is_main, p.id as product_exists
+                     p.id as product_exists
               FROM files f
               LEFT JOIN products p ON f.product_id = p.id AND p.user_id = ?
               WHERE f.user_id = ? AND f.is_temporary = 0
@@ -213,7 +290,6 @@ try {
         $fileType = $row['file_type'];
         $fileId = $row['id'];
         $productId = $row['product_id'];
-        $isMain = $row['is_main'] ?? false;
         $productExists = $row['product_exists'] !== null;
         
         try {
@@ -241,21 +317,31 @@ try {
         }
         
         if ($fileType === 'product_photo') {
-            if ($productId !== null && $productId > 0 && $productExists && !$isMain) {
-                if (!isset($files['product_photo_sec'])) {
-                    $files['product_photo_sec'] = [];
-                }
-                if (!isset($files['product_photo_sec'][$productId])) {
-                    $files['product_photo_sec'][$productId] = [];
-                }
-                $files['product_photo_sec'][$productId][] = $fileData;
-            } else {
+            // Группируем фото продуктов по product_id (без учета is_main)
+            if ($productId !== null && $productId > 0 && $productExists) {
+                // Группируем по product_id в объект
                 if (!isset($files['product_photo'])) {
                     $files['product_photo'] = [];
                 }
-                $files['product_photo'][] = $fileData;
+                // Если это объект с ключами product_id
+                if (!isset($files['product_photo'][$productId])) {
+                    $files['product_photo'][$productId] = [];
+                }
+                $files['product_photo'][$productId][] = $fileData;
+            } else {
+                // Фото без product_id (старые данные или ошибка)
+                if (!isset($files['product_photo'])) {
+                    $files['product_photo'] = [];
+                }
+                // Если это массив, добавляем в него
+                if (is_array($files['product_photo']) && !isset($files['product_photo'][0])) {
+                    $files['product_photo'] = [$fileData];
+                } else {
+                    $files['product_photo'][] = $fileData;
+                }
             }
         } else {
+            // Остальные типы файлов
             if (!isset($files[$fileType])) {
                 $files[$fileType] = [];
             }

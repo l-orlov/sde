@@ -160,7 +160,7 @@ $visibleProducts = min(4, $totalProducts);
   <header class="home-header">
     <div class="home-header-wrapper">
       <div class="home-logo">
-        <img src="img/logo.png" alt="Santiago del Estero" class="home-logo-image">
+        <img src="img/logo.svg" alt="Santiago del Estero" class="home-logo-image">
       </div>
       <div class="home-header-actions">
         <button data-i18n="btn_export_tariffs" class="btn btn-export-tariffs">Ver aranceles de exportación</button>
@@ -171,7 +171,6 @@ $visibleProducts = min(4, $totalProducts);
             <ul id="home_lang_menu" class="home_lang_menu hidden">
               <li onclick="setLang('home', 'es')">Español</li>
               <li onclick="setLang('home', 'en')">English</li>
-              <!-- <li onclick="setLang('home', 'ru')">Русский</li> -->
             </ul>
           </div>
           <div onclick="location.href='?page=regfull';" class="home-icon-btn home-notification-btn">

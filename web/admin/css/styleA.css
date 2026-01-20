@@ -20,7 +20,7 @@
 }
 .scroll-buttons:hover {
 	color: white;
-	background:#0082C6;
+	background:#003399;
 }
 .loading {
 	max-width: 45px;
@@ -30,7 +30,7 @@
 	box-sizing: border-box;
 }
 .adm_zag {
-	background-color: #0082C6 !important;
+	background-color: #003399 !important;
 	color: #FFF;
 	display: flex;
     justify-content: center;
@@ -103,7 +103,7 @@
 	box-sizing: border-box;
 }
 .addnew .add_input:focus {
-	border-color: #0082C6;
+	border-color: #003399;
 	outline: none;
 	box-shadow: 0 0 0 2px rgba(0, 130, 198, 0.2);
 }
@@ -158,7 +158,7 @@
 	border: 1px solid #CCC;
 }
 .adm_busc_bt {
-	background-color: #0082C6 !important;
+	background-color: #003399 !important;
 	color: white !important;
 	border-radius: 5px;
 	padding: 5px 10px;
@@ -296,12 +296,12 @@
 }
 
 .section-title {
-    color: #0082C6;
+    color: #003399;
     font-size: 18px;
     font-weight: bold;
     margin-bottom: 20px;
     padding-bottom: 10px;
-    border-bottom: 2px solid #0082C6;
+    border-bottom: 2px solid #003399;
 }
 
 .user-form-section .form-group {
@@ -328,7 +328,7 @@
 }
 
 .user-form-section .form-control:focus {
-    border-color: #0082C6;
+    border-color: #003399;
     outline: none;
     box-shadow: 0 0 0 2px rgba(0, 130, 198, 0.2);
 }
@@ -365,7 +365,7 @@
 .file-item-preview a {
     display: block;
     margin-top: 5px;
-    color: #0082C6;
+    color: #003399;
     text-decoration: none;
 }
 
@@ -384,14 +384,14 @@
 .form-actions {
     margin-top: 30px;
     padding-top: 20px;
-    border-top: 2px solid #0082C6;
+    border-top: 2px solid #003399;
     text-align: center;
 }
 
 .form-actions .btn {
     padding: 10px 30px;
     font-size: 16px;
-    background-color: #0082C6;
+    background-color: #003399;
     color: white;
     border: none;
     border-radius: 4px;

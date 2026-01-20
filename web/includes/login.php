@@ -9,7 +9,7 @@ if (isset($_GET['logout']) && $_GET['logout'] == '1') {
 	<div class="login_main_box">
 		<div class="login_box">
 			<div class="login_logo">
-                <img src="img/logo.png">
+                <img src="img/logo.svg">
 			</div>
 			<div class="login_lang" onclick="toggleLangMenu()">
 				<img src="img/icons/lang.png">
@@ -17,7 +17,6 @@ if (isset($_GET['logout']) && $_GET['logout'] == '1') {
 				<ul id="login_lang_menu" class="login_lang_menu hidden">
 					<li onclick="setLang('login', 'es')">Español</li>
 					<li onclick="setLang('login', 'en')">English</li>
-					<!-- <li onclick="setLang('login', 'ru')">Русский</li> -->
 				</ul>
 			</div>
 			<div class="login_tit" data-i18n="login_title">LOG-IN</div>

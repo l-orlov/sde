@@ -95,7 +95,16 @@ try {
     $startDate = isset($input['start_date']) ? htmlspecialchars(trim($input['start_date'])) : null;
     $website = isset($input['website']) ? htmlspecialchars(trim($input['website'])) : '';
     $organizationType = isset($input['organization_type']) ? htmlspecialchars(trim($input['organization_type'])) : '';
-    $mainActivity = isset($input['main_activity']) ? htmlspecialchars(trim($input['main_activity'])) : '';
+    $mainActivity = '';
+    if (isset($input['main_activity']) && !empty($input['main_activity'])) {
+        $trimmed = trim($input['main_activity']);
+        // Сохраняем только валидные значения (не "0", не "…", не пустое)
+        if ($trimmed !== '' && $trimmed !== '0' && $trimmed !== '…') {
+            $mainActivity = htmlspecialchars($trimmed);
+        }
+    }
+    // Отладка: логируем значение для проверки
+    error_log("main_activity received: " . ($input['main_activity'] ?? 'NOT SET') . " -> processed: " . $mainActivity);
     
     $startDateTimestamp = null;
     if ($startDate) {
@@ -115,11 +124,13 @@ try {
         $stmt = mysqli_prepare($link, $query);
         mysqli_stmt_bind_param($stmt, 'sssissis', $name, $taxId, $legalName, $startDateTimestamp, $website, $organizationType, $mainActivity, $companyId);
     } else {
+        // Для INSERT используем пустую строку, если значение не передано
+        $mainActivityForInsert = ($mainActivity !== null && $mainActivity !== '') ? $mainActivity : '';
         $query = "INSERT INTO companies (user_id, name, tax_id, legal_name, start_date, website, 
                   organization_type, main_activity, moderation_status) 
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')";
         $stmt = mysqli_prepare($link, $query);
-        mysqli_stmt_bind_param($stmt, 'isssisss', $userId, $name, $taxId, $legalName, $startDateTimestamp, $website, $organizationType, $mainActivity);
+        mysqli_stmt_bind_param($stmt, 'isssisss', $userId, $name, $taxId, $legalName, $startDateTimestamp, $website, $organizationType, $mainActivityForInsert);
     }
     
     if (!mysqli_stmt_execute($stmt)) {
@@ -202,6 +213,17 @@ try {
         mysqli_stmt_bind_param($stmt, 'isssss', $companyId, $contactPerson, $position, $email, $areaCode, $phone);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
+        
+        // Синхронизация email в таблице users
+        if (!empty($email)) {
+            $query = "UPDATE users SET email = ? WHERE id = ?";
+            $stmt = mysqli_prepare($link, $query);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'si', $email, $userId);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+        }
     }
     
     // ========== 4. СОЦИАЛЬНЫЕ СЕТИ ==========
@@ -233,9 +255,119 @@ try {
     
     // ========== 5. ПРОДУКТЫ ==========
     
-    $mainProductId = null;
-    if (isset($input['main_product']) && !empty($input['main_product'])) {
-        $query = "SELECT id FROM products WHERE company_id = ? AND is_main = 1 LIMIT 1";
+    // mainProductId больше не используется - все продукты равны
+    $productIds = [];
+    $certifications = htmlspecialchars(trim($input['certifications'] ?? ''));
+    
+    // Обработка массива продуктов
+    if (isset($input['product_name']) && is_array($input['product_name']) && count($input['product_name']) > 0) {
+        // Получить существующие продукты для обновления (все равны, без is_main)
+        $query = "SELECT id FROM products WHERE company_id = ? ORDER BY id ASC";
+        $stmt = mysqli_prepare($link, $query);
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $existingProducts = [];
+        while ($row = mysqli_fetch_assoc($result)) {
+            $existingProducts[] = $row;
+        }
+        mysqli_stmt_close($stmt);
+        
+        $processedProductIds = [];
+        $existingProductIndex = 0; // Индекс для последовательного сопоставления
+        
+        foreach ($input['product_name'] as $index => $productName) {
+            $productName = trim($productName);
+            if (empty($productName)) {
+                continue; // Пропускаем пустые продукты
+            }
+            
+            // Все продукты равны, is_main = 0 для всех
+            $isMain = 0;
+            $productName = htmlspecialchars($productName);
+            $description = isset($input['product_description'][$index]) && is_array($input['product_description'])
+                ? htmlspecialchars(trim($input['product_description'][$index])) : '';
+            $annualExport = isset($input['annual_export'][$index]) && is_array($input['annual_export'])
+                ? htmlspecialchars(trim($input['annual_export'][$index])) : '';
+            
+            // Найти существующий продукт для обновления (последовательное сопоставление по индексу)
+            $existingProduct = null;
+            if ($existingProductIndex < count($existingProducts)) {
+                // Используем следующий доступный существующий продукт
+                $existingProduct = $existingProducts[$existingProductIndex];
+                $existingProductIndex++;
+            }
+            
+            if ($existingProduct && isset($existingProduct['id']) && !in_array($existingProduct['id'], $processedProductIds)) {
+                // Обновить существующий продукт
+                $query = "UPDATE products SET name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?
+                          WHERE id = ? AND company_id = ?";
+                $stmt = mysqli_prepare($link, $query);
+                if (!$stmt) {
+                    error_log("Failed to prepare UPDATE statement: " . mysqli_error($link));
+                    continue;
+                }
+                mysqli_stmt_bind_param($stmt, 'ssssiii', $productName, $description, $annualExport, $certifications, $isMain,
+                                      $existingProduct['id'], $companyId);
+                if (!mysqli_stmt_execute($stmt)) {
+                    error_log("Failed to execute UPDATE: " . mysqli_stmt_error($stmt));
+                    mysqli_stmt_close($stmt);
+                    continue;
+                }
+                $productId = $existingProduct['id'];
+                mysqli_stmt_close($stmt);
+                $processedProductIds[] = $productId;
+            } else {
+                // Создать новый продукт
+                $query = "INSERT INTO products (company_id, user_id, is_main, name, description, annual_export, certifications) 
+                          VALUES (?, ?, ?, ?, ?, ?, ?)";
+                $stmt = mysqli_prepare($link, $query);
+                if (!$stmt) {
+                    error_log("Failed to prepare INSERT statement: " . mysqli_error($link));
+                    continue;
+                }
+                mysqli_stmt_bind_param($stmt, 'iiissss', $companyId, $userId, $isMain, $productName, $description, $annualExport, $certifications);
+                if (!mysqli_stmt_execute($stmt)) {
+                    error_log("Failed to execute INSERT: " . mysqli_stmt_error($stmt));
+                    mysqli_stmt_close($stmt);
+                    continue;
+                }
+                $productId = mysqli_insert_id($link);
+                mysqli_stmt_close($stmt);
+                $processedProductIds[] = $productId;
+            }
+            
+            $productIds[$index] = $productId;
+        }
+        
+        // Удалить продукты, которые больше не существуют в форме
+        if (!empty($processedProductIds)) {
+            // Получить все продукты компании
+            $query = "SELECT id FROM products WHERE company_id = ?";
+            $stmt = mysqli_prepare($link, $query);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'i', $companyId);
+                mysqli_stmt_execute($stmt);
+                $result = mysqli_stmt_get_result($stmt);
+                while ($row = mysqli_fetch_assoc($result)) {
+                    $productIdToCheck = $row['id'];
+                    // Удаляем только те, которых нет в обработанных
+                    if (!in_array($productIdToCheck, $processedProductIds)) {
+                        $deleteQuery = "DELETE FROM products WHERE id = ? AND company_id = ?";
+                        $deleteStmt = mysqli_prepare($link, $deleteQuery);
+                        if ($deleteStmt) {
+                            mysqli_stmt_bind_param($deleteStmt, 'ii', $productIdToCheck, $companyId);
+                            mysqli_stmt_execute($deleteStmt);
+                            mysqli_stmt_close($deleteStmt);
+                        }
+                    }
+                }
+                mysqli_stmt_close($stmt);
+            }
+        }
+    } elseif (isset($input['main_product']) && !empty($input['main_product'])) {
+        // Обратная совместимость: старый формат с одним продуктом
+        $query = "SELECT id FROM products WHERE company_id = ? ORDER BY id ASC LIMIT 1";
         $stmt = mysqli_prepare($link, $query);
         mysqli_stmt_bind_param($stmt, 'i', $companyId);
         mysqli_stmt_execute($stmt);
@@ -246,26 +378,28 @@ try {
         $productName = htmlspecialchars(trim($input['main_product'] ?? ''));
         $description = htmlspecialchars(trim($input['product_description'] ?? ''));
         $annualExport = htmlspecialchars(trim($input['annual_export'] ?? ''));
-        $certifications = htmlspecialchars(trim($input['certifications'] ?? ''));
+        $isMain = 0; // Все продукты равны
         
         if ($existingMain && isset($existingMain['id'])) {
-            $query = "UPDATE products SET name = ?, description = ?, annual_export = ?, certifications = ?
+            $query = "UPDATE products SET name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?
                       WHERE id = ? AND company_id = ?";
             $stmt = mysqli_prepare($link, $query);
-            mysqli_stmt_bind_param($stmt, 'ssssii', $productName, $description, $annualExport, $certifications, 
+            mysqli_stmt_bind_param($stmt, 'ssssiii', $productName, $description, $annualExport, $certifications, $isMain,
                                   $existingMain['id'], $companyId);
             mysqli_stmt_execute($stmt);
+            // Сохраняем ID для обратной совместимости
             $mainProductId = $existingMain['id'];
             mysqli_stmt_close($stmt);
         } else {
             $query = "INSERT INTO products (company_id, user_id, is_main, name, description, annual_export, certifications) 
-                      VALUES (?, ?, TRUE, ?, ?, ?, ?)";
+                      VALUES (?, ?, ?, ?, ?, ?, ?)";
             $stmt = mysqli_prepare($link, $query);
-            mysqli_stmt_bind_param($stmt, 'iissss', $companyId, $userId, $productName, $description, $annualExport, $certifications);
+            mysqli_stmt_bind_param($stmt, 'iissss', $companyId, $userId, $isMain, $productName, $description, $annualExport, $certifications);
             mysqli_stmt_execute($stmt);
             $mainProductId = mysqli_insert_id($link);
             mysqli_stmt_close($stmt);
         }
+        $productIds[0] = $mainProductId;
     }
     
     // ========== 6. ДОПОЛНИТЕЛЬНЫЕ ДАННЫЕ (JSON) ==========
@@ -305,6 +439,7 @@ try {
             'rounds' => isset($input['rounds']) ? htmlspecialchars(trim($input['rounds'])) : '',
             'export_experience' => isset($input['export_experience']) ? htmlspecialchars(trim($input['export_experience'])) : '',
             'commercial_references' => isset($input['commercial_references']) ? htmlspecialchars(trim($input['commercial_references'])) : '',
+            'other_differentiation' => isset($input['other_differentiation']) ? htmlspecialchars(trim($input['other_differentiation'])) : '',
         ],
         'logistics' => [
             'export_capacity' => isset($input['export_capacity']) ? htmlspecialchars(trim($input['export_capacity'])) : '',
@@ -315,6 +450,7 @@ try {
         'expectations' => [
             'interest_participate' => isset($input['interest_participate']) ? htmlspecialchars(trim($input['interest_participate'])) : '',
             'training_availability' => isset($input['training_availability']) ? htmlspecialchars(trim($input['training_availability'])) : '',
+            'other_needs' => isset($input['other_needs']) ? htmlspecialchars(trim($input['other_needs'])) : '',
         ],
         'consents' => [
             'authorization_publish' => isset($input['authorization_publish']) ? htmlspecialchars(trim($input['authorization_publish'])) : '',
@@ -418,12 +554,25 @@ try {
             $productIndexKey = 'new_file_product_index_' . $fileKey;
             $productIndex = isset($input[$productIndexKey]) ? intval($input[$productIndexKey]) : null;
             
-            if ($productId === null && $productIndex !== null && isset($newProductIdsByIndex[$productIndex])) {
-                $productId = $newProductIdsByIndex[$productIndex];
+            // Определяем product_id по индексу для product_photo
+            if ($productId === null && $productIndex !== null) {
+                if (isset($productIds[$productIndex])) {
+                    $productId = $productIds[$productIndex];
+                }
             }
             
-            if ($productId === null && $fileKey === 'product_photo' && $mainProductId) {
-                $productId = $mainProductId;
+            // Обработка product_photo_index_X
+            if ($productId === null && strpos($fileKey, 'product_photo_index_') === 0) {
+                $indexStr = substr($fileKey, 20); // 'product_photo_index_'.length = 20
+                $index = intval($indexStr);
+                if (isset($productIds[$index])) {
+                    $productId = $productIds[$index];
+                }
+            }
+            
+            // Обработка старого формата product_photo (без индекса) - используем первый продукт
+            if ($productId === null && $fileKey === 'product_photo' && isset($productIds[0])) {
+                $productId = $productIds[0];
             }
             
             $existingFileIds = [];
@@ -502,30 +651,18 @@ try {
             
             // Если нет нового файла, сохраняем существующий
             if (!$hasNewFile) {
+                $targetProductId = null;
+                
+                // Определяем product_id по fileKey
                 if ($fileKey === 'product_photo') {
-                    // Основной продукт
-                    if ($mainProductId) {
-                        foreach ($fileIds as $fileId) {
-                            if ($fileId > 0) {
-                                // Обновляем product_id для файла основного продукта
-                                $query = "UPDATE files SET is_temporary = 0, product_id = ? WHERE id = ? AND user_id = ?";
-                                $stmt = mysqli_prepare($link, $query);
-                                mysqli_stmt_bind_param($stmt, 'iii', $mainProductId, $fileId, $userId);
-                                mysqli_stmt_execute($stmt);
-                                mysqli_stmt_close($stmt);
-                            }
-                        }
-                    } else {
-                        // Если mainProductId еще не определен, просто помечаем файл как постоянный
-                        foreach ($fileIds as $fileId) {
-                            if ($fileId > 0) {
-                                $query = "UPDATE files SET is_temporary = 0 WHERE id = ? AND user_id = ?";
-                                $stmt = mysqli_prepare($link, $query);
-                                mysqli_stmt_bind_param($stmt, 'ii', $fileId, $userId);
-                                mysqli_stmt_execute($stmt);
-                                mysqli_stmt_close($stmt);
-                            }
-                        }
+                    // Старый формат - используем первый продукт
+                    $targetProductId = isset($productIds[0]) ? $productIds[0] : null;
+                } elseif (strpos($fileKey, 'product_photo_index_') === 0) {
+                    // Новый формат с индексами
+                    $indexStr = substr($fileKey, 20); // 'product_photo_index_'.length = 20
+                    $index = intval($indexStr);
+                    if (isset($productIds[$index])) {
+                        $targetProductId = $productIds[$index];
                     }
                 } elseif (strpos($fileKey, 'product_photo_sec_') === 0) {
                     // Вторичный продукт
@@ -543,19 +680,24 @@ try {
                         mysqli_stmt_close($stmt);
                         
                         if ($product) {
+                            $targetProductId = $productId;
+                        }
+                    }
+                }
+                
+                if ($targetProductId) {
                             foreach ($fileIds as $fileId) {
                                 if ($fileId > 0) {
+                            // Обновляем product_id для файла продукта
                                     $query = "UPDATE files SET is_temporary = 0, product_id = ? WHERE id = ? AND user_id = ?";
                                     $stmt = mysqli_prepare($link, $query);
-                                    mysqli_stmt_bind_param($stmt, 'iii', $productId, $fileId, $userId);
+                            mysqli_stmt_bind_param($stmt, 'iii', $targetProductId, $fileId, $userId);
                                     mysqli_stmt_execute($stmt);
                                     mysqli_stmt_close($stmt);
-                                }
-                            }
                         }
                     }
                 } else {
-                    // Остальные типы файлов (logo, process_photo, digital_catalog, institutional_video)
+                    // Остальные типы файлов (logo, process_photo, digital_catalog, institutional_video, или product_photo без product_id)
                     foreach ($fileIds as $fileId) {
                         if ($fileId > 0) {
                             $query = "UPDATE files SET is_temporary = 0 WHERE id = ? AND user_id = ?";

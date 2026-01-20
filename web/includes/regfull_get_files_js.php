@@ -61,19 +61,38 @@ try {
         }
         
         if ($fileType === 'product_photo') {
-            if ($productId !== null && $productId > 0 && $productExists && !$isMain) {
-                if (!isset($filesByType['product_photo_sec'])) {
-                    $filesByType['product_photo_sec'] = [];
-                }
-                if (!isset($filesByType['product_photo_sec'][$productId])) {
-                    $filesByType['product_photo_sec'][$productId] = [];
-                }
-                $filesByType['product_photo_sec'][$productId][] = $fileData;
-            } else if ($productId === null || $productId == 0 || ($productExists && $isMain)) {
+            // Все продукты равны - группируем по product_id
+            if ($productId !== null && $productId > 0 && $productExists) {
+                // Файл привязан к конкретному продукту
+                // Храним в объекте с ключами по product_id
                 if (!isset($filesByType['product_photo'])) {
                     $filesByType['product_photo'] = [];
                 }
-                $filesByType['product_photo'][] = $fileData;
+                // Если это объект с ключами product_id, используем его
+                if (!isset($filesByType['product_photo'][$productId])) {
+                    $filesByType['product_photo'][$productId] = [];
+                }
+                $filesByType['product_photo'][$productId][] = $fileData;
+            } else {
+                // Файл без product_id (старый формат) - добавляем в массив для первого продукта
+                if (!isset($filesByType['product_photo'])) {
+                    $filesByType['product_photo'] = [];
+                }
+                // Если это массив (старый формат), добавляем в него
+                if (is_array($filesByType['product_photo']) && !isset($filesByType['product_photo'][0])) {
+                    // Преобразуем в объект с ключами
+                    $oldFiles = $filesByType['product_photo'];
+                    $filesByType['product_photo'] = [];
+                    if (count($oldFiles) > 0) {
+                        // Сохраняем старые файлы для первого продукта (будет сопоставлен по индексу)
+                        $filesByType['product_photo'][0] = $oldFiles;
+                    }
+                }
+                // Добавляем файл для первого продукта (индекс 0)
+                if (!isset($filesByType['product_photo'][0])) {
+                    $filesByType['product_photo'][0] = [];
+                }
+                $filesByType['product_photo'][0][] = $fileData;
             }
         } else {
             if (!isset($filesByType[$fileType])) {

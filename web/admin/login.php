@@ -41,7 +41,7 @@ $basePath = getAdminBasePath();
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="text-center">
-                                 <img class="pt-5" src="<?= $basePath ?>img/logo.png" style="max-width: 300px; width: 100%;">
+                                 <img class="pt-5" src="<?= $basePath ?>img/logo.svg" style="max-width: 300px; width: 100%;">
                              </div>
                                 <div class="p-5">
                                     <div class="text-center">

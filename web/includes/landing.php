@@ -2,7 +2,7 @@
 <div class="hero-section">
     <header class="hero-header">
         <div class="logo">
-            <img src="img/logo.png" alt="Santiago del Estero" class="logo-image">
+            <img src="img/logo.svg" alt="Santiago del Estero" class="logo-image">
         </div>
         <div class="nav-container">
             <nav class="hero-nav">
@@ -27,7 +27,6 @@
         <ul id="landing_header_lang_menu" class="landing_header_lang_menu hidden">
             <li onclick="setLang('landing', 'es')">Español</li>
             <li onclick="setLang('landing', 'en')">English</li>
-            <!-- <li onclick="setLang('landing', 'ru')">Русский</li> -->
         </ul>
     </div>
     <div class="hero-content">
