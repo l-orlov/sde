@@ -805,7 +805,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-<script src="js/i18n.js?v=1.0.2"></script>
+<script src="js/i18n.js?v=1.0.3"></script>
 <script>
 function toggleHomeLangMenu() {
   const menu = document.getElementById('home_lang_menu');
