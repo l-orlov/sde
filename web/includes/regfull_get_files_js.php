@@ -94,6 +94,40 @@ try {
                 }
                 $filesByType['product_photo'][0][] = $fileData;
             }
+        } else if ($fileType === 'service_photo') {
+            // Все услуги равны - группируем по product_id (услуги тоже хранятся в таблице products)
+            if ($productId !== null && $productId > 0 && $productExists) {
+                // Файл привязан к конкретной услуге
+                // Храним в объекте с ключами по product_id
+                if (!isset($filesByType['service_photo'])) {
+                    $filesByType['service_photo'] = [];
+                }
+                // Если это объект с ключами product_id, используем его
+                if (!isset($filesByType['service_photo'][$productId])) {
+                    $filesByType['service_photo'][$productId] = [];
+                }
+                $filesByType['service_photo'][$productId][] = $fileData;
+            } else {
+                // Файл без product_id (старый формат) - добавляем в массив для первой услуги
+                if (!isset($filesByType['service_photo'])) {
+                    $filesByType['service_photo'] = [];
+                }
+                // Если это массив (старый формат), добавляем в него
+                if (is_array($filesByType['service_photo']) && !isset($filesByType['service_photo'][0])) {
+                    // Преобразуем в объект с ключами
+                    $oldFiles = $filesByType['service_photo'];
+                    $filesByType['service_photo'] = [];
+                    if (count($oldFiles) > 0) {
+                        // Сохраняем старые файлы для первой услуги (будет сопоставлен по индексу)
+                        $filesByType['service_photo'][0] = $oldFiles;
+                    }
+                }
+                // Добавляем файл для первой услуги (индекс 0)
+                if (!isset($filesByType['service_photo'][0])) {
+                    $filesByType['service_photo'][0] = [];
+                }
+                $filesByType['service_photo'][0][] = $fileData;
+            }
         } else {
             if (!isset($filesByType[$fileType])) {
                 $filesByType[$fileType] = [];

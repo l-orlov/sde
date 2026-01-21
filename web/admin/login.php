@@ -19,6 +19,9 @@ $basePath = getAdminBasePath();
     <meta name="author" content="">
 
     <title>Admin</title>
+    <link rel="icon" type="image/png" href="img/icons/logo_icon.png">
+    <link rel="shortcut icon" type="image/png" href="img/icons/logo_icon.png">
+    <link rel="apple-touch-icon" href="img/icons/logo_icon.png">
 
     <!-- Custom fonts for this template-->
     <link href="<?= $basePath ?>vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">

@@ -218,6 +218,108 @@ textarea::placeholder{font-size: 14px;}}
   display:grid;
   gap:8px
 }
+
+/* ===== Regfull Section 3: Product/Service selector buttons ===== */
+.products-services-selector{
+  grid-column: 1 / -1; /* span both columns of .form grid */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+  margin: 10px 0 18px;
+  flex-wrap: wrap;
+}
+.type-pill{
+  min-width: 240px;
+  height: 56px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: linear-gradient(180deg, #0C3D90 0%, #063170 100%);
+  box-shadow: 0 10px 18px rgba(0,0,0,.18);
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+.type-pill__text{
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 2px 10px rgba(0,0,0,.15);
+}
+.type-pill__icon{
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 2px 10px rgba(0,0,0,.18));
+}
+.type-pill:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(0,0,0,.22);
+  filter: brightness(1.02);
+}
+.type-pill:active{
+  transform: translateY(0);
+  box-shadow: 0 8px 16px rgba(0,0,0,.18);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Products/Services containers - должны вписываться в grid */
+.products-container,
+.services-container{
+  display: contents; /* дети становятся grid-элементами родителя .form */
+}
+.products-container.hidden,
+.services-container.hidden{
+  display: none;
+}
+.services-container .services-list{
+  display: contents;
+}
+.services-container .service-item{
+  display: contents; /* пары .label/.field становятся строками в .form grid */
+}
+
+/* Кнопка удаления в форме услуг (по аналогии с remove-product) */
+.remove-service{
+  width: 34px;
+  height: 34px;
+  margin-left: 8px;
+  border: 2px solid #75A8DA;
+  border-radius: 7px;
+  padding: 0;
+  background: #fff;
+  color: #75A8DA;
+  font-size: 16px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.remove-service:hover{ color:#EE3124; border-color:#EE3124; }
+.remove-service[hidden]{ display:none !important; }
+
+@media (max-width: 760px){
+  .type-pill{
+    min-width: 100%;
+    max-width: 100%;
+  }
+  .type-pill__text{
+    font-size: 16px;
+  }
+  .type-pill__icon{
+    width: 36px;
+    height: 46px;
+  }
+}
 .file-ph{
   background-repeat: no-repeat;
   background-position: 10px center;
@@ -440,6 +542,15 @@ textarea::placeholder{font-size: 14px;}}
   column-gap: 24px;
   row-gap: 14px;
   align-items:center;
+  margin-bottom: 12px;
+}
+.servicio_grid {
+  grid-column: 2 / -1;
+  display:grid;
+  grid-template-columns: 165px 1fr;
+  column-gap: 24px;
+  row-gap: 14px;
+  align-items:center;
 }
 .span_all{ grid-column: 1 / -1; }
 .anual_inline {
@@ -449,7 +560,8 @@ textarea::placeholder{font-size: 14px;}}
 }
 /* RESPONSIVE */
 @media (max-width: 750px){
-.producto_grid {
+.producto_grid,
+.servicio_grid {
   grid-column: 1 / -1;
   grid-template-columns: 1fr;
   column-gap: 0;
@@ -495,6 +607,16 @@ textarea::placeholder{font-size: 14px;}}
 .mercados_act .act-list{ display:grid; gap:10px; }
 .productos_field{ display:grid; gap:12px; }
 .productos_field .products-container{ display:grid; gap:10px; }
+.servicios_field{ 
+  display: contents; /* Прозрачный для grid, дети участвуют в основном .form grid */
+}
+.servicios_field .services-list {
+  display: contents; /* Дети становятся grid-элементами родителя .form */
+}
+.servicios_field .add-service {
+  grid-column: 2; /* Кнопка в правой колонке основного grid */
+  margin-top: 12px;
+}
 .mercados_act .act-row{
   display:flex;
   align-items:center;
@@ -513,7 +635,8 @@ textarea::placeholder{font-size: 14px;}}
 }
 .mercados_act .act-row .remove:hover{ color:#EE3124; border-color:#EE3124; }
 .mercados_act .act-row .remove[hidden]{ display:none !important; }
-.producto_grid .remove-product{
+.producto_grid .remove-product,
+.servicio_grid .remove-service{
   width:32px; height:32px;
   border:2px solid #75A8DA; border-radius:7px;
   background:#fff; color:#75A8DA;
@@ -524,10 +647,13 @@ textarea::placeholder{font-size: 14px;}}
   align-self: start;
   margin-top: 0;
 }
-.producto_grid .remove-product:hover{ color:#EE3124; border-color:#EE3124; }
-.producto_grid .remove-product[hidden]{ display:none !important; }
+.producto_grid .remove-product:hover,
+.servicio_grid .remove-service:hover{ color:#EE3124; border-color:#EE3124; }
+.producto_grid .remove-product[hidden],
+.servicio_grid .remove-service[hidden]{ display:none !important; }
 @media (max-width: 750px){
-  .producto_grid .remove-product{
+  .producto_grid .remove-product,
+  .servicio_grid .remove-service{
     grid-column: 1;
     justify-self: end;
   }
@@ -2407,7 +2533,7 @@ to {
 
 .btn-show-more {
   background: transparent;
-  border: 2px solid #FFD60A;
+  border: 2px solid #003399;
   color: #000;
   padding: 12px 32px;
   font-size: 16px;
@@ -2418,8 +2544,8 @@ to {
 }
 
 .btn-show-less {
-  background: #FFD60A;
-  color: #000;
+  background: #003399;
+  color: white;
   padding: 12px 32px;
   font-size: 16px;
   font-weight: 600;
@@ -2612,11 +2738,6 @@ to {
   border-radius: 8px;
   margin: 0 auto;
 }
-
-.btn-edit-form:hover {
-  background: #ffc107;
-}
-
 /* Responsive */
 @media (max-width: 1200px) {
   .home-main {

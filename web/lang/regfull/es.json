@@ -30,6 +30,11 @@
   "regfull_main_activity": "Actividad Principal *",
   "regfull_section3_title": "3. Información sobre Productos y Servicios",
   "regfull_main_product": "Producto *",
+  "regfull_add_products": "Agregar productos",
+  "regfull_add_services": "Agregar servicios",
+  "regfull_activity": "Actividad *",
+  "regfull_service": "Servicio *",
+  "regfull_service_photo": "Foto del Servicio",
   "regfull_tariff_code": "Código Arancelario *",
   "regfull_description": "Descripción *",
   "regfull_annual_volume": "Volumen de Producción Anual *",
@@ -87,5 +92,7 @@
   "regfull_authorization_platform": "Autorización para Difundir la Información Cargada en la Plataforma Provincial *",
   "regfull_authorization_publication": "Autorizo la Publicación de mi Información para Promoción Exportadora *",
   "regfull_accept_contact": "Acepto ser Contactado por Organismos de Promoción y Compradores Internacionales *",
-  "regfull_save_register": "Guardar"
+  "regfull_save_register": "Guardar",
+  "regfull_dropdown_placeholder": "…",
+  "regfull_dropdown_select": "Seleccionar"
 }

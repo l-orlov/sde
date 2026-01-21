@@ -65,7 +65,7 @@ if ($stmt) {
     mysqli_stmt_close($stmt);
 }
 
-// Загрузка товаров пользователя
+// Загрузка товаров и услуг пользователя
 require_once __DIR__ . '/FileManager.php';
 require_once __DIR__ . '/storage/StorageFactory.php';
 
@@ -73,7 +73,8 @@ $products = [];
 $productPhotos = [];
 
 try {
-    $query = "SELECT id, is_main, name, description 
+    // Загружаем и продукты, и услуги
+    $query = "SELECT id, is_main, type, name, description 
               FROM products 
               WHERE user_id = ? 
               ORDER BY is_main DESC, id ASC";
@@ -86,13 +87,14 @@ try {
         $products[] = [
             'id' => intval($row['id']),
             'is_main' => (bool)$row['is_main'],
+            'type' => $row['type'] ?? 'product',
             'name' => htmlspecialchars($row['name'] ?? ''),
             'description' => htmlspecialchars($row['description'] ?? '')
         ];
     }
     mysqli_stmt_close($stmt);
     
-    // Загрузка изображений товаров
+    // Загрузка изображений товаров и услуг
     if (!empty($products)) {
         $productIds = array_column($products, 'id');
         $mainProductId = null;
@@ -103,13 +105,14 @@ try {
             }
         }
         
-        // Загрузка изображений для вторичных товаров
+        // Загрузка изображений для продуктов и услуг
         if (count($productIds) > 0) {
             $placeholders = implode(',', array_fill(0, count($productIds), '?'));
-            $query = "SELECT f.id, f.product_id, f.file_path, f.storage_type, p.is_main, p.id as product_id_from_table
+            // Загружаем и product_photo, и service_photo
+            $query = "SELECT f.id, f.product_id, f.file_path, f.file_type, f.storage_type, p.is_main, p.type, p.id as product_id_from_table
                       FROM files f
                       LEFT JOIN products p ON f.product_id = p.id AND p.user_id = ?
-                      WHERE f.user_id = ? AND f.file_type = 'product_photo' 
+                      WHERE f.user_id = ? AND (f.file_type = 'product_photo' OR f.file_type = 'service_photo')
                       AND f.is_temporary = 0 
                       AND (f.product_id IN ($placeholders) OR (f.product_id IS NULL OR f.product_id = 0))
                       ORDER BY p.is_main DESC, f.product_id, f.created_at";
@@ -125,7 +128,7 @@ try {
                 $isMain = $row['is_main'] ?? false;
                 $productIdFromTable = $row['product_id_from_table'];
                 
-                // Если product_id NULL или 0, и это основной товар
+                // Если product_id NULL или 0, и это основной товар/услуга
                 if (($row['product_id'] === null || intval($row['product_id']) == 0) && $isMain && $mainProductId) {
                     $pid = $mainProductId;
                 } else if ($row['product_id'] !== null && intval($row['product_id']) > 0) {
@@ -149,7 +152,7 @@ try {
         }
     }
 } catch (Exception $e) {
-    error_log("Error loading products in home.php: " . $e->getMessage());
+    error_log("Error loading products and services in home.php: " . $e->getMessage());
 }
 
 $totalProducts = count($products);

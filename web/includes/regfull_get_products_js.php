@@ -25,8 +25,8 @@ $userId = intval($_SESSION['uid']);
 try {
     global $link;
     
-    // Загружаем все продукты (все равны, без is_main)
-    $query = "SELECT id, is_main, name, description, annual_export, certifications
+    // Загружаем все продукты и услуги с учетом type
+    $query = "SELECT id, is_main, type, activity, name, description, annual_export, certifications
               FROM products
               WHERE user_id = ?
               ORDER BY id ASC";
@@ -36,29 +36,48 @@ try {
     $result = $stmt->get_result();
     
     $allProducts = [];
+    $allServices = [];
+    $hasProducts = false;
+    $hasServices = false;
     
     while ($row = $result->fetch_assoc()) {
-        $allProducts[] = [
+        $item = [
             'id' => intval($row['id']),
             'is_main' => (bool)$row['is_main'],
+            'type' => $row['type'] ?? 'product',
+            'activity' => $row['activity'] ?? null,
             'name' => $row['name'],
             'description' => $row['description'] ?? '',
             'annual_export' => $row['annual_export'] ?? '',
             'certifications' => $row['certifications'] ?? ''
         ];
+        
+        if ($row['type'] === 'service') {
+            $allServices[] = $item;
+            $hasServices = true;
+        } else {
+            $allProducts[] = $item;
+            $hasProducts = true;
+        }
     }
     
     $stmt->close();
     
     $return['ok'] = 1;
-    // Для обратной совместимости сохраняем структуру main/secondary
-    // Но теперь все продукты в массиве all
+    // Разделяем на продукты и услуги
     $return['products'] = [
         'all' => $allProducts,
         'main' => count($allProducts) > 0 ? $allProducts[0] : null,
         'secondary' => count($allProducts) > 1 ? array_slice($allProducts, 1) : []
     ];
-    $return['res'] = 'Productos obtenidos correctamente';
+    $return['services'] = [
+        'all' => $allServices,
+        'main' => count($allServices) > 0 ? $allServices[0] : null,
+        'secondary' => count($allServices) > 1 ? array_slice($allServices, 1) : []
+    ];
+    $return['has_products'] = $hasProducts;
+    $return['has_services'] = $hasServices;
+    $return['res'] = 'Productos y servicios obtenidos correctamente';
     
 } catch (Exception $e) {
     error_log("Error getting products: " . $e->getMessage());

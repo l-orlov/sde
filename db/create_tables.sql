@@ -105,6 +105,8 @@ CREATE TABLE products (
     company_id          INT UNSIGNED,
     user_id             INT UNSIGNED    NOT NULL,
     is_main             BOOLEAN         NOT NULL DEFAULT FALSE,
+    type                ENUM('product', 'service') NOT NULL DEFAULT 'product',
+    activity            VARCHAR(255)    NULL,
     name                VARCHAR(255)    NOT NULL,
     description         TEXT,
     annual_export       VARCHAR(100),

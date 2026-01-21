@@ -181,6 +181,40 @@ if (isset($_SESSION['uid'])) {
             'consents' => []
         ];
     }
+    
+    // Проверка типа продуктов/услуг в БД
+    $hasProducts = false;
+    $hasServices = false;
+    $defaultType = null;
+    
+    if ($userId) {
+        $query = "SELECT type FROM products WHERE user_id = ? LIMIT 1";
+        $stmt = mysqli_prepare($link, $query);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $userId);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $productRow = mysqli_fetch_assoc($result);
+            mysqli_stmt_close($stmt);
+            
+            if ($productRow) {
+                if ($productRow['type'] === 'product') {
+                    $hasProducts = true;
+                    $defaultType = 'product';
+                } else if ($productRow['type'] === 'service') {
+                    $hasServices = true;
+                    $defaultType = 'service';
+                }
+            }
+        }
+    }
+    
+    $showSelector = !$hasProducts && !$hasServices;
+} else {
+    $hasProducts = false;
+    $hasServices = false;
+    $defaultType = null;
+    $showSelector = true;
 }
 
 // Функция для безопасного вывода значений
@@ -224,11 +258,11 @@ function esc_attr($value) {
       <div class="social_row">
         <div class="custom-dropdown">
           <div class="dropdown-selected">
-            <span class="selected-text">…</span>
+            <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
             <span class="dropdown-arrow">▼</span>
           </div>
           <div class="dropdown-options">
-            <div class="dropdown-option" data-value="">…</div>
+            <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
             <div class="dropdown-option" data-value="Instagram">Instagram</div>
             <div class="dropdown-option" data-value="Facebook">Facebook</div>
             <div class="dropdown-option" data-value="LinkedIn">LinkedIn</div>
@@ -266,11 +300,11 @@ function esc_attr($value) {
         <div class="span_right">
           <div class="custom-dropdown">
             <div class="dropdown-selected">
-              <span class="selected-text">…</span>
+              <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
               <span class="dropdown-arrow">▼</span>
             </div>
             <div class="dropdown-options">
-              <div class="dropdown-option" data-value="">…</div>
+              <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
               <div class="dropdown-option" data-value="Santiago del Estero (la capital)">Santiago del Estero (la capital)</div>
               <div class="dropdown-option" data-value="La Banda">La Banda</div>
               <div class="dropdown-option" data-value="Termas de Río Hondo">Termas de Río Hondo</div>
@@ -294,11 +328,11 @@ function esc_attr($value) {
         <div class="span_right">
           <div class="custom-dropdown">
             <div class="dropdown-selected">
-              <span class="selected-text">…</span>
+              <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
               <span class="dropdown-arrow">▼</span>
             </div>
             <div class="dropdown-options">
-              <div class="dropdown-option" data-value="">…</div>
+              <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
               <div class="dropdown-option" data-value="Aguirre">Aguirre</div>
               <div class="dropdown-option" data-value="Alberdi">Alberdi</div>
               <div class="dropdown-option" data-value="Atamisqui">Atamisqui</div>
@@ -350,11 +384,11 @@ function esc_attr($value) {
         <div class="span_right">
           <div class="custom-dropdown">
             <div class="dropdown-selected">
-              <span class="selected-text">…</span>
+              <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
               <span class="dropdown-arrow">▼</span>
             </div>
             <div class="dropdown-options">
-              <div class="dropdown-option" data-value="">…</div>
+              <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
               <div class="dropdown-option" data-value="Santiago del Estero (la capital)">Santiago del Estero (la capital)</div>
               <div class="dropdown-option" data-value="La Banda">La Banda</div>
               <div class="dropdown-option" data-value="Termas de Río Hondo">Termas de Río Hondo</div>
@@ -378,11 +412,11 @@ function esc_attr($value) {
         <div class="span_right">
           <div class="custom-dropdown">
             <div class="dropdown-selected">
-              <span class="selected-text">…</span>
+              <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
               <span class="dropdown-arrow">▼</span>
             </div>
             <div class="dropdown-options">
-              <div class="dropdown-option" data-value="">…</div>
+              <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
               <div class="dropdown-option" data-value="Aguirre">Aguirre</div>
               <div class="dropdown-option" data-value="Alberdi">Alberdi</div>
               <div class="dropdown-option" data-value="Atamisqui">Atamisqui</div>
@@ -600,12 +634,44 @@ document.addEventListener('DOMContentLoaded', () => {
     <img src="img/icons/regfull_sobre_productos.svg">
   </div>
   <div class="form" novalidate>
+    <!-- Кнопки выбора типа (показываются только если нет данных в БД) -->
+    <div class="products-services-selector <?= $showSelector ? '' : 'hidden' ?>">
+      <button type="button" class="btn-select-type type-pill" data-type="product">
+        <span class="type-pill__text" data-i18n="regfull_add_products">Agregar productos</span>
+        <img class="type-pill__icon" src="img/icons/regfull_add_product.svg" alt="">
+      </button>
+      <button type="button" class="btn-select-type type-pill" data-type="service">
+        <span class="type-pill__text" data-i18n="regfull_add_services">Agregar servicios</span>
+        <img class="type-pill__icon" src="img/icons/regfull_add_service.svg" alt="">
+      </button>
+    </div>
+    
+    <!-- Контейнер для продуктов -->
+    <div class="products-container <?= ($defaultType === 'product') ? '' : 'hidden' ?>">
     <div class="label"><span data-i18n="regfull_main_product">Producto <span class="req">*</span></span></div>
     <div class="field productos_field">
-      <div class="products-container">
+        <div class="products-list">
+          <!-- Продукты будут добавлены через JavaScript -->
+        </div>
+        <button type="button" class="add_more add-product <?= ($defaultType === 'product') ? '' : 'hidden' ?>" data-i18n="regfull_add_more">agregar más</button>
+      </div>
+    </div>
+    
+    <!-- Контейнер для услуг -->
+    <div class="services-container <?= ($defaultType === 'service') ? '' : 'hidden' ?>">
+      <div class="field servicios_field">
+        <div class="services-list">
+          <!-- Услуги будут добавлены через JavaScript -->
+        </div>
+        <button type="button" class="add_more add-service <?= ($defaultType === 'service') ? '' : 'hidden' ?>" data-i18n="regfull_add_more">agregar más</button>
+      </div>
+    </div>
+    
+    <!-- Шаблон для продукта -->
+    <template class="product-item-tpl">
         <div class="product-item">
     <div class="producto_grid">
-            <input type="search" name="product_name[]" class="span_all">
+          <input type="search" name="product_name[]" class="span_all" placeholder="Producto *">
       <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
             <input type="search" name="product_description[]">
       <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD)</label>
@@ -619,30 +685,73 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button type="button" class="file-ph-remove" style="display: none;" aria-label="Eliminar">&times;</button>
     </div>
             </div>
-            <button type="button" class="remove remove-product" aria-label="Eliminar" data-i18n-aria-label="regfull_remove" hidden>&times;</button>
+          <input type="hidden" name="product_type[]" value="product">
+          <button type="button" class="remove remove-product" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
           </div>
         </div>
-      </div>
-      <button type="button" class="add_more add-product" data-i18n="regfull_add_more">agregar más</button>
-    </div>
-    <template class="product-item-tpl">
-      <div class="product-item">
-        <div class="producto_grid">
-          <input type="search" name="product_name[]" class="span_all">
+    </template>
+    
+    <!-- Шаблон для услуги -->
+    <template class="service-item-tpl">
+      <div class="service-item">
+        <!-- Actividad * - отдельная пара label/field в основном grid (ПЕРВОЕ) -->
+        <div class="label"><span data-i18n="regfull_activity">Actividad <span class="req">*</span></span></div>
+        <div class="field">
+          <div class="custom-dropdown">
+            <div class="dropdown-selected">
+              <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
+              <span class="dropdown-arrow">▼</span>
+            </div>
+            <div class="dropdown-options">
+              <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
+              <div class="dropdown-option" data-value="Staff augmentation / provisión de perfiles especializados">Staff augmentation / provisión de perfiles especializados</div>
+              <div class="dropdown-option" data-value="Implementadores de soluciones">Implementadores de soluciones</div>
+              <div class="dropdown-option" data-value="Ciencia de datos">Ciencia de datos</div>
+              <div class="dropdown-option" data-value="Análisis de datos y scraping">Análisis de datos y scraping</div>
+              <div class="dropdown-option" data-value="Blockchain">Blockchain</div>
+              <div class="dropdown-option" data-value="Biotecnología (servicios, prótesis)">Biotecnología (servicios, prótesis)</div>
+              <div class="dropdown-option" data-value="Turismo (servicios tecnológicos asociados)">Turismo (servicios tecnológicos asociados)</div>
+              <div class="dropdown-option" data-value="Marketing Digital">Marketing Digital</div>
+              <div class="dropdown-option" data-value="Servicios de mantenimiento aeronáutico">Servicios de mantenimiento aeronáutico</div>
+              <div class="dropdown-option" data-value="IA – servicios de desarrollo (bots de lenguaje natural, soluciones a medida)">IA – servicios de desarrollo (bots de lenguaje natural, soluciones a medida)</div>
+              <div class="dropdown-option" data-value="e-Government (soluciones para Estado provincial y municipios)">e-Government (soluciones para Estado provincial y municipios)</div>
+              <div class="dropdown-option" data-value="Consultoría de procesos y transformación digital">Consultoría de procesos y transformación digital</div>
+              <div class="dropdown-option" data-value="Diseño mecánico">Diseño mecánico</div>
+              <div class="dropdown-option" data-value="Diseño 3D">Diseño 3D</div>
+              <div class="dropdown-option" data-value="Diseño multimedia">Diseño multimedia</div>
+              <div class="dropdown-option" data-value="Diseño de hardware">Diseño de hardware</div>
+              <div class="dropdown-option" data-value="Fintech">Fintech</div>
+              <div class="dropdown-option" data-value="Growth Marketing">Growth Marketing</div>
+              <div class="dropdown-option" data-value="Economía del Conocimiento – Productos orientados a Salud">Economía del Conocimiento – Productos orientados a Salud</div>
+              <div class="dropdown-option" data-value="Sistemas de facturación">Sistemas de facturación</div>
+            </div>
+            <input type="hidden" name="service_activity[]" value="">
+          </div>
+        </div>
+
+        <!-- Servicio * - отдельная пара label/field в основном grid (ВТОРОЕ) -->
+        <div class="label"><span data-i18n="regfull_service">Servicio <span class="req">*</span></span></div>
+        <div class="field">
+          <input type="search" name="service_name[]">
+        </div>
+
+        <!-- Остальные поля в servicio_grid (как producto_grid для продуктов) -->
+        <div class="servicio_grid">
           <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
-          <input type="search" name="product_description[]">
+          <input type="search" name="service_description[]">
           <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD)</label>
           <input type="search" name="annual_export[]">
-          <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto</label>
+          <label class="label_span" data-i18n="regfull_service_photo">Foto del Servicio</label>
           <div class="file-ph-wrapper">
-            <input type="file" class="file-ph" name="product_photo[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
+            <input type="file" class="file-ph" name="service_photo[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
             <div class="file-ph-display">
               <img class="file-preview-img" src="" alt="" style="display: none;">
               <span class="file-ph-placeholder" data-i18n="regfull_upload_file">subir archivo (JPG, PNG, PDF)</span>
               <button type="button" class="file-ph-remove" style="display: none;" aria-label="Eliminar">&times;</button>
             </div>
           </div>
-          <button type="button" class="remove remove-product" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
+          <input type="hidden" name="service_type[]" value="service">
+          <button type="button" class="remove remove-service" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
         </div>
       </div>
     </template>
@@ -683,11 +792,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="act-row">
           <div class="custom-dropdown">
             <div class="dropdown-selected">
-              <span class="selected-text">…</span>
+              <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
               <span class="dropdown-arrow">▼</span>
             </div>
             <div class="dropdown-options">
-              <div class="dropdown-option" data-value="">…</div>
+              <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
               <div class="dropdown-option" data-value="América del Norte">América del Norte</div>
               <div class="dropdown-option" data-value="América del Sur">América del Sur</div>
               <div class="dropdown-option" data-value="Europa">Europa</div>
@@ -742,92 +851,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script>
-// Управление продуктами: добавление и удаление
+// Управление продуктами и услугами: добавление и удаление
 document.addEventListener('DOMContentLoaded', () => {
-  const container = document.querySelector('.products-container');
-  const template = document.querySelector('.product-item-tpl');
-  const productosField = document.querySelector('.productos_field');
+  const selector = document.querySelector('.products-services-selector');
+  const productsContainer = document.querySelector('.products-container');
+  const servicesContainer = document.querySelector('.services-container');
+  const productsList = productsContainer ? productsContainer.querySelector('.products-list') : null;
+  const servicesList = servicesContainer ? servicesContainer.querySelector('.services-list') : null;
+  const productTemplate = document.querySelector('.product-item-tpl');
+  const serviceTemplate = document.querySelector('.service-item-tpl');
+  const productosField = productsContainer ? productsContainer.querySelector('.productos_field') : null;
+  const serviciosField = servicesContainer ? servicesContainer.querySelector('.servicios_field') : null;
+  const addProductBtn = productosField ? productosField.querySelector('.add-product') : null;
+  const addServiceBtn = serviciosField ? serviciosField.querySelector('.add-service') : null;
   
-  if (!container || !template) return;
-  
-  function updateRemoveButtons() {
-    const items = container.querySelectorAll('.product-item');
-    items.forEach((item, index) => {
-      const removeBtn = item.querySelector('.remove-product');
-      if (removeBtn) {
-        // Первый продукт - скрыть, остальные - показать
-        removeBtn.hidden = (index === 0);
-      }
-    });
-  }
-  
-  function updateAddButtons() {
-    // Кнопка add-product теперь всегда видна и находится вне product-item
-    // Функция оставлена для обратной совместимости, но ничего не делает
-  }
-  
-  function bindFileInputEvents(item) {
-    const fileInput = item.querySelector('input.file-ph');
-    const fileDisplay = item.querySelector('.file-ph-display');
-    const fileRemove = item.querySelector('.file-ph-remove');
-    
-    if (!fileInput || !fileDisplay) return;
-    
-    // Клик по display открывает выбор файла
-    if (!fileDisplay._bound) {
-      fileDisplay.addEventListener('click', (e) => {
-        // Не открывать выбор, если клик по кнопке удаления
-        if (e.target === fileRemove || e.target.closest('.file-ph-remove')) {
-          return;
-        }
-        fileInput.click();
-      });
-      fileDisplay._bound = true;
-    }
-    
-    // Обработка выбора файла
-    if (!fileInput._bound) {
-      fileInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-          const file = e.target.files[0];
-          if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              updateFileDisplay(fileInput, event.target.result, file.name);
-            };
-            reader.readAsDataURL(file);
-          } else {
-            updateFileDisplay(fileInput, null, file.name);
-          }
-        }
-      });
-      fileInput._bound = true;
-    }
-    
-    // Обработка удаления файла
-    if (fileRemove && !fileRemove._bound) {
-      fileRemove.addEventListener('click', (e) => {
-        e.stopPropagation();
-        fileInput.value = '';
-        updateFileDisplay(fileInput, null, null);
-        
-        // Удалить из fileState если есть
-        if (window.getFileState) {
-          const fileState = window.getFileState();
-          const productItem = fileInput.closest('.product-item');
-          const items = container.querySelectorAll('.product-item');
-          const index = Array.from(items).indexOf(productItem);
-          
-          if (index >= 0) {
-            const fileKey = index === 0 ? 'product_photo' : `product_photo_index_${index}`;
-            delete fileState.newFiles[fileKey];
-          }
-        }
-      });
-      fileRemove._bound = true;
-    }
-  }
-  
+  // Общая функция для обновления отображения файла
   function updateFileDisplay(input, url, name) {
     const wrapper = input.closest('.file-ph-wrapper');
     if (!wrapper) return;
@@ -870,32 +908,161 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
+  // Общая функция для привязки обработчиков файлов
+  function bindFileInputEvents(item) {
+    const fileInput = item.querySelector('input.file-ph');
+    const fileDisplay = item.querySelector('.file-ph-display');
+    const fileRemove = item.querySelector('.file-ph-remove');
+    
+    if (!fileInput || !fileDisplay) return;
+    
+    if (!fileDisplay._bound) {
+      fileDisplay.addEventListener('click', (e) => {
+        if (e.target === fileRemove || e.target.closest('.file-ph-remove')) {
+          return;
+        }
+        fileInput.click();
+      });
+      fileDisplay._bound = true;
+    }
+    
+    if (!fileInput._bound) {
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          const file = e.target.files[0];
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              updateFileDisplay(fileInput, event.target.result, file.name);
+            };
+            reader.readAsDataURL(file);
+          } else {
+            updateFileDisplay(fileInput, null, file.name);
+          }
+        }
+      });
+      fileInput._bound = true;
+    }
+    
+    if (fileRemove && !fileRemove._bound) {
+      fileRemove.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.value = '';
+        updateFileDisplay(fileInput, null, null);
+      });
+      fileRemove._bound = true;
+    }
+  }
+  
+  // Обновление кнопок удаления для продуктов
+  function updateProductRemoveButtons() {
+    if (!productsList) return;
+    const items = productsList.querySelectorAll('.product-item');
+    items.forEach((item, index) => {
+      const removeBtn = item.querySelector('.remove-product');
+      if (removeBtn) {
+        removeBtn.hidden = (index === 0);
+      }
+    });
+  }
+  
+  // Обновление кнопок удаления для услуг
+  function updateServiceRemoveButtons() {
+    if (!servicesList) return;
+    const items = servicesList.querySelectorAll('.service-item');
+    items.forEach((item, index) => {
+      const removeBtn = item.querySelector('.remove-service');
+      if (removeBtn) {
+        removeBtn.hidden = (index === 0);
+      }
+    });
+  }
+  
+  // Привязка обработчиков для продукта
   function bindProductItemEvents(item) {
-    const removeBtn = item.querySelector('.remove-product');
-    
-    // Привязать обработчики для файлового поля
     bindFileInputEvents(item);
-    
+    const removeBtn = item.querySelector('.remove-product');
     if (removeBtn && !removeBtn._bound) {
       removeBtn.addEventListener('click', () => {
-        const items = container.querySelectorAll('.product-item');
-        // Минимум один продукт
+        const items = productsList.querySelectorAll('.product-item');
         if (items.length <= 1) return;
-        
         item.remove();
-        updateRemoveButtons();
+        updateProductRemoveButtons();
       });
       removeBtn._bound = true;
     }
   }
   
-  // Привязать обработчик к кнопке "agregar más" (находится в productos_field)
-  const addProductBtn = productosField ? productosField.querySelector('.add-product') : document.querySelector('.add-product');
-  if (addProductBtn && !addProductBtn._bound) {
+  // Привязка обработчиков для услуги
+  function bindServiceItemEvents(item) {
+    bindFileInputEvents(item);
+    
+    // Инициализация dropdown для Actividad
+    const dropdown = item.querySelector('.custom-dropdown');
+    if (dropdown) {
+      const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+      if (hiddenInput && typeof initCustomDropdown === 'function') {
+        initCustomDropdown(dropdown, hiddenInput);
+      }
+    }
+    
+    const removeBtn = item.querySelector('.remove-service');
+    if (removeBtn && !removeBtn._bound) {
+      removeBtn.addEventListener('click', () => {
+        const items = servicesList.querySelectorAll('.service-item');
+        if (items.length <= 1) return;
+        item.remove();
+        updateServiceRemoveButtons();
+      });
+      removeBtn._bound = true;
+    }
+  }
+  
+  // Обработка клика по кнопкам выбора типа
+  if (selector) {
+    const buttons = selector.querySelectorAll('.btn-select-type');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const type = e.target.closest('.btn-select-type').dataset.type;
+        
+        // Скрыть кнопки выбора
+        selector.classList.add('hidden');
+        
+        if (type === 'product') {
+          // Показать контейнер продуктов
+          if (productsContainer) productsContainer.classList.remove('hidden');
+          if (addProductBtn) addProductBtn.classList.remove('hidden');
+          
+          // Добавить первую форму продукта, если список пуст
+          if (productsList && productsList.children.length === 0 && productTemplate) {
+            const newProduct = productTemplate.content.firstElementChild.cloneNode(true);
+            productsList.appendChild(newProduct);
+            bindProductItemEvents(newProduct);
+            updateProductRemoveButtons();
+          }
+        } else if (type === 'service') {
+          // Показать контейнер услуг
+          if (servicesContainer) servicesContainer.classList.remove('hidden');
+          if (addServiceBtn) addServiceBtn.classList.remove('hidden');
+          
+          // Добавить первую форму услуги, если список пуст
+          if (servicesList && servicesList.children.length === 0 && serviceTemplate) {
+            const newService = serviceTemplate.content.firstElementChild.cloneNode(true);
+            servicesList.appendChild(newService);
+            bindServiceItemEvents(newService);
+            updateServiceRemoveButtons();
+          }
+        }
+      });
+    });
+  }
+  
+  // Обработка добавления продукта
+  if (addProductBtn && !addProductBtn._bound && productTemplate) {
     addProductBtn.addEventListener('click', () => {
-      const newProduct = template.content.firstElementChild.cloneNode(true);
+      const newProduct = productTemplate.content.firstElementChild.cloneNode(true);
       
-      // Сбросить значения полей
+      // Сбросить значения
       newProduct.querySelectorAll('input').forEach(input => {
         if (input.type === 'file') {
           input.value = '';
@@ -916,35 +1083,83 @@ document.addEventListener('DOMContentLoaded', () => {
         fileDisplay.classList.remove('has-image');
       }
       
-      // Вставить в конец контейнера (перед кнопкой "agregar más")
-      if (productosField) {
-        productosField.insertBefore(newProduct, addProductBtn);
-      } else {
-        container.appendChild(newProduct);
+      if (productsList) {
+        productsList.appendChild(newProduct);
+        bindProductItemEvents(newProduct);
+        updateProductRemoveButtons();
       }
-      
-      // Привязать обработчики к новому продукту
-      bindProductItemEvents(newProduct);
-      
-      // Обновить видимость кнопок удаления
-      updateRemoveButtons();
     });
     addProductBtn._bound = true;
   }
   
-  // Привязать обработчики к существующим продуктам
-  container.querySelectorAll('.product-item').forEach(item => {
+  // Обработка добавления услуги
+  if (addServiceBtn && !addServiceBtn._bound && serviceTemplate) {
+    addServiceBtn.addEventListener('click', () => {
+      const newService = serviceTemplate.content.firstElementChild.cloneNode(true);
+      
+      // Сбросить значения
+      newService.querySelectorAll('input').forEach(input => {
+        if (input.type === 'file') {
+          input.value = '';
+      } else {
+          input.value = '';
+        }
+      });
+      
+      // Сбросить dropdown
+      const dropdown = newService.querySelector('.custom-dropdown');
+      if (dropdown) {
+        const selectedText = dropdown.querySelector('.selected-text');
+        if (selectedText) selectedText.textContent = '…';
+        const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+        if (hiddenInput) hiddenInput.value = '';
+        dropdown.querySelectorAll('.dropdown-option').forEach(opt => {
+          opt.classList.remove('selected');
+        });
+      }
+      
+      // Сбросить отображение файла
+      const fileDisplay = newService.querySelector('.file-ph-display');
+      if (fileDisplay) {
+        const img = fileDisplay.querySelector('.file-preview-img');
+        const placeholder = fileDisplay.querySelector('.file-ph-placeholder');
+        const removeBtn = fileDisplay.querySelector('.file-ph-remove');
+        if (img) img.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'block';
+        if (removeBtn) removeBtn.style.display = 'none';
+        fileDisplay.classList.remove('has-image');
+      }
+      
+      if (servicesList) {
+        servicesList.appendChild(newService);
+        bindServiceItemEvents(newService);
+        updateServiceRemoveButtons();
+      }
+    });
+    addServiceBtn._bound = true;
+  }
+  
+  // Привязать обработчики к существующим элементам
+  if (productsList) {
+    productsList.querySelectorAll('.product-item').forEach(item => {
     bindProductItemEvents(item);
   });
+    updateProductRemoveButtons();
+  }
   
-  // Обновить видимость кнопок при загрузке
-  updateRemoveButtons();
+  if (servicesList) {
+    servicesList.querySelectorAll('.service-item').forEach(item => {
+      bindServiceItemEvents(item);
+    });
+    updateServiceRemoveButtons();
+  }
   
-  // Экспортировать функции для использования в других местах
+  // Экспортировать функции
   window.updateFileDisplay = updateFileDisplay;
-  window.updateRemoveButtons = updateRemoveButtons;
-  window.updateAddButtons = updateAddButtons;
+  window.updateProductRemoveButtons = updateProductRemoveButtons;
+  window.updateServiceRemoveButtons = updateServiceRemoveButtons;
   window.bindProductItemEvents = bindProductItemEvents;
+  window.bindServiceItemEvents = bindServiceItemEvents;
 });
 </script>
 <!-- PRODUCTOS -->
@@ -1014,11 +1229,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="field">
         <div class="custom-dropdown">
           <div class="dropdown-selected">
-            <span class="selected-text">…</span>
+            <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
             <span class="dropdown-arrow">▼</span>
           </div>
           <div class="dropdown-options">
-            <div class="dropdown-option" data-value="">…</div>
+            <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
             <div class="dropdown-option" data-value="Sí, ya exportamos regularmente">Sí, ya exportamos regularmente</div>
             <div class="dropdown-option" data-value="Hemos exportado ocasionalmente">Hemos exportado ocasionalmente</div>
             <div class="dropdown-option" data-value="Nunca exportamos">Nunca exportamos</div>
@@ -3552,6 +3767,8 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     const name = input.name;
     if (name === 'product_photo[]') return 'product_photo';
     if (name === 'product_photo') return 'product_photo'; // для обратной совместимости
+    if (name === 'service_photo[]') return 'service_photo';
+    if (name === 'service_photo') return 'service_photo'; // для обратной совместимости
     if (name === 'product_photo_sec[]') return 'product_photo_sec';
     if (name === 'company_logo[]') return 'logo';
     if (name === 'process_photos[]') return 'process_photo';
@@ -3565,6 +3782,15 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     const productItem = input.closest('.product-item');
     if (productItem) {
       const hiddenInput = productItem.querySelector('input[type="hidden"][name="product_id[]"]');
+      if (hiddenInput && hiddenInput.value) {
+        return hiddenInput.value;
+      }
+    }
+    
+    // Проверяем service-item (новые услуги)
+    const serviceItem = input.closest('.service-item');
+    if (serviceItem) {
+      const hiddenInput = serviceItem.querySelector('input[type="hidden"][name="service_id[]"]');
       if (hiddenInput && hiddenInput.value) {
         return hiddenInput.value;
       }
@@ -3585,6 +3811,14 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     if (productItem) {
       const allProductItems = Array.from(document.querySelectorAll('.product-item'));
       const index = allProductItems.indexOf(productItem);
+      return index >= 0 ? index : null;
+    }
+    
+    // Для новых услуг (service-item)
+    const serviceItem = input.closest('.service-item');
+    if (serviceItem) {
+      const allServiceItems = Array.from(document.querySelectorAll('.service-item'));
+      const index = allServiceItems.indexOf(serviceItem);
       return index >= 0 ? index : null;
     }
     
@@ -3614,8 +3848,8 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     const productId = getProductIdFromInput(input);
     let productIndex = null;
     
-    // Определяем индекс продукта для product_photo
-    if (fileType === 'product_photo') {
+    // Определяем индекс продукта/услуги для product_photo и service_photo
+    if (fileType === 'product_photo' || fileType === 'service_photo') {
       productIndex = getProductIndexFromInput(input);
     } else if (fileType === 'product_photo_sec') {
       productIndex = getProductIndexFromInput(input);
@@ -3646,6 +3880,8 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
           fileKey = `${fileType}_${productId}`;
         } else if (productIndex !== null && fileType === 'product_photo') {
           fileKey = `product_photo_index_${productIndex}`;
+        } else if (productIndex !== null && fileType === 'service_photo') {
+          fileKey = `service_photo_index_${productIndex}`;
         } else if (productIndex !== null && fileType === 'product_photo_sec') {
           fileKey = `${fileType}_index_${productIndex}`;
         } else {
@@ -3663,8 +3899,8 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
         };
         
         setTimeout(() => {
-          // Для product_photo и файлов секции 5 используем updateFileDisplay
-          if ((fileType === 'product_photo' || fileType === 'logo' || fileType === 'process_photo' || 
+          // Для product_photo, service_photo и файлов секции 5 используем updateFileDisplay
+          if ((fileType === 'product_photo' || fileType === 'service_photo' || fileType === 'logo' || fileType === 'process_photo' || 
                fileType === 'digital_catalog' || fileType === 'institutional_video') && window.updateFileDisplay) {
             window.updateFileDisplay(input, result.url, result.name);
           } else {
@@ -3685,8 +3921,9 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   function displayFilePreview(input, url, name, isNew) {
     console.log('displayFilePreview: input:', input.name, 'url:', url, 'name:', name, 'isNew:', isNew);
     
-    // Для product_photo и файлов секции 5 используем новую функцию updateFileDisplay
+    // Для product_photo, service_photo и файлов секции 5 используем новую функцию updateFileDisplay
     if (input.name === 'product_photo[]' || input.name === 'product_photo' ||
+        input.name === 'service_photo[]' || input.name === 'service_photo' ||
         input.name === 'company_logo[]' || input.name === 'process_photos[]' ||
         input.name === 'digital_catalog[]' || input.name === 'institutional_video') {
       if (window.updateFileDisplay) {
@@ -3928,6 +4165,69 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       }
     }
     
+    // Service photos
+    if (files.service_photo) {
+      const serviceItems = document.querySelectorAll('.service-item');
+      
+      if (Array.isArray(files.service_photo)) {
+        // Старый формат: массив файлов - для первой услуги
+        if (files.service_photo.length > 0 && serviceItems.length > 0) {
+          const input = serviceItems[0].querySelector('input[name="service_photo[]"]');
+          if (input) {
+            const file = files.service_photo[0];
+            if (window.updateFileDisplay) {
+              window.updateFileDisplay(input, file.url, file.name);
+            } else {
+              displayFilePreview(input, file.url, file.name, false);
+            }
+          }
+        }
+      } else if (typeof files.service_photo === 'object') {
+        // Новый формат: объект с ключами service_id или индексами
+        const serviceIdToIndex = new Map();
+        serviceItems.forEach((item, index) => {
+          const hiddenInput = item.querySelector('input[type="hidden"][name="service_id[]"]');
+          if (hiddenInput && hiddenInput.value) {
+            const serviceId = parseInt(hiddenInput.value, 10);
+            if (!isNaN(serviceId)) {
+              serviceIdToIndex.set(serviceId, index);
+            }
+          }
+        });
+        
+        Object.keys(files.service_photo).forEach(key => {
+          let serviceId = null;
+          let index = null;
+          
+          const keyAsNum = parseInt(key, 10);
+          if (!isNaN(keyAsNum) && serviceIdToIndex.has(keyAsNum)) {
+            serviceId = keyAsNum;
+            index = serviceIdToIndex.get(serviceId);
+          } else if (key.startsWith('index_')) {
+            index = parseInt(key.replace('index_', ''), 10);
+          } else {
+            index = parseInt(key, 10);
+            if (isNaN(index)) return;
+          }
+          
+          if (index !== null && index >= 0 && serviceItems[index]) {
+            const input = serviceItems[index].querySelector('input[name="service_photo[]"]');
+            if (input) {
+              const fileData = files.service_photo[key];
+              const file = Array.isArray(fileData) ? fileData[0] : fileData;
+              if (file && file.url) {
+                if (window.updateFileDisplay) {
+                  window.updateFileDisplay(input, file.url, file.name);
+                } else {
+        displayFilePreview(input, file.url, file.name, false);
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+    
     // Company logo
     if (files.logo && Array.isArray(files.logo) && files.logo.length > 0) {
       files.logo.forEach((file, index) => {
@@ -4077,155 +4377,166 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       
       loadedProductIds.clear();
       
-      if (result.ok === 1 && result.products) {
-        // Используем новый формат с массивом all, или старый формат для обратной совместимости
+      if (result.ok === 1) {
+        // Обработка продуктов
+        if (result.products && result.has_products) {
         let allProducts = [];
         if (result.products.all && Array.isArray(result.products.all)) {
           allProducts = result.products.all;
         } else {
-          // Обратная совместимость со старым форматом
         const { main, secondary } = result.products;
-          if (main) {
-            allProducts.push(main);
-          }
+            if (main) allProducts.push(main);
           if (secondary && Array.isArray(secondary)) {
             allProducts.push(...secondary);
           }
         }
         
-        // Сохраняем ID всех продуктов
         allProducts.forEach(prod => {
           if (prod && prod.id) {
             loadedProductIds.add(prod.id);
           }
         });
         
-        // Заполняем форму продуктами
-        const container = document.querySelector('.products-container');
-        if (!container) return;
-        
-        const productItems = container.querySelectorAll('.product-item');
+          const productsContainer = document.querySelector('.products-container');
+          const productsList = productsContainer ? productsContainer.querySelector('.products-list') : null;
+          const productTemplate = document.querySelector('.product-item-tpl');
+          
+          if (productsList && productTemplate) {
+            // Очистить существующие элементы
+            productsList.innerHTML = '';
         
         allProducts.forEach((product, index) => {
-          let productItem;
-          
-          if (index === 0 && productItems.length > 0) {
-            // Используем первый существующий product-item
-            productItem = productItems[0];
-          } else {
-            // Создаем новый product-item
-            const template = document.querySelector('.product-item-tpl');
-            if (!template) return;
-            
-            productItem = template.content.firstElementChild.cloneNode(true);
-            container.appendChild(productItem);
-            
-          // Привязать обработчики к новому продукту
+              const productItem = productTemplate.content.firstElementChild.cloneNode(true);
+              productsList.appendChild(productItem);
+              
           if (window.bindProductItemEvents) {
             window.bindProductItemEvents(productItem);
-          } else {
-            // Fallback: простая инициализация
-            const removeBtn = productItem.querySelector('.remove-product');
-            if (removeBtn) {
-              removeBtn.addEventListener('click', () => {
-                const items = container.querySelectorAll('.product-item');
-                if (items.length > 1) {
-                  productItem.remove();
-                  if (window.updateRemoveButtons) window.updateRemoveButtons();
-                }
-              });
-            }
-          }
-          
-          // Привязать обработчики для файлового поля
-          const fileInput = productItem.querySelector('input.file-ph');
-          const fileDisplay = productItem.querySelector('.file-ph-display');
-          if (fileInput && fileDisplay && !fileDisplay._bound) {
-            fileDisplay.addEventListener('click', (e) => {
-              const fileRemove = productItem.querySelector('.file-ph-remove');
-              if (e.target === fileRemove || e.target.closest('.file-ph-remove')) {
-                return;
               }
-              fileInput.click();
-            });
-            fileDisplay._bound = true;
-            
-            fileInput.addEventListener('change', (e) => {
-              if (e.target.files && e.target.files.length > 0) {
-                const file = e.target.files[0];
-                if (file.type.startsWith('image/')) {
-                  const reader = new FileReader();
-                  reader.onload = (event) => {
-                    if (window.updateFileDisplay) {
-                      window.updateFileDisplay(fileInput, event.target.result, file.name);
-                    }
-                  };
-                  reader.readAsDataURL(file);
-                } else {
-                  if (window.updateFileDisplay) {
-                    window.updateFileDisplay(fileInput, null, file.name);
-                  }
+              
+              const nameInput = productItem.querySelector('input[name="product_name[]"]');
+              const descInput = productItem.querySelector('input[name="product_description[]"]');
+              const exportInput = productItem.querySelector('input[name="annual_export[]"]');
+              
+              if (nameInput) nameInput.value = product.name || '';
+              if (descInput) descInput.value = product.description || '';
+              if (exportInput) exportInput.value = product.annual_export || '';
+              
+              if (product.id) {
+                let hiddenInput = productItem.querySelector('input[type="hidden"][name="product_id[]"]');
+                if (!hiddenInput) {
+                  hiddenInput = document.createElement('input');
+                  hiddenInput.type = 'hidden';
+                  hiddenInput.name = 'product_id[]';
+                  productItem.querySelector('.producto_grid').appendChild(hiddenInput);
                 }
+                hiddenInput.value = product.id;
               }
             });
             
-            const fileRemove = productItem.querySelector('.file-ph-remove');
-            if (fileRemove && !fileRemove._bound) {
-              fileRemove.addEventListener('click', (e) => {
-                e.stopPropagation();
-                fileInput.value = '';
-                if (window.updateFileDisplay) {
-                  window.updateFileDisplay(fileInput, null, null);
-                }
-              });
-              fileRemove._bound = true;
+            if (window.updateProductRemoveButtons) {
+              window.updateProductRemoveButtons();
             }
-          }
-          }
-          
-          // Заполняем поля продукта
-          const nameInput = productItem.querySelector('input[name="product_name[]"]');
-          const descInput = productItem.querySelector('input[name="product_description[]"]');
-          const exportInput = productItem.querySelector('input[name="annual_export[]"]');
-          
-          if (nameInput) nameInput.value = product.name || '';
-          if (descInput) descInput.value = product.description || '';
-          if (exportInput) exportInput.value = product.annual_export || '';
-          
-          // Сохраняем product_id для связи с файлами
-          if (product.id) {
-            let hiddenInput = productItem.querySelector('input[type="hidden"][name="product_id[]"]');
-            if (!hiddenInput) {
-              hiddenInput = document.createElement('input');
-              hiddenInput.type = 'hidden';
-              hiddenInput.name = 'product_id[]';
-              productItem.querySelector('.producto_grid').appendChild(hiddenInput);
-            }
-            hiddenInput.value = product.id;
-          }
-        });
-        
-        // Заполняем certifications (общее для всех продуктов)
-        // Берем из первого продукта, если есть
-        if (allProducts.length > 0 && allProducts[0].certifications) {
-          const certificationsInput = document.querySelector('input[name="certifications"]');
-          if (certificationsInput) {
-            certificationsInput.value = allProducts[0].certifications || '';
           }
         }
         
-        // Обновить видимость кнопок
-        setTimeout(() => {
-          if (window.updateRemoveButtons) {
-            window.updateRemoveButtons();
+        // Обработка услуг
+        if (result.services && result.has_services) {
+          let allServices = [];
+          if (result.services.all && Array.isArray(result.services.all)) {
+            allServices = result.services.all;
+                } else {
+            const { main, secondary } = result.services;
+            if (main) allServices.push(main);
+            if (secondary && Array.isArray(secondary)) {
+              allServices.push(...secondary);
+            }
           }
-          if (window.updateAddButtons) {
-            window.updateAddButtons();
+          
+          allServices.forEach(serv => {
+            if (serv && serv.id) {
+              loadedProductIds.add(serv.id);
+            }
+          });
+          
+          const servicesContainer = document.querySelector('.services-container');
+          const servicesList = servicesContainer ? servicesContainer.querySelector('.services-list') : null;
+          const serviceTemplate = document.querySelector('.service-item-tpl');
+          
+          if (servicesList && serviceTemplate) {
+            // Очистить существующие элементы
+            servicesList.innerHTML = '';
+            
+            allServices.forEach((service, index) => {
+              const serviceItem = serviceTemplate.content.firstElementChild.cloneNode(true);
+              servicesList.appendChild(serviceItem);
+              
+              if (window.bindServiceItemEvents) {
+                window.bindServiceItemEvents(serviceItem);
+              }
+              
+              // Заполнение dropdown Actividad
+              if (service.activity) {
+                const activityInput = serviceItem.querySelector('input[name="service_activity[]"]');
+                if (activityInput) {
+                  activityInput.value = service.activity;
+                  const dropdown = activityInput.closest('.custom-dropdown');
+                  if (dropdown && typeof initCustomDropdown === 'function') {
+                    initCustomDropdown(dropdown, activityInput);
+                    const options = dropdown.querySelectorAll('.dropdown-option');
+                    for (let option of options) {
+                      if (option.dataset.value === service.activity) {
+                        const selectedText = dropdown.querySelector('.selected-text');
+                        if (selectedText) selectedText.textContent = option.textContent;
+                        option.classList.add('selected');
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+              
+              const nameInput = serviceItem.querySelector('input[name="service_name[]"]');
+              const descInput = serviceItem.querySelector('input[name="service_description[]"]');
+              const exportInput = serviceItem.querySelector('input[name="annual_export[]"]');
+              
+              if (nameInput) nameInput.value = service.name || '';
+              if (descInput) descInput.value = service.description || '';
+              if (exportInput) exportInput.value = service.annual_export || '';
+              
+              if (service.id) {
+                let hiddenInput = serviceItem.querySelector('input[type="hidden"][name="service_id[]"]');
+            if (!hiddenInput) {
+              hiddenInput = document.createElement('input');
+              hiddenInput.type = 'hidden';
+                  hiddenInput.name = 'service_id[]';
+                  serviceItem.appendChild(hiddenInput);
+                }
+                hiddenInput.value = service.id;
+              }
+            });
+            
+            if (window.updateServiceRemoveButtons) {
+              window.updateServiceRemoveButtons();
+            }
           }
-        }, 100);
+        }
+        
+        // Заполняем certifications (общее для всех)
+        const firstItem = (result.products && result.products.all && result.products.all.length > 0) 
+          ? result.products.all[0] 
+          : (result.services && result.services.all && result.services.all.length > 0) 
+            ? result.services.all[0] 
+            : null;
+        
+        if (firstItem && firstItem.certifications) {
+          const certificationsInput = document.querySelector('input[name="certifications"]');
+          if (certificationsInput) {
+            certificationsInput.value = firstItem.certifications || '';
+          }
+        }
       }
     } catch (error) {
-      console.error('Error loading products:', error);
+      console.error('Error loading products and services:', error);
     }
   }
   

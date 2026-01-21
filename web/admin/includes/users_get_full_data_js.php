@@ -131,37 +131,50 @@ try {
     }
     mysqli_stmt_close($stmt);
     
-    // 5. Продукты (загружаем все продукты, не только main)
+    // 5. Продукты и услуги (загружаем все, не только main)
     $products = ['all' => [], 'main' => null];
-    $query = "SELECT id, is_main, name, description, annual_export, certifications
+    $services = ['all' => [], 'main' => null];
+    $query = "SELECT id, is_main, type, activity, name, description, annual_export, certifications
               FROM products
               WHERE user_id = ?
-              ORDER BY id ASC";
+              ORDER BY type, id ASC";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $userId);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     
     $allProducts = [];
+    $allServices = [];
     while ($row = mysqli_fetch_assoc($result)) {
-        $productData = [
+        $itemData = [
             'id' => intval($row['id']),
             'is_main' => (bool)$row['is_main'],
+            'type' => $row['type'] ?? 'product',
+            'activity' => $row['activity'] ?? null,
             'name' => $row['name'] ?? '',
             'description' => $row['description'] ?? '',
             'annual_export' => $row['annual_export'] ?? '',
             'certifications' => $row['certifications'] ?? ''
         ];
-        $allProducts[] = $productData;
         
-        // Для обратной совместимости сохраняем первый продукт как main
-        if ($products['main'] === null) {
-            $products['main'] = $productData;
+        if ($row['type'] === 'service') {
+            $allServices[] = $itemData;
+            // Для обратной совместимости сохраняем первую услугу как main
+            if ($services['main'] === null) {
+                $services['main'] = $itemData;
+            }
+        } else {
+            $allProducts[] = $itemData;
+            // Для обратной совместимости сохраняем первый продукт как main
+            if ($products['main'] === null) {
+                $products['main'] = $itemData;
+            }
         }
     }
     mysqli_stmt_close($stmt);
     
     $products['all'] = $allProducts;
+    $services['all'] = $allServices;
     
     // 6. Дополнительные данные (JSON)
     $companyDataJson = null;
@@ -340,6 +353,30 @@ try {
                     $files['product_photo'][] = $fileData;
                 }
             }
+        } else if ($fileType === 'service_photo') {
+            // Группируем фото услуг по product_id (аналогично product_photo)
+            if ($productId !== null && $productId > 0 && $productExists) {
+                // Группируем по product_id в объект
+                if (!isset($files['service_photo'])) {
+                    $files['service_photo'] = [];
+                }
+                // Если это объект с ключами product_id
+                if (!isset($files['service_photo'][$productId])) {
+                    $files['service_photo'][$productId] = [];
+                }
+                $files['service_photo'][$productId][] = $fileData;
+            } else {
+                // Фото без product_id (старые данные или ошибка)
+                if (!isset($files['service_photo'])) {
+                    $files['service_photo'] = [];
+                }
+                // Если это массив, добавляем в него
+                if (is_array($files['service_photo']) && !isset($files['service_photo'][0])) {
+                    $files['service_photo'] = [$fileData];
+                } else {
+                    $files['service_photo'][] = $fileData;
+                }
+            }
         } else {
             // Остальные типы файлов
             if (!isset($files[$fileType])) {
@@ -358,6 +395,7 @@ try {
         'contacts' => $contacts,
         'social_networks' => $socialNetworks,
         'products' => $products,
+        'services' => $services,
         'company_data' => $companyDataJson,
         'files' => $files,
         'has_company_data' => true

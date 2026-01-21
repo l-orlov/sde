@@ -195,6 +195,7 @@ function generateUserFormHTML(data, userId) {
     const contacts = data.contacts || {};
     const socialNetworks = data.social_networks || [];
     const products = data.products || {};
+    const services = data.services || {};
     const companyData = data.company_data || {};
     const files = data.files || {};
     
@@ -334,65 +335,162 @@ function generateUserFormHTML(data, userId) {
     
     html += '</div>';
     
-    // Секция 3: Productos
+    // Секция 3: Productos y Servicios
     html += '<div class="user-form-section">';
     html += '<h4 class="section-title">3. Información sobre Productos y Servicios</h4>';
     
-    // Отображаем все продукты
+    // Определяем, что есть в БД: продукты или услуги
     const allProducts = products.all || (products.main ? [products.main] : []);
-    if (allProducts.length === 0) {
-        allProducts.push({ id: null, name: '', description: '', annual_export: '', certifications: '' });
-    }
+    const allServices = services.all || (services.main ? [services.main] : []);
     
-    // Certificaciones (общие для всех продуктов, берем из первого)
-    const certificationsValue = allProducts.length > 0 ? (allProducts[0].certifications || '') : '';
+    const hasProducts = allProducts.length > 0 && allProducts.some(p => p.id !== null);
+    const hasServices = allServices.length > 0 && allServices.some(s => s.id !== null);
+    
+    // Certificaciones (общие для всех продуктов/услуг, берем из первого продукта или услуги)
+    const certificationsValue = hasProducts && allProducts.length > 0 ? (allProducts[0].certifications || '') : 
+                                (hasServices && allServices.length > 0 ? (allServices[0].certifications || '') : '');
     html += '<div class="form-group"><label>Certificaciones</label>';
     html += '<textarea class="form-control" id="form_certifications">' + escapeHtml(certificationsValue) + '</textarea></div>';
     
-    // Список всех продуктов
-    html += '<div id="products_list_container">';
-    allProducts.forEach((product, index) => {
-        const productId = product.id || null;
-        html += '<div class="product-item-admin" data-product-id="' + (productId || '') + '" data-product-index="' + index + '">';
-        html += '<h5 style="margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Producto ' + (index + 1) + '</h5>';
-        
-        html += '<div class="form-group"><label>Producto <span class="req">*</span></label>';
-        html += '<input type="text" class="form-control product-name" data-index="' + index + '" value="' + escapeHtml(product.name || '') + '" required></div>';
-        
-        html += '<div class="form-group"><label>Descripción <span class="req">*</span></label>';
-        html += '<input type="text" class="form-control product-description" data-index="' + index + '" value="' + escapeHtml(product.description || '') + '" required></div>';
-        
-        html += '<div class="form-group"><label>Exportación Anual (USD)</label>';
-        html += '<input type="text" class="form-control product-export" data-index="' + index + '" value="' + escapeHtml(product.annual_export || '') + '"></div>';
-        
-        // Фото продукта
-        let productPhotos = [];
-        if (productId && files.product_photo && typeof files.product_photo === 'object') {
-            if (Array.isArray(files.product_photo)) {
-                // Старый формат - массив
-                if (index === 0 && files.product_photo.length > 0) {
-                    productPhotos = files.product_photo;
-                }
-            } else {
-                // Новый формат - объект с ключами product_id
-                if (files.product_photo[productId]) {
-                    productPhotos = Array.isArray(files.product_photo[productId]) ? files.product_photo[productId] : [files.product_photo[productId]];
+    // Показываем только продукты, если они есть
+    if (hasProducts) {
+        // Список всех продуктов
+        html += '<h5 style="margin-top: 20px; margin-bottom: 10px; font-weight: bold;">Productos</h5>';
+        html += '<div id="products_list_container">';
+        allProducts.forEach((product, index) => {
+            const productId = product.id || null;
+            html += '<div class="product-item-admin" data-product-id="' + (productId || '') + '" data-product-index="' + index + '" data-product-type="product">';
+            html += '<h5 style="margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Producto ' + (index + 1) + '</h5>';
+            
+            html += '<div class="form-group"><label>Producto <span class="req">*</span></label>';
+            html += '<input type="text" class="form-control product-name" data-index="' + index + '" value="' + escapeHtml(product.name || '') + '" required></div>';
+            
+            html += '<div class="form-group"><label>Descripción <span class="req">*</span></label>';
+            html += '<input type="text" class="form-control product-description" data-index="' + index + '" value="' + escapeHtml(product.description || '') + '" required></div>';
+            
+            html += '<div class="form-group"><label>Exportación Anual (USD)</label>';
+            html += '<input type="text" class="form-control product-export" data-index="' + index + '" value="' + escapeHtml(product.annual_export || '') + '"></div>';
+            
+            // Фото продукта
+            let productPhotos = [];
+            if (productId && files.product_photo && typeof files.product_photo === 'object') {
+                if (Array.isArray(files.product_photo)) {
+                    // Старый формат - массив
+                    if (index === 0 && files.product_photo.length > 0) {
+                        productPhotos = files.product_photo;
+                    }
+                } else {
+                    // Новый формат - объект с ключами product_id
+                    if (files.product_photo[productId]) {
+                        productPhotos = Array.isArray(files.product_photo[productId]) ? files.product_photo[productId] : [files.product_photo[productId]];
+                    }
                 }
             }
-        }
-        
-        if (productPhotos.length > 0) {
-            html += '<div class="form-group"><label>Foto del Producto</label>';
-            html += displayFiles(productPhotos);
+            
+            if (productPhotos.length > 0) {
+                html += '<div class="form-group"><label>Foto del Producto</label>';
+                html += displayFiles(productPhotos, productId, 'product_photo');
+                html += '</div>';
+            }
+            
+            // Кнопка удаления продукта
+            if (productId) {
+                html += '<button type="button" class="btn btn-danger btn-sm delete-product-btn" data-product-id="' + productId + '" style="margin-top: 10px;">Eliminar Producto</button>';
+            }
+            
             html += '</div>';
-        }
-        
+        });
         html += '</div>';
-    });
-    html += '</div>';
+        
+        // Кнопка для добавления нового продукта
+        html += '<button type="button" class="btn btn-secondary" id="add_product_btn" style="margin-top: 10px;">Agregar Producto</button>';
+    }
     
-    // Кнопка для добавления нового продукта
-    html += '<button type="button" class="btn btn-secondary" id="add_product_btn" style="margin-top: 10px;">Agregar Producto</button>';
+    // Показываем только услуги, если они есть
+    if (hasServices) {
+        // Список всех услуг
+        html += '<h5 style="margin-top: ' + (hasProducts ? '30px' : '20px') + '; margin-bottom: 10px; font-weight: bold;">Servicios</h5>';
+        html += '<div id="services_list_container">';
+        allServices.forEach((service, index) => {
+            const serviceId = service.id || null;
+            html += '<div class="service-item-admin" data-service-id="' + (serviceId || '') + '" data-service-index="' + index + '" data-service-type="service">';
+            html += '<h5 style="margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Servicio ' + (index + 1) + '</h5>';
+            
+            // Actividad
+            const activityOptions = [
+                'Staff augmentation / provisión de perfiles especializados',
+                'Implementadores de soluciones',
+                'Ciencia de datos',
+                'Análisis de datos y scraping',
+                'Blockchain',
+                'Biotecnología (servicios, prótesis)',
+                'Turismo (servicios tecnológicos asociados)',
+                'Marketing Digital',
+                'Servicios de mantenimiento aeronáutico',
+                'IA – servicios de desarrollo (bots de lenguaje natural, soluciones a medida)',
+                'e-Government (soluciones para Estado provincial y municipios)',
+                'Consultoría de procesos y transformación digital',
+                'Diseño mecánico',
+                'Diseño 3D',
+                'Diseño multimedia',
+                'Diseño de hardware',
+                'Fintech',
+                'Growth Marketing',
+                'Economía del Conocimiento – Productos orientados a Salud',
+                'Sistemas de facturación'
+            ];
+            html += '<div class="form-group"><label>Actividad <span class="req">*</span></label>';
+            html += '<select class="form-control service-activity" data-index="' + index + '" required>';
+            html += '<option value="">...</option>';
+            activityOptions.forEach(option => {
+                const selected = (service.activity === option) ? ' selected' : '';
+                html += '<option value="' + escapeHtml(option) + '"' + selected + '>' + escapeHtml(option) + '</option>';
+            });
+            html += '</select></div>';
+            
+            html += '<div class="form-group"><label>Servicio <span class="req">*</span></label>';
+            html += '<input type="text" class="form-control service-name" data-index="' + index + '" value="' + escapeHtml(service.name || '') + '" required></div>';
+            
+            html += '<div class="form-group"><label>Descripción <span class="req">*</span></label>';
+            html += '<input type="text" class="form-control service-description" data-index="' + index + '" value="' + escapeHtml(service.description || '') + '" required></div>';
+            
+            html += '<div class="form-group"><label>Exportación Anual (USD)</label>';
+            html += '<input type="text" class="form-control service-export" data-index="' + index + '" value="' + escapeHtml(service.annual_export || '') + '"></div>';
+            
+            // Фото услуги
+            let servicePhotos = [];
+            if (serviceId && files.service_photo && typeof files.service_photo === 'object') {
+                if (Array.isArray(files.service_photo)) {
+                    // Старый формат - массив
+                    if (index === 0 && files.service_photo.length > 0) {
+                        servicePhotos = files.service_photo;
+                    }
+                } else {
+                    // Новый формат - объект с ключами product_id
+                    if (files.service_photo[serviceId]) {
+                        servicePhotos = Array.isArray(files.service_photo[serviceId]) ? files.service_photo[serviceId] : [files.service_photo[serviceId]];
+                    }
+                }
+            }
+            
+            if (servicePhotos.length > 0) {
+                html += '<div class="form-group"><label>Foto del Servicio</label>';
+                html += displayFiles(servicePhotos, serviceId, 'service_photo');
+                html += '</div>';
+            }
+            
+            // Кнопка удаления услуги
+            if (serviceId) {
+                html += '<button type="button" class="btn btn-danger btn-sm delete-service-btn" data-service-id="' + serviceId + '" style="margin-top: 10px;">Eliminar Servicio</button>';
+            }
+            
+            html += '</div>';
+        });
+        html += '</div>';
+        
+        // Кнопка для добавления новой услуги
+        html += '<button type="button" class="btn btn-secondary" id="add_service_btn" style="margin-top: 10px;">Agregar Servicio</button>';
+    }
     
     // Mercados Actuales (редактируемое поле)
     html += '<div class="form-group"><label>Mercados Actuales (Continente) <span class="req">*</span></label>';
@@ -688,7 +786,7 @@ function saveUserBasicData(userId) {
     });
 }
 
-function displayFiles(files) {
+function displayFiles(files, productId = null, fileType = null) {
     if (!files || files.length === 0) return '';
     
     let html = '<div class="files-preview">';
@@ -697,7 +795,7 @@ function displayFiles(files) {
         const isVideo = file.mime_type && file.mime_type.startsWith('video/');
         const isPDF = file.mime_type === 'application/pdf';
         
-        html += '<div class="file-item-preview">';
+        html += '<div class="file-item-preview" data-file-id="' + (file.id || '') + '">';
         
         if (isImage) {
             html += '<img src="' + escapeHtml(file.url) + '" alt="' + escapeHtml(file.name) + '" style="max-width: 200px; max-height: 150px; margin: 5px;">';
@@ -708,6 +806,12 @@ function displayFiles(files) {
         }
         
         html += '<br><a href="' + escapeHtml(file.url) + '" target="_blank" download>Descargar: ' + escapeHtml(file.name) + '</a>';
+        
+        // Кнопка удаления файла
+        if (file.id) {
+            html += '<button type="button" class="btn btn-sm btn-danger delete-file-btn" data-file-id="' + file.id + '" style="margin-left: 10px; margin-top: 5px;">Eliminar</button>';
+        }
+        
         html += '</div>';
     });
     html += '</div>';
@@ -985,8 +1089,10 @@ function approveModeration(userId) {
 
 function collectProductsData() {
     const products = [];
-    const productItems = document.querySelectorAll('.product-item-admin');
+    const services = [];
     
+    // Собираем продукты
+    const productItems = document.querySelectorAll('.product-item-admin');
     productItems.forEach((item, index) => {
         const productId = item.getAttribute('data-product-id');
         const nameInput = item.querySelector('.product-name[data-index="' + index + '"]');
@@ -996,6 +1102,7 @@ function collectProductsData() {
         if (nameInput && descInput) {
             products.push({
                 id: productId && productId !== 'null' ? parseInt(productId) : null,
+                type: 'product',
                 name: nameInput.value.trim() || '',
                 description: descInput.value.trim() || '',
                 annual_export: exportInput ? exportInput.value.trim() : ''
@@ -1003,7 +1110,29 @@ function collectProductsData() {
         }
     });
     
-    return products;
+    // Собираем услуги
+    const serviceItems = document.querySelectorAll('.service-item-admin');
+    serviceItems.forEach((item, index) => {
+        const serviceId = item.getAttribute('data-service-id');
+        const activitySelect = item.querySelector('.service-activity[data-index="' + index + '"]');
+        const nameInput = item.querySelector('.service-name[data-index="' + index + '"]');
+        const descInput = item.querySelector('.service-description[data-index="' + index + '"]');
+        const exportInput = item.querySelector('.service-export[data-index="' + index + '"]');
+        
+        if (nameInput && descInput && activitySelect) {
+            services.push({
+                id: serviceId && serviceId !== 'null' ? parseInt(serviceId) : null,
+                type: 'service',
+                activity: activitySelect.value.trim() || '',
+                name: nameInput.value.trim() || '',
+                description: descInput.value.trim() || '',
+                annual_export: exportInput ? exportInput.value.trim() : ''
+            });
+        }
+    });
+    
+    // Объединяем продукты и услуги в один массив для отправки
+    return products.concat(services);
 }
 
 function collectCheckboxValues(selector) {

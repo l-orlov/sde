@@ -368,7 +368,7 @@ function setupFormEventHandlers() {
 			const productItems = container.querySelectorAll('.product-item-admin');
 			const newIndex = productItems.length;
 			
-			const newProductHtml = '<div class="product-item-admin" data-product-id="" data-product-index="' + newIndex + '">' +
+			const newProductHtml = '<div class="product-item-admin" data-product-id="" data-product-index="' + newIndex + '" data-product-type="product">' +
 				'<h5 style="margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Producto ' + (newIndex + 1) + '</h5>' +
 				'<div class="form-group"><label>Producto <span class="req">*</span></label>' +
 				'<input type="text" class="form-control product-name" data-index="' + newIndex + '" value="" required></div>' +
@@ -381,6 +381,200 @@ function setupFormEventHandlers() {
 			container.insertAdjacentHTML('beforeend', newProductHtml);
 		});
 	}
+	
+	// Обработчик для кнопки добавления услуги
+	const addServiceBtn = document.getElementById('add_service_btn');
+	if (addServiceBtn) {
+		addServiceBtn.addEventListener('click', function() {
+			const container = document.getElementById('services_list_container');
+			if (!container) return;
+			
+			const serviceItems = container.querySelectorAll('.service-item-admin');
+			const newIndex = serviceItems.length;
+			
+			const activityOptions = [
+				'Staff augmentation / provisión de perfiles especializados',
+				'Implementadores de soluciones',
+				'Ciencia de datos',
+				'Análisis de datos y scraping',
+				'Blockchain',
+				'Biotecnología (servicios, prótesis)',
+				'Turismo (servicios tecnológicos asociados)',
+				'Marketing Digital',
+				'Servicios de mantenimiento aeronáutico',
+				'IA – servicios de desarrollo (bots de lenguaje natural, soluciones a medida)',
+				'e-Government (soluciones para Estado provincial y municipios)',
+				'Consultoría de procesos y transformación digital',
+				'Diseño mecánico',
+				'Diseño 3D',
+				'Diseño multimedia',
+				'Diseño de hardware',
+				'Fintech',
+				'Growth Marketing',
+				'Economía del Conocimiento – Productos orientados a Salud',
+				'Sistemas de facturación'
+			];
+			
+			let activityOptionsHtml = '<option value="">...</option>';
+			activityOptions.forEach(option => {
+				activityOptionsHtml += '<option value="' + option.replace(/'/g, "&#39;") + '">' + option + '</option>';
+			});
+			
+			const newServiceHtml = '<div class="service-item-admin" data-service-id="" data-service-index="' + newIndex + '" data-service-type="service">' +
+				'<h5 style="margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Servicio ' + (newIndex + 1) + '</h5>' +
+				'<div class="form-group"><label>Actividad <span class="req">*</span></label>' +
+				'<select class="form-control service-activity" data-index="' + newIndex + '" required>' + activityOptionsHtml + '</select></div>' +
+				'<div class="form-group"><label>Servicio <span class="req">*</span></label>' +
+				'<input type="text" class="form-control service-name" data-index="' + newIndex + '" value="" required></div>' +
+				'<div class="form-group"><label>Descripción <span class="req">*</span></label>' +
+				'<input type="text" class="form-control service-description" data-index="' + newIndex + '" value="" required></div>' +
+				'<div class="form-group"><label>Exportación Anual (USD)</label>' +
+				'<input type="text" class="form-control service-export" data-index="' + newIndex + '" value=""></div>' +
+				'</div>';
+			
+			container.insertAdjacentHTML('beforeend', newServiceHtml);
+		});
+	}
+	
+	// Обработчики для удаления файлов
+	document.querySelectorAll('.delete-file-btn').forEach(btn => {
+		btn.addEventListener('click', function() {
+			const fileId = this.getAttribute('data-file-id');
+			if (!fileId) {
+				console.error('No file ID found');
+				return;
+			}
+			
+			if (!confirm('¿Está seguro de eliminar este archivo?')) {
+				return;
+			}
+			
+			const url = basePath + 'includes/admin_delete_file_js.php';
+			console.log('Deleting file:', fileId, 'URL:', url);
+			
+			fetch(url, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ file_id: fileId })
+			})
+			.then(response => {
+				console.log('Response status:', response.status);
+				console.log('Response headers:', response.headers);
+				
+				// Проверяем, что ответ действительно JSON
+				const contentType = response.headers.get('content-type');
+				if (!contentType || !contentType.includes('application/json')) {
+					return response.text().then(text => {
+						console.error('Respuesta no es JSON:', text.substring(0, 500));
+						throw new Error('El servidor devolvió una respuesta no válida: ' + text.substring(0, 100));
+					});
+				}
+				return response.json();
+			})
+			.then(data => {
+				console.log('Response data:', data);
+				if (data.ok === 1) {
+					// Удаляем элемент из DOM
+					const fileItem = this.closest('.file-item-preview');
+					if (fileItem) {
+						fileItem.remove();
+					}
+					// Если это был последний файл, скрываем весь блок
+					const filesPreview = this.closest('.files-preview');
+					if (filesPreview && filesPreview.querySelectorAll('.file-item-preview').length === 0) {
+						const formGroup = filesPreview.closest('.form-group');
+						if (formGroup) {
+							formGroup.remove();
+						}
+					}
+				} else {
+					alert('Error al eliminar archivo: ' + (data.err || 'Error desconocido'));
+				}
+			})
+			.catch(error => {
+				console.error('Error deleting file:', error);
+				alert('Error de conexión al eliminar archivo: ' + error.message);
+			});
+		});
+	});
+	
+	// Обработчики для удаления продуктов
+	document.querySelectorAll('.delete-product-btn').forEach(btn => {
+		btn.addEventListener('click', function() {
+			const productId = this.getAttribute('data-product-id');
+			if (!productId) return;
+			
+			if (!confirm('¿Está seguro de eliminar este producto? Se eliminarán también todas sus imágenes.')) {
+				return;
+			}
+			
+			fetch(basePath + 'includes/admin_delete_product_js.php', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ product_id: productId })
+			})
+			.then(response => response.json())
+			.then(data => {
+				if (data.ok === 1) {
+					// Удаляем элемент из DOM
+					const productItem = this.closest('.product-item-admin');
+					if (productItem) {
+						productItem.remove();
+					}
+					// Перезагружаем данные пользователя для обновления формы
+					const userId = currentSelectedUserId;
+					if (userId) {
+						loadUserFullData(userId);
+					}
+				} else {
+					alert('Error al eliminar producto: ' + (data.err || 'Error desconocido'));
+				}
+			})
+			.catch(error => {
+				console.error('Error deleting product:', error);
+				alert('Error de conexión al eliminar producto');
+			});
+		});
+	});
+	
+	// Обработчики для удаления услуг
+	document.querySelectorAll('.delete-service-btn').forEach(btn => {
+		btn.addEventListener('click', function() {
+			const serviceId = this.getAttribute('data-service-id');
+			if (!serviceId) return;
+			
+			if (!confirm('¿Está seguro de eliminar este servicio? Se eliminarán también todas sus imágenes.')) {
+				return;
+			}
+			
+			fetch(basePath + 'includes/admin_delete_product_js.php', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ product_id: serviceId })
+			})
+			.then(response => response.json())
+			.then(data => {
+				if (data.ok === 1) {
+					// Удаляем элемент из DOM
+					const serviceItem = this.closest('.service-item-admin');
+					if (serviceItem) {
+						serviceItem.remove();
+					}
+					// Перезагружаем данные пользователя для обновления формы
+					const userId = currentSelectedUserId;
+					if (userId) {
+						loadUserFullData(userId);
+					}
+				} else {
+					alert('Error al eliminar servicio: ' + (data.err || 'Error desconocido'));
+				}
+			})
+			.catch(error => {
+				console.error('Error deleting service:', error);
+				alert('Error de conexión al eliminar servicio');
+			});
+		});
+	});
 }
 
 user_list(0, '');

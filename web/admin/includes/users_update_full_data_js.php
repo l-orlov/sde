@@ -117,11 +117,11 @@ try {
     }
     mysqli_stmt_close($stmt);
     
-    // 2. Обновление продуктов (массив)
+    // 2. Обновление продуктов и услуг (массив)
     $certifications = isset($input['certifications']) ? htmlspecialchars(trim($input['certifications'])) : '';
     
     if (isset($input['products']) && is_array($input['products'])) {
-        // Загружаем все существующие продукты
+        // Загружаем все существующие продукты и услуги
         $query = "SELECT id FROM products WHERE user_id = ? ORDER BY id ASC";
         $stmt = mysqli_prepare($link, $query);
         mysqli_stmt_bind_param($stmt, 'i', $userId);
@@ -134,49 +134,91 @@ try {
         mysqli_stmt_close($stmt);
         
         $submittedProductIds = [];
+        $firstProductIndex = null;
+        $firstServiceIndex = null;
         
-        // Обрабатываем каждый продукт из формы
-        foreach ($input['products'] as $index => $product) {
-            $productId = isset($product['id']) && $product['id'] !== null && $product['id'] !== '' ? intval($product['id']) : null;
-            $productName = isset($product['name']) ? htmlspecialchars(trim($product['name'])) : '';
-            $productDescription = isset($product['description']) ? htmlspecialchars(trim($product['description'])) : '';
-            $productAnnualExport = isset($product['annual_export']) ? htmlspecialchars(trim($product['annual_export'])) : '';
-            
-            if ($productId && in_array($productId, $existingProductIds)) {
-                // Обновляем существующий продукт
-                $query = "UPDATE products SET name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?, updated_at = UNIX_TIMESTAMP()
-                          WHERE id = ?";
-                $isMain = ($index === 0) ? 1 : 0;
-                $stmt = mysqli_prepare($link, $query);
-                mysqli_stmt_bind_param($stmt, 'ssssii', $productName, $productDescription, $productAnnualExport, $certifications, $isMain, $productId);
-                
-                if (!mysqli_stmt_execute($stmt)) {
-                    throw new Exception("Error al actualizar producto: " . mysqli_error($link));
+        // Разделяем на продукты и услуги
+        $productsList = [];
+        $servicesList = [];
+        foreach ($input['products'] as $index => $item) {
+            $itemType = isset($item['type']) ? $item['type'] : 'product';
+            if ($itemType === 'service') {
+                $servicesList[] = ['index' => $index, 'data' => $item];
+                if ($firstServiceIndex === null) {
+                    $firstServiceIndex = $index;
                 }
-                mysqli_stmt_close($stmt);
-                
-                $submittedProductIds[] = $productId;
             } else {
-                // Создаем новый продукт
-                $isMain = ($index === 0) ? 1 : 0;
-                $query = "INSERT INTO products (company_id, user_id, is_main, name, description, annual_export, certifications) 
-                          VALUES (?, ?, ?, ?, ?, ?, ?)";
-                $stmt = mysqli_prepare($link, $query);
-                mysqli_stmt_bind_param($stmt, 'iisssss', $companyId, $userId, $isMain, $productName, $productDescription, $productAnnualExport, $certifications);
-                
-                if (!mysqli_stmt_execute($stmt)) {
-                    throw new Exception("Error al crear producto: " . mysqli_error($link));
-                }
-                $newProductId = mysqli_insert_id($link);
-                mysqli_stmt_close($stmt);
-                
-                if ($newProductId) {
-                    $submittedProductIds[] = $newProductId;
+                $productsList[] = ['index' => $index, 'data' => $item];
+                if ($firstProductIndex === null) {
+                    $firstProductIndex = $index;
                 }
             }
         }
         
-        // Удаляем продукты, которые не были отправлены в форме
+        // Обрабатываем каждый продукт/услугу из формы
+        foreach ($input['products'] as $index => $item) {
+            $itemId = isset($item['id']) && $item['id'] !== null && $item['id'] !== '' ? intval($item['id']) : null;
+            $itemType = isset($item['type']) ? $item['type'] : 'product';
+            $itemName = isset($item['name']) ? htmlspecialchars(trim($item['name'])) : '';
+            $itemDescription = isset($item['description']) ? htmlspecialchars(trim($item['description'])) : '';
+            $itemAnnualExport = isset($item['annual_export']) ? htmlspecialchars(trim($item['annual_export'])) : '';
+            $itemActivity = isset($item['activity']) ? htmlspecialchars(trim($item['activity'])) : null;
+            
+            // Определяем is_main: первый продукт или первая услуга
+            $isMain = 0;
+            if ($itemType === 'product' && $index === $firstProductIndex) {
+                $isMain = 1;
+            } else if ($itemType === 'service' && $index === $firstServiceIndex) {
+                $isMain = 1;
+            }
+            
+            if ($itemId && in_array($itemId, $existingProductIds)) {
+                // Обновляем существующий продукт/услугу
+                if ($itemType === 'service') {
+                    $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?, updated_at = UNIX_TIMESTAMP()
+                              WHERE id = ?";
+                    $stmt = mysqli_prepare($link, $query);
+                    mysqli_stmt_bind_param($stmt, 'ssssssii', $itemType, $itemActivity, $itemName, $itemDescription, $itemAnnualExport, $certifications, $isMain, $itemId);
+                } else {
+                    $query = "UPDATE products SET type = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?, updated_at = UNIX_TIMESTAMP()
+                              WHERE id = ?";
+                    $stmt = mysqli_prepare($link, $query);
+                    mysqli_stmt_bind_param($stmt, 'sssssii', $itemType, $itemName, $itemDescription, $itemAnnualExport, $certifications, $isMain, $itemId);
+                }
+                
+                if (!mysqli_stmt_execute($stmt)) {
+                    throw new Exception("Error al actualizar producto/servicio: " . mysqli_error($link));
+                }
+                mysqli_stmt_close($stmt);
+                
+                $submittedProductIds[] = $itemId;
+            } else {
+                // Создаем новый продукт/услугу
+                if ($itemType === 'service') {
+                    $query = "INSERT INTO products (company_id, user_id, type, activity, is_main, name, description, annual_export, certifications) 
+                              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    $stmt = mysqli_prepare($link, $query);
+                    mysqli_stmt_bind_param($stmt, 'iississss', $companyId, $userId, $itemType, $itemActivity, $isMain, $itemName, $itemDescription, $itemAnnualExport, $certifications);
+                } else {
+                    $query = "INSERT INTO products (company_id, user_id, type, is_main, name, description, annual_export, certifications) 
+                              VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                    $stmt = mysqli_prepare($link, $query);
+                    mysqli_stmt_bind_param($stmt, 'iisissss', $companyId, $userId, $itemType, $isMain, $itemName, $itemDescription, $itemAnnualExport, $certifications);
+                }
+                
+                if (!mysqli_stmt_execute($stmt)) {
+                    throw new Exception("Error al crear producto/servicio: " . mysqli_error($link));
+                }
+                $newItemId = mysqli_insert_id($link);
+                mysqli_stmt_close($stmt);
+                
+                if ($newItemId) {
+                    $submittedProductIds[] = $newItemId;
+                }
+            }
+        }
+        
+        // Удаляем продукты/услуги, которые не были отправлены в форме
         if (!empty($submittedProductIds)) {
             $placeholders = implode(',', array_fill(0, count($submittedProductIds), '?'));
             $query = "DELETE FROM products WHERE user_id = ? AND id NOT IN ($placeholders)";
@@ -187,7 +229,7 @@ try {
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
         } else {
-            // Если нет продуктов в форме, удаляем все
+            // Если нет продуктов/услуг в форме, удаляем все
             $query = "DELETE FROM products WHERE user_id = ?";
             $stmt = mysqli_prepare($link, $query);
             mysqli_stmt_bind_param($stmt, 'i', $userId);

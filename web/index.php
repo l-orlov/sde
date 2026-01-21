@@ -16,6 +16,9 @@ DBconnect();
     <title>sde</title>
     <link rel="stylesheet" href="css/style.css?t=<?=time()?>">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="img/icons/logo_icon.png">
+    <link rel="shortcut icon" type="image/png" href="img/icons/logo_icon.png">
+    <link rel="apple-touch-icon" href="img/icons/logo_icon.png">
 </head>
 <body>
 

@@ -253,14 +253,24 @@ try {
         mysqli_stmt_close($stmt);
     }
     
-    // ========== 5. ПРОДУКТЫ ==========
+    // ========== 5. ПРОДУКТЫ И УСЛУГИ ==========
     
-    // mainProductId больше не используется - все продукты равны
     $productIds = [];
     $certifications = htmlspecialchars(trim($input['certifications'] ?? ''));
     
+    // Определение типа: продукты или услуги
+    $isProduct = isset($input['product_name']) && is_array($input['product_name']) && count($input['product_name']) > 0;
+    $isService = isset($input['service_name']) && is_array($input['service_name']) && count($input['service_name']) > 0;
+    
+    $type = 'product'; // По умолчанию
+    if ($isService) {
+        $type = 'service';
+    } else if ($isProduct) {
+        $type = 'product';
+    }
+    
     // Обработка массива продуктов
-    if (isset($input['product_name']) && is_array($input['product_name']) && count($input['product_name']) > 0) {
+    if ($isProduct) {
         // Получить существующие продукты для обновления (все равны, без is_main)
         $query = "SELECT id FROM products WHERE company_id = ? ORDER BY id ASC";
         $stmt = mysqli_prepare($link, $query);
@@ -289,6 +299,7 @@ try {
                 ? htmlspecialchars(trim($input['product_description'][$index])) : '';
             $annualExport = isset($input['annual_export'][$index]) && is_array($input['annual_export'])
                 ? htmlspecialchars(trim($input['annual_export'][$index])) : '';
+            $activity = null; // Для продуктов activity = null
             
             // Найти существующий продукт для обновления (последовательное сопоставление по индексу)
             $existingProduct = null;
@@ -300,14 +311,14 @@ try {
             
             if ($existingProduct && isset($existingProduct['id']) && !in_array($existingProduct['id'], $processedProductIds)) {
                 // Обновить существующий продукт
-                $query = "UPDATE products SET name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?
+                $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?
                           WHERE id = ? AND company_id = ?";
                 $stmt = mysqli_prepare($link, $query);
                 if (!$stmt) {
                     error_log("Failed to prepare UPDATE statement: " . mysqli_error($link));
                     continue;
                 }
-                mysqli_stmt_bind_param($stmt, 'ssssiii', $productName, $description, $annualExport, $certifications, $isMain,
+                mysqli_stmt_bind_param($stmt, 'ssssssiii', $type, $activity, $productName, $description, $annualExport, $certifications, $isMain,
                                       $existingProduct['id'], $companyId);
                 if (!mysqli_stmt_execute($stmt)) {
                     error_log("Failed to execute UPDATE: " . mysqli_stmt_error($stmt));
@@ -319,14 +330,14 @@ try {
                 $processedProductIds[] = $productId;
             } else {
                 // Создать новый продукт
-                $query = "INSERT INTO products (company_id, user_id, is_main, name, description, annual_export, certifications) 
-                          VALUES (?, ?, ?, ?, ?, ?, ?)";
+                $query = "INSERT INTO products (company_id, user_id, is_main, type, activity, name, description, annual_export, certifications) 
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 $stmt = mysqli_prepare($link, $query);
                 if (!$stmt) {
                     error_log("Failed to prepare INSERT statement: " . mysqli_error($link));
                     continue;
                 }
-                mysqli_stmt_bind_param($stmt, 'iiissss', $companyId, $userId, $isMain, $productName, $description, $annualExport, $certifications);
+                mysqli_stmt_bind_param($stmt, 'iiissssss', $companyId, $userId, $isMain, $type, $activity, $productName, $description, $annualExport, $certifications);
                 if (!mysqli_stmt_execute($stmt)) {
                     error_log("Failed to execute INSERT: " . mysqli_stmt_error($stmt));
                     mysqli_stmt_close($stmt);
@@ -381,25 +392,133 @@ try {
         $isMain = 0; // Все продукты равны
         
         if ($existingMain && isset($existingMain['id'])) {
-            $query = "UPDATE products SET name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?
+            $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?
                       WHERE id = ? AND company_id = ?";
             $stmt = mysqli_prepare($link, $query);
-            mysqli_stmt_bind_param($stmt, 'ssssiii', $productName, $description, $annualExport, $certifications, $isMain,
+            $activity = null; // Для старых продуктов activity = null
+            mysqli_stmt_bind_param($stmt, 'ssssssiii', $type, $activity, $productName, $description, $annualExport, $certifications, $isMain,
                                   $existingMain['id'], $companyId);
             mysqli_stmt_execute($stmt);
             // Сохраняем ID для обратной совместимости
             $mainProductId = $existingMain['id'];
             mysqli_stmt_close($stmt);
         } else {
-            $query = "INSERT INTO products (company_id, user_id, is_main, name, description, annual_export, certifications) 
-                      VALUES (?, ?, ?, ?, ?, ?, ?)";
+            $query = "INSERT INTO products (company_id, user_id, is_main, type, activity, name, description, annual_export, certifications) 
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = mysqli_prepare($link, $query);
-            mysqli_stmt_bind_param($stmt, 'iissss', $companyId, $userId, $isMain, $productName, $description, $annualExport, $certifications);
+            $activity = null; // Для старых продуктов activity = null
+            mysqli_stmt_bind_param($stmt, 'iiissssss', $companyId, $userId, $isMain, $type, $activity, $productName, $description, $annualExport, $certifications);
             mysqli_stmt_execute($stmt);
             $mainProductId = mysqli_insert_id($link);
             mysqli_stmt_close($stmt);
         }
         $productIds[0] = $mainProductId;
+    }
+    
+    // Обработка массива услуг
+    if ($isService) {
+        // Получить существующие услуги для обновления
+        $query = "SELECT id FROM products WHERE company_id = ? AND type = 'service' ORDER BY id ASC";
+        $stmt = mysqli_prepare($link, $query);
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $existingServices = [];
+        while ($row = mysqli_fetch_assoc($result)) {
+            $existingServices[] = $row;
+        }
+        mysqli_stmt_close($stmt);
+        
+        $processedServiceIds = [];
+        $existingServiceIndex = 0;
+        
+        foreach ($input['service_name'] as $index => $serviceName) {
+            $serviceName = trim($serviceName);
+            if (empty($serviceName)) {
+                continue;
+            }
+            
+            $isMain = 0;
+            $serviceName = htmlspecialchars($serviceName);
+            $description = isset($input['service_description'][$index]) && is_array($input['service_description'])
+                ? htmlspecialchars(trim($input['service_description'][$index])) : '';
+            $annualExport = isset($input['annual_export'][$index]) && is_array($input['annual_export'])
+                ? htmlspecialchars(trim($input['annual_export'][$index])) : '';
+            $activity = isset($input['service_activity'][$index]) && is_array($input['service_activity'])
+                ? htmlspecialchars(trim($input['service_activity'][$index])) : null;
+            
+            // Найти существующую услугу для обновления
+            $existingService = null;
+            if ($existingServiceIndex < count($existingServices)) {
+                $existingService = $existingServices[$existingServiceIndex];
+                $existingServiceIndex++;
+            }
+            
+            if ($existingService && isset($existingService['id']) && !in_array($existingService['id'], $processedServiceIds)) {
+                // Обновить существующую услугу
+                $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?
+                          WHERE id = ? AND company_id = ?";
+                $stmt = mysqli_prepare($link, $query);
+                if (!$stmt) {
+                    error_log("Failed to prepare UPDATE statement for service: " . mysqli_error($link));
+                    continue;
+                }
+                mysqli_stmt_bind_param($stmt, 'ssssssiii', $type, $activity, $serviceName, $description, $annualExport, $certifications, $isMain,
+                                      $existingService['id'], $companyId);
+                if (!mysqli_stmt_execute($stmt)) {
+                    error_log("Failed to execute UPDATE for service: " . mysqli_stmt_error($stmt));
+                    mysqli_stmt_close($stmt);
+                    continue;
+                }
+                $serviceId = $existingService['id'];
+                mysqli_stmt_close($stmt);
+                $processedServiceIds[] = $serviceId;
+            } else {
+                // Создать новую услугу
+                $query = "INSERT INTO products (company_id, user_id, is_main, type, activity, name, description, annual_export, certifications) 
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $stmt = mysqli_prepare($link, $query);
+                if (!$stmt) {
+                    error_log("Failed to prepare INSERT statement for service: " . mysqli_error($link));
+                    continue;
+                }
+                mysqli_stmt_bind_param($stmt, 'iiissssss', $companyId, $userId, $isMain, $type, $activity, $serviceName, $description, $annualExport, $certifications);
+                if (!mysqli_stmt_execute($stmt)) {
+                    error_log("Failed to execute INSERT for service: " . mysqli_stmt_error($stmt));
+                    mysqli_stmt_close($stmt);
+                    continue;
+                }
+                $serviceId = mysqli_insert_id($link);
+                mysqli_stmt_close($stmt);
+                $processedServiceIds[] = $serviceId;
+            }
+            
+            $productIds[$index] = $serviceId;
+        }
+        
+        // Удалить услуги, которые больше не существуют в форме
+        if (!empty($processedServiceIds)) {
+            $query = "SELECT id FROM products WHERE company_id = ? AND type = 'service'";
+            $stmt = mysqli_prepare($link, $query);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'i', $companyId);
+                mysqli_stmt_execute($stmt);
+                $result = mysqli_stmt_get_result($stmt);
+                while ($row = mysqli_fetch_assoc($result)) {
+                    $serviceIdToCheck = $row['id'];
+                    if (!in_array($serviceIdToCheck, $processedServiceIds)) {
+                        $deleteQuery = "DELETE FROM products WHERE id = ? AND company_id = ?";
+                        $deleteStmt = mysqli_prepare($link, $deleteQuery);
+                        if ($deleteStmt) {
+                            mysqli_stmt_bind_param($deleteStmt, 'ii', $serviceIdToCheck, $companyId);
+                            mysqli_stmt_execute($deleteStmt);
+                            mysqli_stmt_close($deleteStmt);
+                        }
+                    }
+                }
+                mysqli_stmt_close($stmt);
+            }
+        }
     }
     
     // ========== 6. ДОПОЛНИТЕЛЬНЫЕ ДАННЫЕ (JSON) ==========
@@ -570,8 +689,22 @@ try {
                 }
             }
             
+            // Обработка service_photo_index_X
+            if ($productId === null && strpos($fileKey, 'service_photo_index_') === 0) {
+                $indexStr = substr($fileKey, 20); // 'service_photo_index_'.length = 20
+                $index = intval($indexStr);
+                if (isset($productIds[$index])) {
+                    $productId = $productIds[$index];
+                }
+            }
+            
             // Обработка старого формата product_photo (без индекса) - используем первый продукт
             if ($productId === null && $fileKey === 'product_photo' && isset($productIds[0])) {
+                $productId = $productIds[0];
+            }
+            
+            // Обработка service_photo (без индекса) - используем первый продукт/услугу
+            if ($productId === null && $fileKey === 'service_photo' && isset($productIds[0])) {
                 $productId = $productIds[0];
             }
             
@@ -657,9 +790,19 @@ try {
                 if ($fileKey === 'product_photo') {
                     // Старый формат - используем первый продукт
                     $targetProductId = isset($productIds[0]) ? $productIds[0] : null;
+                } elseif ($fileKey === 'service_photo') {
+                    // Используем первый продукт/услугу
+                    $targetProductId = isset($productIds[0]) ? $productIds[0] : null;
                 } elseif (strpos($fileKey, 'product_photo_index_') === 0) {
                     // Новый формат с индексами
                     $indexStr = substr($fileKey, 20); // 'product_photo_index_'.length = 20
+                    $index = intval($indexStr);
+                    if (isset($productIds[$index])) {
+                        $targetProductId = $productIds[$index];
+                    }
+                } elseif (strpos($fileKey, 'service_photo_index_') === 0) {
+                    // Новый формат с индексами для услуг
+                    $indexStr = substr($fileKey, 20); // 'service_photo_index_'.length = 20
                     $index = intval($indexStr);
                     if (isset($productIds[$index])) {
                         $targetProductId = $productIds[$index];
