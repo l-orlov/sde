@@ -209,9 +209,43 @@ textarea::placeholder{font-size: 14px;}}
   font-size: 18px;
   color: #402B2F;
   line-height: 1.1;
-  white-space:normal;
+  white-space: normal;
+  display: inline-block;
+}
+
+/* Для label_span с подзаголовком используем block */
+.label_span .sub {
+  font-size: 18px;
+  color: #667085;
+  margin-top: 2px;
+  font-weight: normal;
+  display: block;
+  white-space: normal;
+}
+
+/* Основной текст и звездочка всегда на одной строке */
+.label_span > span:first-child {
+  white-space: nowrap;
 }
 .req { 
+  color: #EE3124 !important;
+}
+
+/* Убеждаемся, что все звездочки красные во всем файле - максимальная специфичность */
+.req,
+label .req,
+.label .req,
+.label_span .req,
+span .req,
+[data-i18n] .req,
+label[data-i18n] .req,
+.label span[data-i18n] .req,
+.label_span[data-i18n] .req,
+div.label label .req,
+div.label span .req,
+.compet_blk .label .req,
+.needs-blk .label .req,
+.consent-blk .req {
   color: #EE3124 !important;
 }
 .field {
@@ -230,26 +264,24 @@ textarea::placeholder{font-size: 14px;}}
   flex-wrap: wrap;
 }
 .type-pill{
+  background: #fff;
   min-width: 240px;
   height: 56px;
   padding: 0 24px;
-  border: 0;
+  border: 2px solid #003399;
   border-radius: 999px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: linear-gradient(180deg, #0C3D90 0%, #063170 100%);
-  box-shadow: 0 10px 18px rgba(0,0,0,.18);
   transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
 }
 .type-pill__text{
-  color: #fff;
+  color: #402B2F;
   font-size: 18px;
   font-weight: 700;
   line-height: 1;
-  text-shadow: 0 2px 10px rgba(0,0,0,.15);
 }
 .type-pill__icon{
   width: 32px;
@@ -269,6 +301,110 @@ textarea::placeholder{font-size: 14px;}}
 
 .hidden {
   display: none !important;
+}
+
+/* Add More Wrapper */
+.add-more-wrapper {
+  position: relative;
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  grid-column: 1 / -1; /* Занимает всю ширину grid */
+}
+
+.add-more-menu {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+  flex-wrap: wrap;
+}
+
+.add-more-menu:not(.hidden) {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.add-more-menu .menu-option {
+  min-width: 240px;
+}
+
+/* Items List - единый список для продуктов и услуг */
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  margin-top: 20px;
+  width: 100%;
+  grid-column: 1 / -1; /* Занимает всю ширину grid */
+}
+
+/* Product-item и service-item внутри items-list не должны быть grid элементами формы */
+.items-list > .product-item,
+.items-list > .service-item {
+  display: block; /* Обычный блок, не grid элемент */
+}
+
+/* Визуальное различие продуктов и услуг */
+.product-item,
+.service-item {
+  position: relative;
+  padding: 20px;
+  border-radius: 8px;
+  background: #fff;
+  border-left: 4px solid;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  width: 100%;
+  display: block; /* Обычный блок, не grid элемент */
+}
+
+.product-item {
+  border-left-color: #4CAF50;
+}
+
+.service-item {
+  border-left-color: #FF9800;
+}
+
+.product-item > .producto_grid,
+.service-item > .servicio_grid {
+  grid-column: 1 / -1; /* Grid занимает всю ширину внутри своего контейнера */
+  width: 100%;
+  display: grid;
+  grid-template-columns: 345px 1fr;
+  column-gap: 24px;
+  row-gap: 14px;
+  align-items: start; /* Изменено с center на start для правильного выравнивания label с подзаголовком */
+}
+
+/* Бейдж для типа */
+.item-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+}
+
+.item-badge-product {
+  background: #4CAF50;
+}
+
+.item-badge-service {
+  background: #FF9800;
 }
 
 /* Products/Services containers - должны вписываться в grid */
@@ -538,19 +674,30 @@ textarea::placeholder{font-size: 14px;}}
 .producto_grid {
   grid-column: 2 / -1;
   display:grid;
-  grid-template-columns: 165px 1fr;
+  grid-template-columns: 345px 1fr;
   column-gap: 24px;
   row-gap: 14px;
   align-items:center;
   margin-bottom: 12px;
 }
+
+/* Когда producto_grid внутри product-item, не используем grid-column */
+.product-item > .producto_grid {
+  grid-column: 1 / -1;
+}
+
 .servicio_grid {
   grid-column: 2 / -1;
   display:grid;
-  grid-template-columns: 165px 1fr;
+  grid-template-columns: 345px 1fr;
   column-gap: 24px;
   row-gap: 14px;
   align-items:center;
+}
+
+/* Когда servicio_grid внутри service-item, не используем grid-column */
+.service-item > .servicio_grid {
+  grid-column: 1 / -1;
 }
 .span_all{ grid-column: 1 / -1; }
 .anual_inline {
@@ -603,8 +750,17 @@ textarea::placeholder{font-size: 14px;}}
   row-gap: 12px;
   align-items:center;
 }
-.mercados_act{ display:grid; gap:12px; }
-.mercados_act .act-list{ display:grid; gap:10px; }
+.mercados_act{ 
+  display:grid; 
+  gap:12px; 
+  width: 100%;
+  align-items: start;
+}
+.mercados_act .act-list{ 
+  display:grid; 
+  gap:10px; 
+  width: 100%;
+}
 .productos_field{ display:grid; gap:12px; }
 .productos_field .products-container{ display:grid; gap:10px; }
 .servicios_field{ 
@@ -2478,6 +2634,30 @@ to {
   flex-direction: column;
   width: 100%;
   min-height: 280px;
+  position: relative;
+}
+
+/* Бейджи для продуктов и услуг */
+.home-product-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.home-product-badge-type {
+  background: #4CAF50;
+}
+
+.home-service-badge {
+  background: #FF9800;
 }
 
 .home-product-card:hover {

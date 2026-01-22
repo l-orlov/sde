@@ -34,6 +34,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file']) && $_FILES['
             $dbFileType = 'product_photo';
         }
         
+        // Ограничение до одного изображения на товар/услугу: удаляем все существующие файлы для этого product_id и типа
+        if ($productId && ($fileType === 'product_photo' || $fileType === 'service_photo')) {
+            global $link;
+            $deleteQuery = "SELECT id FROM files WHERE product_id = ? AND user_id = ? AND file_type = ? AND is_temporary = 0";
+            $deleteStmt = mysqli_prepare($link, $deleteQuery);
+            if ($deleteStmt) {
+                mysqli_stmt_bind_param($deleteStmt, 'iis', $productId, $userId, $dbFileType);
+                mysqli_stmt_execute($deleteStmt);
+                $deleteResult = mysqli_stmt_get_result($deleteStmt);
+                while ($oldFile = mysqli_fetch_assoc($deleteResult)) {
+                    try {
+                        $fileManager->delete($oldFile['id'], $userId);
+                    } catch (Exception $e) {
+                        error_log("Error deleting old file {$oldFile['id']}: " . $e->getMessage());
+                    }
+                }
+                mysqli_stmt_close($deleteStmt);
+            }
+        }
+        
         $fileId = $fileManager->upload($_FILES['file'], $productId, $userId, $dbFileType, true);
         
         $fileInfo = $fileManager->getFileInfo($fileId);

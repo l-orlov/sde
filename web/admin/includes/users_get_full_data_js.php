@@ -146,10 +146,17 @@ try {
     $allProducts = [];
     $allServices = [];
     while ($row = mysqli_fetch_assoc($result)) {
+        // Определяем тип продукта/услуги
+        $itemType = $row['type'] ?? null;
+        // Если type пустой, NULL или не равен 'service', считаем продуктом
+        if (empty($itemType) || $itemType === '' || $itemType !== 'service') {
+            $itemType = 'product';
+        }
+        
         $itemData = [
             'id' => intval($row['id']),
             'is_main' => (bool)$row['is_main'],
-            'type' => $row['type'] ?? 'product',
+            'type' => $itemType,
             'activity' => $row['activity'] ?? null,
             'name' => $row['name'] ?? '',
             'description' => $row['description'] ?? '',
@@ -157,7 +164,7 @@ try {
             'certifications' => $row['certifications'] ?? ''
         ];
         
-        if ($row['type'] === 'service') {
+        if ($itemType === 'service') {
             $allServices[] = $itemData;
             // Для обратной совместимости сохраняем первую услугу как main
             if ($services['main'] === null) {
@@ -178,15 +185,37 @@ try {
     
     // 6. Дополнительные данные (JSON)
     $companyDataJson = null;
-    $query = "SELECT current_markets, target_markets, differentiation_factors, needs, 
-                     competitiveness, logistics, expectations, consents
-              FROM company_data WHERE company_id = ? LIMIT 1";
-    $stmt = mysqli_prepare($link, $query);
-    mysqli_stmt_bind_param($stmt, 'i', $companyId);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $companyDataJson = mysqli_fetch_assoc($result);
-    mysqli_stmt_close($stmt);
+    
+    // Проверяем, существует ли таблица company_data и колонка current_markets
+    $checkTableQuery = "SHOW TABLES LIKE 'company_data'";
+    $checkTableResult = mysqli_query($link, $checkTableQuery);
+    $tableExists = ($checkTableResult && mysqli_num_rows($checkTableResult) > 0);
+    
+    if ($tableExists) {
+        $checkColumnQuery = "SHOW COLUMNS FROM company_data LIKE 'current_markets'";
+        $checkColumnResult = mysqli_query($link, $checkColumnQuery);
+        $columnExists = ($checkColumnResult && mysqli_num_rows($checkColumnResult) > 0);
+        
+        if ($columnExists) {
+            $query = "SELECT current_markets, target_markets, differentiation_factors, needs, 
+                         competitiveness, logistics, expectations, consents
+                  FROM company_data WHERE company_id = ? LIMIT 1";
+            $stmt = mysqli_prepare($link, $query);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'i', $companyId);
+                mysqli_stmt_execute($stmt);
+                $result = mysqli_stmt_get_result($stmt);
+                $companyDataJson = mysqli_fetch_assoc($result);
+                mysqli_stmt_close($stmt);
+            }
+        } else {
+            // Если колонки нет, создаем пустую структуру
+            $companyDataJson = null;
+        }
+    } else {
+        // Если таблицы нет, создаем пустую структуру
+        $companyDataJson = null;
+    }
     
     // Парсинг JSON полей с правильной обработкой
     if ($companyDataJson) {

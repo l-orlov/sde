@@ -84,10 +84,17 @@ try {
     $result = mysqli_stmt_get_result($stmt);
     
     while ($row = mysqli_fetch_assoc($result)) {
+        // Определяем тип продукта/услуги
+        $itemType = $row['type'] ?? null;
+        // Если type пустой, NULL или не равен 'service', считаем продуктом
+        if (empty($itemType) || $itemType === '' || $itemType !== 'service') {
+            $itemType = 'product';
+        }
+        
         $products[] = [
             'id' => intval($row['id']),
             'is_main' => (bool)$row['is_main'],
-            'type' => $row['type'] ?? 'product',
+            'type' => $itemType,
             'name' => htmlspecialchars($row['name'] ?? ''),
             'description' => htmlspecialchars($row['description'] ?? '')
         ];
@@ -127,6 +134,17 @@ try {
                 $pid = null;
                 $isMain = $row['is_main'] ?? false;
                 $productIdFromTable = $row['product_id_from_table'];
+                $fileType = $row['file_type'] ?? '';
+                $productType = $row['type'] ?? 'product';
+                
+                // Определяем правильный тип файла на основе типа продукта/услуги
+                // Если это услуга, ищем service_photo, если продукт - product_photo
+                if ($productType === 'service' && $fileType !== 'service_photo') {
+                    continue; // Пропускаем, если это не service_photo для услуги
+                }
+                if ($productType === 'product' && $fileType !== 'product_photo') {
+                    continue; // Пропускаем, если это не product_photo для продукта
+                }
                 
                 // Если product_id NULL или 0, и это основной товар/услуга
                 if (($row['product_id'] === null || intval($row['product_id']) == 0) && $isMain && $mainProductId) {
@@ -303,6 +321,9 @@ $visibleProducts = min(4, $totalProducts);
               $productName = htmlspecialchars($product['name']);
             ?>
             <div class="home-product-card <?php echo $isVisible ? 'home-product-visible' : 'home-product-hidden'; ?>">
+              <div class="home-product-badge <?php echo ($product['type'] === 'service') ? 'home-service-badge' : 'home-product-badge-type'; ?>">
+                <?php echo ($product['type'] === 'service') ? 'Servicio' : 'Producto'; ?>
+              </div>
               <div class="home-product-image">
                 <img src="<?php echo $imageSrc; ?>" alt="<?php echo $imageAlt; ?>">
               </div>
@@ -805,7 +826,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-<script src="js/i18n.js?v=1.0.3"></script>
+<script src="js/i18n.js?v=1.0.4"></script>
 <script>
 function toggleHomeLangMenu() {
   const menu = document.getElementById('home_lang_menu');

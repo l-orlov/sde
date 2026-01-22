@@ -634,109 +634,155 @@ document.addEventListener('DOMContentLoaded', () => {
     <img src="img/icons/regfull_sobre_productos.svg">
   </div>
   <div class="form" novalidate>
-    <!-- Кнопки выбора типа (показываются только если нет данных в БД) -->
-    <div class="products-services-selector <?= $showSelector ? '' : 'hidden' ?>">
-      <button type="button" class="btn-select-type type-pill" data-type="product">
-        <span class="type-pill__text" data-i18n="regfull_add_products">Agregar productos</span>
-        <img class="type-pill__icon" src="img/icons/regfull_add_product.svg" alt="">
+    <!-- Общая кнопка "agregar más" (всегда видна) -->
+    <div class="add-more-wrapper">
+      <button type="button" class="btn-add-more type-pill" id="btn-add-more">
+        <img class="type-pill__icon" src="img/icons/regfull_add_plus.png" alt="">
+        <span class="type-pill__text" data-i18n="regfull_add_more">agregar más</span>
       </button>
-      <button type="button" class="btn-select-type type-pill" data-type="service">
-        <span class="type-pill__text" data-i18n="regfull_add_services">Agregar servicios</span>
-        <img class="type-pill__icon" src="img/icons/regfull_add_service.svg" alt="">
-      </button>
-    </div>
-    
-    <!-- Контейнер для продуктов -->
-    <div class="products-container <?= ($defaultType === 'product') ? '' : 'hidden' ?>">
-    <div class="label"><span data-i18n="regfull_main_product">Producto <span class="req">*</span></span></div>
-    <div class="field productos_field">
-        <div class="products-list">
-          <!-- Продукты будут добавлены через JavaScript -->
-        </div>
-        <button type="button" class="add_more add-product <?= ($defaultType === 'product') ? '' : 'hidden' ?>" data-i18n="regfull_add_more">agregar más</button>
+      <!-- Inline меню выбора (скрыто по умолчанию) -->
+      <div class="add-more-menu hidden">
+        <button type="button" class="menu-option type-pill" data-type="product">
+          <span class="type-pill__text" data-i18n="regfull_add_products">Agregar productos</span>
+          <img class="type-pill__icon" src="img/icons/regfull_add_product.svg" alt="">
+        </button>
+        <button type="button" class="menu-option type-pill" data-type="service">
+          <span class="type-pill__text" data-i18n="regfull_add_services">Agregar servicios</span>
+          <img class="type-pill__icon" src="img/icons/regfull_add_service.svg" alt="">
+        </button>
       </div>
     </div>
     
-    <!-- Контейнер для услуг -->
-    <div class="services-container <?= ($defaultType === 'service') ? '' : 'hidden' ?>">
-      <div class="field servicios_field">
-        <div class="services-list">
-          <!-- Услуги будут добавлены через JavaScript -->
-        </div>
-        <button type="button" class="add_more add-service <?= ($defaultType === 'service') ? '' : 'hidden' ?>" data-i18n="regfull_add_more">agregar más</button>
-      </div>
+    <!-- Единый список для продуктов и услуг -->
+    <div class="items-list">
+      <!-- Продукты и услуги будут добавлены через JavaScript -->
     </div>
     
     <!-- Шаблон для продукта -->
     <template class="product-item-tpl">
-        <div class="product-item">
-    <div class="producto_grid">
-          <input type="search" name="product_name[]" class="span_all" placeholder="Producto *">
-      <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
-            <input type="search" name="product_description[]">
-      <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD)</label>
-            <input type="search" name="annual_export[]">
-      <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto</label>
-            <div class="file-ph-wrapper">
-              <input type="file" class="file-ph" name="product_photo[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
-              <div class="file-ph-display">
-                <img class="file-preview-img" src="" alt="" style="display: none;">
-                <span class="file-ph-placeholder" data-i18n="regfull_upload_file">subir archivo (JPG, PNG, PDF)</span>
-                <button type="button" class="file-ph-remove" style="display: none;" aria-label="Eliminar">&times;</button>
-    </div>
+      <div class="product-item">
+        <div class="item-badge item-badge-product">Producto</div>
+        <div class="producto_grid">
+          <label class="label_span" data-i18n="regfull_main_product">Producto <span class="req">*</span></label>
+          <input type="search" name="product_name[]" class="span_right">
+          <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
+          <input type="search" name="product_description[]">
+          <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD)</label>
+          <input type="search" name="annual_export[]">
+          <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto</label>
+          <div class="file-ph-wrapper">
+            <input type="file" class="file-ph" name="product_photo[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
+            <div class="file-ph-display">
+              <img class="file-preview-img" src="" alt="" style="display: none;">
+              <span class="file-ph-placeholder" data-i18n="regfull_upload_file">subir archivo (JPG, PNG, PDF)</span>
+              <button type="button" class="file-ph-remove" style="display: none;" aria-label="Eliminar">&times;</button>
             </div>
+          </div>
+          <!-- Certificaciones (внутри продукта) -->
+          <label class="label_span" data-i18n="regfull_certifications">Certificaciones</label>
+          <input type="search" name="product_certifications[]" data-i18n-placeholder="regfull_certifications_placeholder" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
+          <!-- Mercados Actuales (внутри продукта) -->
+          <label class="label_span" data-i18n="regfull_current_markets">Mercados Actuales (Continente) <span class="req">*</span></label>
+          <div class="span_right">
+            <div class="custom-dropdown">
+              <div class="dropdown-selected">
+                <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
+                <span class="dropdown-arrow">▼</span>
+              </div>
+              <div class="dropdown-options">
+                <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
+                <div class="dropdown-option" data-value="América del Norte">América del Norte</div>
+                <div class="dropdown-option" data-value="América del Sur">América del Sur</div>
+                <div class="dropdown-option" data-value="Europa">Europa</div>
+                <div class="dropdown-option" data-value="Asia">Asia</div>
+                <div class="dropdown-option" data-value="África">África</div>
+                <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
+              </div>
+              <input type="hidden" name="product_current_markets[]" value="">
+            </div>
+          </div>
+          <!-- Mercados de Interés (внутри продукта) -->
+          <label class="label_span" data-i18n="regfull_interest_markets">
+            <span>Mercados de Interés (Continente)</span>
+            <div class="sub" data-i18n="regfull_interest_markets_sub">(a donde le gustaría exportar)</div>
+          </label>
+          <div class="span_right">
+            <div class="mercados_act product-markets">
+              <div class="act-list"></div>
+              <button type="button" class="add_more act-add" data-i18n="regfull_add_more">agregar más</button>
+              <template class="act-item-tpl">
+                <div class="act-row">
+                  <div class="custom-dropdown">
+                    <div class="dropdown-selected">
+                      <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
+                      <span class="dropdown-arrow">▼</span>
+                    </div>
+                    <div class="dropdown-options">
+                      <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
+                      <div class="dropdown-option" data-value="América del Norte">América del Norte</div>
+                      <div class="dropdown-option" data-value="América del Sur">América del Sur</div>
+                      <div class="dropdown-option" data-value="Europa">Europa</div>
+                      <div class="dropdown-option" data-value="Asia">Asia</div>
+                      <div class="dropdown-option" data-value="África">África</div>
+                      <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
+                    </div>
+                    <input type="hidden" name="product_target_markets[]" value="">
+                  </div>
+                  <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
+                </div>
+              </template>
+            </div>
+          </div>
           <input type="hidden" name="product_type[]" value="product">
           <button type="button" class="remove remove-product" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
-          </div>
         </div>
+      </div>
     </template>
     
     <!-- Шаблон для услуги -->
     <template class="service-item-tpl">
       <div class="service-item">
-        <!-- Actividad * - отдельная пара label/field в основном grid (ПЕРВОЕ) -->
-        <div class="label"><span data-i18n="regfull_activity">Actividad <span class="req">*</span></span></div>
-        <div class="field">
-          <div class="custom-dropdown">
-            <div class="dropdown-selected">
-              <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
-              <span class="dropdown-arrow">▼</span>
-            </div>
-            <div class="dropdown-options">
-              <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
-              <div class="dropdown-option" data-value="Staff augmentation / provisión de perfiles especializados">Staff augmentation / provisión de perfiles especializados</div>
-              <div class="dropdown-option" data-value="Implementadores de soluciones">Implementadores de soluciones</div>
-              <div class="dropdown-option" data-value="Ciencia de datos">Ciencia de datos</div>
-              <div class="dropdown-option" data-value="Análisis de datos y scraping">Análisis de datos y scraping</div>
-              <div class="dropdown-option" data-value="Blockchain">Blockchain</div>
-              <div class="dropdown-option" data-value="Biotecnología (servicios, prótesis)">Biotecnología (servicios, prótesis)</div>
-              <div class="dropdown-option" data-value="Turismo (servicios tecnológicos asociados)">Turismo (servicios tecnológicos asociados)</div>
-              <div class="dropdown-option" data-value="Marketing Digital">Marketing Digital</div>
-              <div class="dropdown-option" data-value="Servicios de mantenimiento aeronáutico">Servicios de mantenimiento aeronáutico</div>
-              <div class="dropdown-option" data-value="IA – servicios de desarrollo (bots de lenguaje natural, soluciones a medida)">IA – servicios de desarrollo (bots de lenguaje natural, soluciones a medida)</div>
-              <div class="dropdown-option" data-value="e-Government (soluciones para Estado provincial y municipios)">e-Government (soluciones para Estado provincial y municipios)</div>
-              <div class="dropdown-option" data-value="Consultoría de procesos y transformación digital">Consultoría de procesos y transformación digital</div>
-              <div class="dropdown-option" data-value="Diseño mecánico">Diseño mecánico</div>
-              <div class="dropdown-option" data-value="Diseño 3D">Diseño 3D</div>
-              <div class="dropdown-option" data-value="Diseño multimedia">Diseño multimedia</div>
-              <div class="dropdown-option" data-value="Diseño de hardware">Diseño de hardware</div>
-              <div class="dropdown-option" data-value="Fintech">Fintech</div>
-              <div class="dropdown-option" data-value="Growth Marketing">Growth Marketing</div>
-              <div class="dropdown-option" data-value="Economía del Conocimiento – Productos orientados a Salud">Economía del Conocimiento – Productos orientados a Salud</div>
-              <div class="dropdown-option" data-value="Sistemas de facturación">Sistemas de facturación</div>
-            </div>
-            <input type="hidden" name="service_activity[]" value="">
-          </div>
-        </div>
-
-        <!-- Servicio * - отдельная пара label/field в основном grid (ВТОРОЕ) -->
-        <div class="label"><span data-i18n="regfull_service">Servicio <span class="req">*</span></span></div>
-        <div class="field">
-          <input type="search" name="service_name[]">
-        </div>
-
+        <div class="item-badge item-badge-service">Servicio</div>
         <!-- Остальные поля в servicio_grid (как producto_grid для продуктов) -->
         <div class="servicio_grid">
+          <!-- Actividad * - в одной строке с label -->
+          <label class="label_span" data-i18n="regfull_activity">Actividad <span class="req">*</span></label>
+          <div class="span_right">
+            <div class="custom-dropdown">
+              <div class="dropdown-selected">
+                <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
+                <span class="dropdown-arrow">▼</span>
+              </div>
+              <div class="dropdown-options">
+                <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
+                <div class="dropdown-option" data-value="Staff augmentation / provisión de perfiles especializados">Staff augmentation / provisión de perfiles especializados</div>
+                <div class="dropdown-option" data-value="Implementadores de soluciones">Implementadores de soluciones</div>
+                <div class="dropdown-option" data-value="Ciencia de datos">Ciencia de datos</div>
+                <div class="dropdown-option" data-value="Análisis de datos y scraping">Análisis de datos y scraping</div>
+                <div class="dropdown-option" data-value="Blockchain">Blockchain</div>
+                <div class="dropdown-option" data-value="Biotecnología (servicios, prótesis)">Biotecnología (servicios, prótesis)</div>
+                <div class="dropdown-option" data-value="Turismo (servicios tecnológicos asociados)">Turismo (servicios tecnológicos asociados)</div>
+                <div class="dropdown-option" data-value="Marketing Digital">Marketing Digital</div>
+                <div class="dropdown-option" data-value="Servicios de mantenimiento aeronáutico">Servicios de mantenimiento aeronáutico</div>
+                <div class="dropdown-option" data-value="IA – servicios de desarrollo (bots de lenguaje natural, soluciones a medida)">IA – servicios de desarrollo (bots de lenguaje natural, soluciones a medida)</div>
+                <div class="dropdown-option" data-value="e-Government (soluciones para Estado provincial y municipios)">e-Government (soluciones para Estado provincial y municipios)</div>
+                <div class="dropdown-option" data-value="Consultoría de procesos y transformación digital">Consultoría de procesos y transformación digital</div>
+                <div class="dropdown-option" data-value="Diseño mecánico">Diseño mecánico</div>
+                <div class="dropdown-option" data-value="Diseño 3D">Diseño 3D</div>
+                <div class="dropdown-option" data-value="Diseño multimedia">Diseño multimedia</div>
+                <div class="dropdown-option" data-value="Diseño de hardware">Diseño de hardware</div>
+                <div class="dropdown-option" data-value="Fintech">Fintech</div>
+                <div class="dropdown-option" data-value="Growth Marketing">Growth Marketing</div>
+                <div class="dropdown-option" data-value="Economía del Conocimiento – Productos orientados a Salud">Economía del Conocimiento – Productos orientados a Salud</div>
+                <div class="dropdown-option" data-value="Sistemas de facturación">Sistemas de facturación</div>
+              </div>
+              <input type="hidden" name="service_activity[]" value="">
+            </div>
+          </div>
+
+          <!-- Servicio * - в одной строке с label -->
+          <label class="label_span" data-i18n="regfull_service">Servicio <span class="req">*</span></label>
+          <input type="search" name="service_name[]" class="span_right">
           <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
           <input type="search" name="service_description[]">
           <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD)</label>
@@ -750,66 +796,66 @@ document.addEventListener('DOMContentLoaded', () => {
               <button type="button" class="file-ph-remove" style="display: none;" aria-label="Eliminar">&times;</button>
             </div>
           </div>
+          <!-- Certificaciones (внутри услуги) -->
+          <label class="label_span" data-i18n="regfull_certifications">Certificaciones</label>
+          <input type="search" name="service_certifications[]" data-i18n-placeholder="regfull_certifications_placeholder" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
+          <!-- Mercados Actuales (внутри услуги) -->
+          <label class="label_span" data-i18n="regfull_current_markets">Mercados Actuales (Continente) <span class="req">*</span></label>
+          <div class="span_right">
+            <div class="custom-dropdown">
+              <div class="dropdown-selected">
+                <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
+                <span class="dropdown-arrow">▼</span>
+              </div>
+              <div class="dropdown-options">
+                <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
+                <div class="dropdown-option" data-value="América del Norte">América del Norte</div>
+                <div class="dropdown-option" data-value="América del Sur">América del Sur</div>
+                <div class="dropdown-option" data-value="Europa">Europa</div>
+                <div class="dropdown-option" data-value="Asia">Asia</div>
+                <div class="dropdown-option" data-value="África">África</div>
+                <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
+              </div>
+              <input type="hidden" name="service_current_markets[]" value="">
+            </div>
+          </div>
+          <!-- Mercados de Interés (внутри услуги) -->
+          <label class="label_span" data-i18n="regfull_interest_markets">
+            <span>Mercados de Interés (Continente)</span>
+            <div class="sub" data-i18n="regfull_interest_markets_sub">(a donde le gustaría exportar)</div>
+          </label>
+          <div class="span_right">
+            <div class="mercados_act service-markets">
+              <div class="act-list"></div>
+              <button type="button" class="add_more act-add" data-i18n="regfull_add_more">agregar más</button>
+              <template class="act-item-tpl">
+                <div class="act-row">
+                  <div class="custom-dropdown">
+                    <div class="dropdown-selected">
+                      <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
+                      <span class="dropdown-arrow">▼</span>
+                    </div>
+                    <div class="dropdown-options">
+                      <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
+                      <div class="dropdown-option" data-value="América del Norte">América del Norte</div>
+                      <div class="dropdown-option" data-value="América del Sur">América del Sur</div>
+                      <div class="dropdown-option" data-value="Europa">Europa</div>
+                      <div class="dropdown-option" data-value="Asia">Asia</div>
+                      <div class="dropdown-option" data-value="África">África</div>
+                      <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
+                    </div>
+                    <input type="hidden" name="service_target_markets[]" value="">
+                  </div>
+                  <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
+                </div>
+              </template>
+            </div>
+          </div>
           <input type="hidden" name="service_type[]" value="service">
           <button type="button" class="remove remove-service" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
         </div>
       </div>
     </template>
-    <!-- Certificaciones -->
-    <div class="label"><span data-i18n="regfull_certifications">Certificaciones</span></div>
-    <div class="field">
-      <input type="search" name="certifications" data-i18n-placeholder="regfull_certifications_placeholder" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
-    </div>
-    <!-- Mercados Actuales (Continente) -->
-    <div class="label"><span data-i18n="regfull_current_markets">Mercados Actuales (Continente) <span class="req">*</span></span></div>
-    <div class="field">
-      <div class="custom-dropdown">
-        <div class="dropdown-selected">
-          <span class="selected-text">…</span>
-          <span class="dropdown-arrow">▼</span>
-        </div>
-        <div class="dropdown-options">
-          <div class="dropdown-option" data-value="">…</div>
-          <div class="dropdown-option" data-value="América del Norte">América del Norte</div>
-          <div class="dropdown-option" data-value="América del Sur">América del Sur</div>
-          <div class="dropdown-option" data-value="Europa">Europa</div>
-          <div class="dropdown-option" data-value="Asia">Asia</div>
-          <div class="dropdown-option" data-value="África">África</div>
-          <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
-        </div>
-        <input type="hidden" name="current_markets" value="<?= esc_attr($companyDataJson['current_markets'] ?? '') ?>">
-      </div>
-    </div>
-    <!-- Mercados de Interés (Continente) -->
-    <div class="label">
-      <span data-i18n="regfull_interest_markets">Mercados de Interés (Continente)</span>
-      <div class="sub" data-i18n="regfull_interest_markets_sub">(a donde le gustaría exportar)</div>
-    </div>
-    <div class="field mercados_act">
-      <div class="act-list"></div>
-      <button type="button" class="add_more act-add" data-i18n="regfull_add_more">agregar más</button>
-      <template class="act-item-tpl">
-        <div class="act-row">
-          <div class="custom-dropdown">
-            <div class="dropdown-selected">
-              <span class="selected-text" data-i18n="regfull_dropdown_placeholder">…</span>
-              <span class="dropdown-arrow">▼</span>
-            </div>
-            <div class="dropdown-options">
-              <div class="dropdown-option" data-value="" data-i18n="regfull_dropdown_placeholder">…</div>
-              <div class="dropdown-option" data-value="América del Norte">América del Norte</div>
-              <div class="dropdown-option" data-value="América del Sur">América del Sur</div>
-              <div class="dropdown-option" data-value="Europa">Europa</div>
-              <div class="dropdown-option" data-value="Asia">Asia</div>
-              <div class="dropdown-option" data-value="África">África</div>
-              <div class="dropdown-option" data-value="Oceanía">Oceanía</div>
-            </div>
-            <input type="hidden" name="target_markets[]" value="">
-          </div>
-          <button type="button" class="remove" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
-        </div>
-      </template>
-    </div>
   </div>
 </div>
 <script>
@@ -853,17 +899,11 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
 // Управление продуктами и услугами: добавление и удаление
 document.addEventListener('DOMContentLoaded', () => {
-  const selector = document.querySelector('.products-services-selector');
-  const productsContainer = document.querySelector('.products-container');
-  const servicesContainer = document.querySelector('.services-container');
-  const productsList = productsContainer ? productsContainer.querySelector('.products-list') : null;
-  const servicesList = servicesContainer ? servicesContainer.querySelector('.services-list') : null;
+  const btnAddMore = document.getElementById('btn-add-more');
+  const addMoreMenu = document.querySelector('.add-more-menu');
+  const itemsList = document.querySelector('.items-list');
   const productTemplate = document.querySelector('.product-item-tpl');
   const serviceTemplate = document.querySelector('.service-item-tpl');
-  const productosField = productsContainer ? productsContainer.querySelector('.productos_field') : null;
-  const serviciosField = servicesContainer ? servicesContainer.querySelector('.servicios_field') : null;
-  const addProductBtn = productosField ? productosField.querySelector('.add-product') : null;
-  const addServiceBtn = serviciosField ? serviciosField.querySelector('.add-service') : null;
   
   // Общая функция для обновления отображения файла
   function updateFileDisplay(input, url, name) {
@@ -954,40 +994,88 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // Обновление кнопок удаления для продуктов
-  function updateProductRemoveButtons() {
-    if (!productsList) return;
-    const items = productsList.querySelectorAll('.product-item');
-    items.forEach((item, index) => {
-      const removeBtn = item.querySelector('.remove-product');
+  // Обновление кнопок удаления для всех элементов
+  function updateRemoveButtons() {
+    if (!itemsList) return;
+    const allItems = itemsList.querySelectorAll('.product-item, .service-item');
+    allItems.forEach((item, index) => {
+      const removeBtn = item.querySelector('.remove-product, .remove-service');
       if (removeBtn) {
-        removeBtn.hidden = (index === 0);
+        removeBtn.hidden = (allItems.length === 1);
       }
     });
   }
   
-  // Обновление кнопок удаления для услуг
-  function updateServiceRemoveButtons() {
-    if (!servicesList) return;
-    const items = servicesList.querySelectorAll('.service-item');
-    items.forEach((item, index) => {
-      const removeBtn = item.querySelector('.remove-service');
-      if (removeBtn) {
-        removeBtn.hidden = (index === 0);
+  // Инициализация Mercados de Interés для элемента
+  function initMercadosAct(item) {
+    const mercadosBox = item.querySelector('.mercados_act');
+    if (!mercadosBox) return;
+    
+    const list = mercadosBox.querySelector('.act-list');
+    const tpl = mercadosBox.querySelector('.act-item-tpl');
+    const add = mercadosBox.querySelector('.act-add');
+    
+    if (!list || !tpl || !add) return;
+    
+    function updateRemoves() {
+      const rows = list.querySelectorAll('.act-row');
+      rows.forEach((row, i) => {
+        const btn = row.querySelector('.remove');
+        if (!btn) return;
+        btn.hidden = (rows.length === 1 && i === 0);
+      });
+    }
+    
+    function addRow() {
+      const node = tpl.content.firstElementChild.cloneNode(true);
+      node.querySelector('.remove').addEventListener('click', () => {
+        node.remove();
+        updateRemoves();
+      });
+      
+      const dropdown = node.querySelector('.custom-dropdown');
+      if (dropdown) {
+        const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+        if (hiddenInput && typeof initCustomDropdown === 'function') {
+          initCustomDropdown(dropdown, hiddenInput);
+        }
       }
-    });
+      
+      list.appendChild(node);
+      updateRemoves();
+    }
+    
+    if (!add._bound) {
+      add.addEventListener('click', addRow);
+      add._bound = true;
+    }
+    
+    if (!list.children.length) addRow();
   }
   
   // Привязка обработчиков для продукта
   function bindProductItemEvents(item) {
     bindFileInputEvents(item);
+    
+    // Инициализация dropdown для Mercados Actuales
+    const currentMarketsDropdown = item.querySelector('input[name="product_current_markets[]"]');
+    if (currentMarketsDropdown) {
+      const dropdown = currentMarketsDropdown.closest('.custom-dropdown');
+      if (dropdown && typeof initCustomDropdown === 'function') {
+        initCustomDropdown(dropdown, currentMarketsDropdown);
+      }
+    }
+    
+    // Инициализация Mercados de Interés
+    initMercadosAct(item);
+    
     const removeBtn = item.querySelector('.remove-product');
     if (removeBtn && !removeBtn._bound) {
       removeBtn.addEventListener('click', () => {
-        const items = productsList.querySelectorAll('.product-item');
-        if (items.length <= 1) return;
+        const allItems = itemsList.querySelectorAll('.product-item, .service-item');
+        if (allItems.length <= 1) return;
         item.remove();
-        updateProductRemoveButtons();
+        updateRemoveButtons();
       });
       removeBtn._bound = true;
     }
@@ -998,166 +1086,160 @@ document.addEventListener('DOMContentLoaded', () => {
     bindFileInputEvents(item);
     
     // Инициализация dropdown для Actividad
-    const dropdown = item.querySelector('.custom-dropdown');
-    if (dropdown) {
-      const hiddenInput = dropdown.querySelector('input[type="hidden"]');
-      if (hiddenInput && typeof initCustomDropdown === 'function') {
-        initCustomDropdown(dropdown, hiddenInput);
+    const activityDropdown = item.querySelector('input[name="service_activity[]"]');
+    if (activityDropdown) {
+      const dropdown = activityDropdown.closest('.custom-dropdown');
+      if (dropdown && typeof initCustomDropdown === 'function') {
+        initCustomDropdown(dropdown, activityDropdown);
       }
     }
+    
+    // Инициализация dropdown для Mercados Actuales
+    const currentMarketsDropdown = item.querySelector('input[name="service_current_markets[]"]');
+    if (currentMarketsDropdown) {
+      const dropdown = currentMarketsDropdown.closest('.custom-dropdown');
+      if (dropdown && typeof initCustomDropdown === 'function') {
+        initCustomDropdown(dropdown, currentMarketsDropdown);
+      }
+    }
+    
+    // Инициализация Mercados de Interés
+    initMercadosAct(item);
     
     const removeBtn = item.querySelector('.remove-service');
     if (removeBtn && !removeBtn._bound) {
       removeBtn.addEventListener('click', () => {
-        const items = servicesList.querySelectorAll('.service-item');
-        if (items.length <= 1) return;
+        const allItems = itemsList.querySelectorAll('.product-item, .service-item');
+        if (allItems.length <= 1) return;
         item.remove();
-        updateServiceRemoveButtons();
+        updateRemoveButtons();
       });
       removeBtn._bound = true;
     }
   }
   
-  // Обработка клика по кнопкам выбора типа
-  if (selector) {
-    const buttons = selector.querySelectorAll('.btn-select-type');
-    buttons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const type = e.target.closest('.btn-select-type').dataset.type;
+  // Функция для сброса значений элемента
+  function resetItemValues(item, isService = false) {
+    // Сбросить все input поля
+    item.querySelectorAll('input').forEach(input => {
+      if (input.type === 'file') {
+        input.value = '';
+      } else if (input.type !== 'hidden' || input.name.includes('type')) {
+        input.value = '';
+      }
+    });
+    
+    // Сбросить все dropdown
+    item.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+      const selectedText = dropdown.querySelector('.selected-text');
+      if (selectedText) selectedText.textContent = '…';
+      const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+      if (hiddenInput && !hiddenInput.name.includes('type')) {
+        hiddenInput.value = '';
+      }
+      dropdown.querySelectorAll('.dropdown-option').forEach(opt => {
+        opt.classList.remove('selected');
+      });
+    });
+    
+    // Сбросить отображение файла
+    const fileDisplay = item.querySelector('.file-ph-display');
+    if (fileDisplay) {
+      const img = fileDisplay.querySelector('.file-preview-img');
+      const placeholder = fileDisplay.querySelector('.file-ph-placeholder');
+      const removeBtn = fileDisplay.querySelector('.file-ph-remove');
+      if (img) img.style.display = 'none';
+      if (placeholder) placeholder.style.display = 'block';
+      if (removeBtn) removeBtn.style.display = 'none';
+      fileDisplay.classList.remove('has-image');
+    }
+    
+    // Очистить Mercados de Interés
+    const mercadosList = item.querySelector('.act-list');
+    if (mercadosList) {
+      const rows = mercadosList.querySelectorAll('.act-row');
+      for (let i = 1; i < rows.length; i++) {
+        rows[i].remove();
+      }
+      if (rows[0]) {
+        const firstDropdown = rows[0].querySelector('.custom-dropdown');
+        if (firstDropdown) {
+          const selectedText = firstDropdown.querySelector('.selected-text');
+          if (selectedText) selectedText.textContent = '…';
+          const hiddenInput = firstDropdown.querySelector('input[type="hidden"]');
+          if (hiddenInput) hiddenInput.value = '';
+          firstDropdown.querySelectorAll('.dropdown-option').forEach(opt => {
+            opt.classList.remove('selected');
+          });
+        }
+      }
+    }
+  }
+  
+  // Обработка кнопки "agregar más"
+  if (btnAddMore && !btnAddMore._bound) {
+    btnAddMore.addEventListener('click', (e) => {
+      e.stopPropagation();
+      addMoreMenu.classList.toggle('hidden');
+    });
+    btnAddMore._bound = true;
+  }
+  
+  // Закрытие меню при клике вне его
+  document.addEventListener('click', (e) => {
+    if (addMoreMenu && !addMoreMenu.contains(e.target) && !btnAddMore.contains(e.target)) {
+      addMoreMenu.classList.add('hidden');
+    }
+  });
+  
+  // Обработка выбора типа из меню
+  if (addMoreMenu) {
+    const menuOptions = addMoreMenu.querySelectorAll('.menu-option');
+    menuOptions.forEach(option => {
+      option.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = option.dataset.type;
         
-        // Скрыть кнопки выбора
-        selector.classList.add('hidden');
+        // Закрыть меню
+        addMoreMenu.classList.add('hidden');
         
-        if (type === 'product') {
-          // Показать контейнер продуктов
-          if (productsContainer) productsContainer.classList.remove('hidden');
-          if (addProductBtn) addProductBtn.classList.remove('hidden');
+        if (type === 'product' && productTemplate) {
+          const newProduct = productTemplate.content.firstElementChild.cloneNode(true);
+          resetItemValues(newProduct, false);
           
-          // Добавить первую форму продукта, если список пуст
-          if (productsList && productsList.children.length === 0 && productTemplate) {
-            const newProduct = productTemplate.content.firstElementChild.cloneNode(true);
-            productsList.appendChild(newProduct);
+          if (itemsList) {
+            itemsList.insertBefore(newProduct, itemsList.firstChild);
             bindProductItemEvents(newProduct);
-            updateProductRemoveButtons();
+            updateRemoveButtons();
           }
-        } else if (type === 'service') {
-          // Показать контейнер услуг
-          if (servicesContainer) servicesContainer.classList.remove('hidden');
-          if (addServiceBtn) addServiceBtn.classList.remove('hidden');
+        } else if (type === 'service' && serviceTemplate) {
+          const newService = serviceTemplate.content.firstElementChild.cloneNode(true);
+          resetItemValues(newService, true);
           
-          // Добавить первую форму услуги, если список пуст
-          if (servicesList && servicesList.children.length === 0 && serviceTemplate) {
-            const newService = serviceTemplate.content.firstElementChild.cloneNode(true);
-            servicesList.appendChild(newService);
+          if (itemsList) {
+            itemsList.insertBefore(newService, itemsList.firstChild);
             bindServiceItemEvents(newService);
-            updateServiceRemoveButtons();
+            updateRemoveButtons();
           }
         }
       });
     });
-  }
-  
-  // Обработка добавления продукта
-  if (addProductBtn && !addProductBtn._bound && productTemplate) {
-    addProductBtn.addEventListener('click', () => {
-      const newProduct = productTemplate.content.firstElementChild.cloneNode(true);
-      
-      // Сбросить значения
-      newProduct.querySelectorAll('input').forEach(input => {
-        if (input.type === 'file') {
-          input.value = '';
-        } else {
-          input.value = '';
-        }
-      });
-      
-      // Сбросить отображение файла
-      const fileDisplay = newProduct.querySelector('.file-ph-display');
-      if (fileDisplay) {
-        const img = fileDisplay.querySelector('.file-preview-img');
-        const placeholder = fileDisplay.querySelector('.file-ph-placeholder');
-        const removeBtn = fileDisplay.querySelector('.file-ph-remove');
-        if (img) img.style.display = 'none';
-        if (placeholder) placeholder.style.display = 'block';
-        if (removeBtn) removeBtn.style.display = 'none';
-        fileDisplay.classList.remove('has-image');
-      }
-      
-      if (productsList) {
-        productsList.appendChild(newProduct);
-        bindProductItemEvents(newProduct);
-        updateProductRemoveButtons();
-      }
-    });
-    addProductBtn._bound = true;
-  }
-  
-  // Обработка добавления услуги
-  if (addServiceBtn && !addServiceBtn._bound && serviceTemplate) {
-    addServiceBtn.addEventListener('click', () => {
-      const newService = serviceTemplate.content.firstElementChild.cloneNode(true);
-      
-      // Сбросить значения
-      newService.querySelectorAll('input').forEach(input => {
-        if (input.type === 'file') {
-          input.value = '';
-      } else {
-          input.value = '';
-        }
-      });
-      
-      // Сбросить dropdown
-      const dropdown = newService.querySelector('.custom-dropdown');
-      if (dropdown) {
-        const selectedText = dropdown.querySelector('.selected-text');
-        if (selectedText) selectedText.textContent = '…';
-        const hiddenInput = dropdown.querySelector('input[type="hidden"]');
-        if (hiddenInput) hiddenInput.value = '';
-        dropdown.querySelectorAll('.dropdown-option').forEach(opt => {
-          opt.classList.remove('selected');
-        });
-      }
-      
-      // Сбросить отображение файла
-      const fileDisplay = newService.querySelector('.file-ph-display');
-      if (fileDisplay) {
-        const img = fileDisplay.querySelector('.file-preview-img');
-        const placeholder = fileDisplay.querySelector('.file-ph-placeholder');
-        const removeBtn = fileDisplay.querySelector('.file-ph-remove');
-        if (img) img.style.display = 'none';
-        if (placeholder) placeholder.style.display = 'block';
-        if (removeBtn) removeBtn.style.display = 'none';
-        fileDisplay.classList.remove('has-image');
-      }
-      
-      if (servicesList) {
-        servicesList.appendChild(newService);
-        bindServiceItemEvents(newService);
-        updateServiceRemoveButtons();
-      }
-    });
-    addServiceBtn._bound = true;
   }
   
   // Привязать обработчики к существующим элементам
-  if (productsList) {
-    productsList.querySelectorAll('.product-item').forEach(item => {
-    bindProductItemEvents(item);
-  });
-    updateProductRemoveButtons();
-  }
-  
-  if (servicesList) {
-    servicesList.querySelectorAll('.service-item').forEach(item => {
+  if (itemsList) {
+    itemsList.querySelectorAll('.product-item').forEach(item => {
+      bindProductItemEvents(item);
+    });
+    itemsList.querySelectorAll('.service-item').forEach(item => {
       bindServiceItemEvents(item);
     });
-    updateServiceRemoveButtons();
+    updateRemoveButtons();
   }
   
   // Экспортировать функции
   window.updateFileDisplay = updateFileDisplay;
-  window.updateProductRemoveButtons = updateProductRemoveButtons;
-  window.updateServiceRemoveButtons = updateServiceRemoveButtons;
+  window.updateRemoveButtons = updateRemoveButtons;
   window.bindProductItemEvents = bindProductItemEvents;
   window.bindServiceItemEvents = bindServiceItemEvents;
 });
@@ -2056,9 +2138,13 @@ document.addEventListener('DOMContentLoaded', () => {
       checkDropdown('organization_type', 'Tipo de Organización');
       checkDropdown('main_activity', 'Actividad Principal');
       
-      // Валидация продуктов (массив)
-      const productItems = document.querySelectorAll('.product-item');
-      productItems.forEach((item, index) => {
+      // Валидация продуктов и услуг (только если они добавлены)
+      const allItems = document.querySelectorAll('.product-item, .service-item');
+      
+      if (allItems.length > 0) {
+        // Валидация продуктов
+        const productItems = document.querySelectorAll('.product-item');
+        productItems.forEach((item, index) => {
         const productName = item.querySelector('input[name="product_name[]"]');
         const productDesc = item.querySelector('input[name="product_description[]"]');
         const productPhoto = item.querySelector('input[name="product_photo[]"]');
@@ -2179,9 +2265,158 @@ document.addEventListener('DOMContentLoaded', () => {
           const fileDisplay = item.querySelector('.file-ph-display');
           if (fileDisplay) fileDisplay.style.borderColor = '';
         }
+        
+        // Проверка Mercados Actuales для продукта
+        const productCurrentMarkets = item.querySelector('input[name="product_current_markets[]"]');
+        if (productCurrentMarkets) {
+          const dropdown = productCurrentMarkets.closest('.custom-dropdown');
+          if (!productCurrentMarkets.value || productCurrentMarkets.value === '' || productCurrentMarkets.value === '…') {
+            errors.push(`Producto ${index + 1}: Mercados Actuales es obligatorio`);
+            if (dropdown) {
+              dropdown.style.boxShadow = '0 0 0 2px #f44336';
+              dropdown.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          } else {
+            if (dropdown) dropdown.style.boxShadow = '';
+          }
+        }
       });
       
-      checkDropdown('current_markets', 'Mercados Actuales');
+      // Валидация услуг
+      const serviceItems = document.querySelectorAll('.service-item');
+      serviceItems.forEach((item, index) => {
+        const serviceActivity = item.querySelector('input[name="service_activity[]"]');
+        const serviceName = item.querySelector('input[name="service_name[]"]');
+        const serviceDesc = item.querySelector('input[name="service_description[]"]');
+        const servicePhoto = item.querySelector('input[name="service_photo[]"]');
+        
+        if (!serviceActivity || !serviceActivity.value || serviceActivity.value === '' || serviceActivity.value === '…') {
+          errors.push(`Servicio ${index + 1}: Actividad es obligatoria`);
+          const dropdown = serviceActivity?.closest('.custom-dropdown');
+          if (dropdown) {
+            dropdown.style.boxShadow = '0 0 0 2px #f44336';
+            dropdown.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else {
+          const dropdown = serviceActivity.closest('.custom-dropdown');
+          if (dropdown) dropdown.style.boxShadow = '';
+        }
+        
+        if (!serviceName || !serviceName.value || !serviceName.value.trim()) {
+          errors.push(`Servicio ${index + 1}: Nombre es obligatorio`);
+          if (serviceName) {
+            serviceName.style.borderColor = '#f44336';
+            serviceName.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else {
+          if (serviceName) serviceName.style.borderColor = '';
+        }
+        
+        if (!serviceDesc || !serviceDesc.value || !serviceDesc.value.trim()) {
+          errors.push(`Servicio ${index + 1}: Descripción es obligatoria`);
+          if (serviceDesc) {
+            serviceDesc.style.borderColor = '#f44336';
+            serviceDesc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else {
+          if (serviceDesc) serviceDesc.style.borderColor = '';
+        }
+        
+        // Проверка файла услуги (аналогично продукту)
+        const fileState = window.getFileState ? window.getFileState() : { existingFiles: {}, newFiles: {} };
+        let hasFile = false;
+        
+        if (servicePhoto && servicePhoto.files && servicePhoto.files.length > 0) {
+          hasFile = true;
+        }
+        
+        if (!hasFile) {
+          const fileDisplay = item.querySelector('.file-ph-display');
+          if (fileDisplay) {
+            const img = fileDisplay.querySelector('img.file-preview-img');
+            const video = fileDisplay.querySelector('video.file-preview-img');
+            if (img && img.src && img.style.display !== 'none') {
+              hasFile = true;
+            } else if (video && video.src && video.style.display !== 'none') {
+              hasFile = true;
+            } else if (fileDisplay.classList.contains('has-image')) {
+              hasFile = true;
+            }
+          }
+        }
+        
+        if (!hasFile) {
+          const fileKey = index === 0 ? 'service_photo' : `service_photo_index_${index}`;
+          let existingFiles = fileState.existingFiles[fileKey];
+          if (!existingFiles && fileState.existingFiles['service_photo']) {
+            const servicePhotoData = fileState.existingFiles['service_photo'];
+            if (typeof servicePhotoData === 'object' && !Array.isArray(servicePhotoData)) {
+              existingFiles = servicePhotoData[`index_${index}`] || servicePhotoData[index] || servicePhotoData[String(index)];
+            } else if (Array.isArray(servicePhotoData) && index < servicePhotoData.length) {
+              existingFiles = servicePhotoData[index];
+            } else if (index === 0 && servicePhotoData) {
+              existingFiles = Array.isArray(servicePhotoData) ? servicePhotoData[0] : servicePhotoData;
+            }
+          }
+          
+          if (existingFiles) {
+            if (Array.isArray(existingFiles) && existingFiles.length > 0) {
+              hasFile = true;
+            } else if (existingFiles && existingFiles.id) {
+              hasFile = true;
+            } else if (existingFiles && existingFiles.url) {
+              hasFile = true;
+            }
+          }
+        }
+        
+        if (!hasFile) {
+          const newFiles = fileState.newFiles;
+          for (const key in newFiles) {
+            if (key === 'service_photo' && index === 0) {
+              hasFile = true;
+              break;
+            } else if (key === `service_photo_index_${index}`) {
+              hasFile = true;
+              break;
+            }
+          }
+        }
+        
+        if (!hasFile && servicePhoto) {
+          errors.push(`Servicio ${index + 1}: Foto del Servicio es obligatoria`);
+          const fileDisplay = item.querySelector('.file-ph-display');
+          if (fileDisplay) {
+            fileDisplay.style.borderColor = '#f44336';
+            fileDisplay.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            servicePhoto.style.borderColor = '#f44336';
+            servicePhoto.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else {
+          if (servicePhoto) servicePhoto.style.borderColor = '';
+          const fileDisplay = item.querySelector('.file-ph-display');
+          if (fileDisplay) fileDisplay.style.borderColor = '';
+        }
+        
+        // Проверка Mercados Actuales для услуги
+        const serviceCurrentMarkets = item.querySelector('input[name="service_current_markets[]"]');
+        if (serviceCurrentMarkets) {
+          const dropdown = serviceCurrentMarkets.closest('.custom-dropdown');
+          if (!serviceCurrentMarkets.value || serviceCurrentMarkets.value === '' || serviceCurrentMarkets.value === '…') {
+            errors.push(`Servicio ${index + 1}: Mercados Actuales es obligatorio`);
+            if (dropdown) {
+              dropdown.style.boxShadow = '0 0 0 2px #f44336';
+              dropdown.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          } else {
+            if (dropdown) dropdown.style.boxShadow = '';
+          }
+        }
+      });
+      }
+      
+      // Удалена проверка общего поля current_markets, так как теперь оно внутри каждого продукта/услуги
       
       checkRequired('company_history', 'Historia de la Empresa');
       const awards = document.querySelector('input[name="awards"]:checked');
@@ -2402,8 +2637,35 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
         
+        // Собираем target_markets для каждого продукта отдельно
+        document.querySelectorAll('.product-item').forEach((item, productIndex) => {
+          const targetMarketsInputs = item.querySelectorAll('input[name="product_target_markets[]"]');
+          targetMarketsInputs.forEach(input => {
+            if (input.value && input.value.trim() && input.value.trim() !== '…') {
+              // Отправляем с индексом продукта для правильной обработки на сервере
+              appendToFormData(`product_target_markets[${productIndex}][]`, input.value);
+            }
+          });
+        });
+        
+        // Собираем target_markets для каждой услуги отдельно
+        document.querySelectorAll('.service-item').forEach((item, serviceIndex) => {
+          const targetMarketsInputs = item.querySelectorAll('input[name="service_target_markets[]"]');
+          targetMarketsInputs.forEach(input => {
+            if (input.value && input.value.trim() && input.value.trim() !== '…') {
+              // Отправляем с индексом услуги для правильной обработки на сервере
+              appendToFormData(`service_target_markets[${serviceIndex}][]`, input.value);
+            }
+          });
+        });
+        
         document.querySelectorAll('input[type="hidden"]').forEach(field => {
           if (field.name) {
+            // Пропускаем product_target_markets[] и service_target_markets[] - они уже обработаны выше
+            if (field.name === 'product_target_markets[]' || field.name === 'service_target_markets[]') {
+              return;
+            }
+            
             // Для main_activity отправляем только валидные значения
             if (field.name === 'main_activity') {
               // Проверяем и value, и атрибут value, и также проверяем визуальное отображение
@@ -3390,8 +3652,8 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     department_legal: <?= json_encode($companyAddresses['legal']['department'] ?? '') ?>,
     locality_admin: <?= json_encode($companyAddresses['admin']['locality'] ?? '') ?>,
     department_admin: <?= json_encode($companyAddresses['admin']['department'] ?? '') ?>,
-    current_markets: <?= json_encode($companyDataJson['current_markets'] ?? '') ?>,
-    target_markets: <?= json_encode($companyDataJson['target_markets'] ?? []) ?>,
+    // current_markets и target_markets теперь индивидуальные для каждого продукта/услуги
+    // и загружаются через loadExistingProducts()
     export_experience: <?= json_encode($companyDataJson['competitiveness']['export_experience'] ?? '') ?>,
   };
   
@@ -3402,28 +3664,8 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   function fillCompanyDataFromDB() {
     const data = window.companyDataFromDB;
     
-    
-    // Заполнение current_markets dropdown
-    if (data.current_markets) {
-      const currentMarketsInput = document.querySelector('input[name="current_markets"]');
-      if (currentMarketsInput) {
-        currentMarketsInput.value = data.current_markets;
-        const dropdown = currentMarketsInput.closest('.custom-dropdown');
-        if (dropdown) {
-          const options = dropdown.querySelectorAll('.dropdown-option');
-          for (let option of options) {
-            if (option.dataset.value === data.current_markets) {
-              const selectedText = dropdown.querySelector('.selected-text');
-              if (selectedText) {
-                selectedText.textContent = option.textContent;
-              }
-              option.classList.add('selected');
-              break;
-            }
-          }
-        }
-      }
-    }
+    // Примечание: current_markets и target_markets теперь индивидуальные для каждого продукта/услуги
+    // и загружаются через loadExistingProducts()
     
     // Заполнение export_experience dropdown
     if (data.export_experience) {
@@ -3447,49 +3689,8 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       }
     }
     
-    // Заполнение target_markets (динамический список)
-    if (data.target_markets && Array.isArray(data.target_markets) && data.target_markets.length > 0) {
-      const actList = document.querySelector('.act-list');
-      const actAdd = document.querySelector('.act-add');
-      if (actList && actAdd) {
-        // Очистить существующие элементы, кроме первого
-        const existingRows = actList.querySelectorAll('.act-row');
-        for (let i = 1; i < existingRows.length; i++) {
-          existingRows[i].remove();
-        }
-        
-        // Создать элементы для каждого рынка
-        data.target_markets.forEach((market, index) => {
-          let row;
-          if (index === 0) {
-            row = actList.querySelector('.act-row');
-          } else {
-            // Добавить новый элемент
-            actAdd.click();
-            row = actList.querySelectorAll('.act-row')[index];
-          }
-          
-          if (row) {
-            const dropdown = row.querySelector('.custom-dropdown');
-            const hiddenInput = row.querySelector('input[type="hidden"]');
-            if (dropdown && hiddenInput && market) {
-              hiddenInput.value = market;
-              const options = dropdown.querySelectorAll('.dropdown-option');
-              for (let option of options) {
-                if (option.dataset.value === market) {
-                  const selectedText = dropdown.querySelector('.selected-text');
-                  if (selectedText) {
-                    selectedText.textContent = option.textContent;
-                  }
-                  option.classList.add('selected');
-                  break;
-                }
-              }
-            }
-          }
-        });
-      }
-    }
+    // Примечание: target_markets теперь индивидуальные для каждого продукта/услуги
+    // и загружаются через loadExistingProducts()
   }
   
   function fillDropdownsFromDB() {
@@ -4115,48 +4316,43 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     }
         }
       } else if (typeof files.product_photo === 'object') {
-        // Новый формат: объект с ключами product_id или индексами
-        // Сначала создаем карту product_id -> индекс продукта
-        const productIdToIndex = new Map();
-        productItems.forEach((item, index) => {
+        // Новый формат: объект с ключами product_id
+        // Сначала создаем карту product_id -> элемент продукта
+        const productIdToItem = new Map();
+        productItems.forEach((item) => {
           const hiddenInput = item.querySelector('input[type="hidden"][name="product_id[]"]');
           if (hiddenInput && hiddenInput.value) {
             const productId = parseInt(hiddenInput.value, 10);
             if (!isNaN(productId)) {
-              productIdToIndex.set(productId, index);
+              productIdToItem.set(productId, item);
             }
           }
         });
         
         Object.keys(files.product_photo).forEach(key => {
           let productId = null;
-          let index = null;
           
           // Проверяем, является ли ключ product_id (число)
           const keyAsNum = parseInt(key, 10);
-          if (!isNaN(keyAsNum) && productIdToIndex.has(keyAsNum)) {
+          if (!isNaN(keyAsNum) && productIdToItem.has(keyAsNum)) {
             // Ключ - это product_id
             productId = keyAsNum;
-            index = productIdToIndex.get(productId);
-          } else if (key.startsWith('index_')) {
-            // Старый формат с индексом
-            index = parseInt(key.replace('index_', ''), 10);
           } else {
-            // Пытаемся интерпретировать как индекс
-            index = parseInt(key, 10);
-            if (isNaN(index)) return;
+            // Пропускаем, если ключ не является product_id
+            return;
           }
           
-          if (index !== null && index >= 0 && productItems[index]) {
-            const input = productItems[index].querySelector('input[name="product_photo[]"]');
-      if (input) {
+          const item = productIdToItem.get(productId);
+          if (item) {
+            const input = item.querySelector('input[name="product_photo[]"]');
+            if (input) {
               const fileData = files.product_photo[key];
               const file = Array.isArray(fileData) ? fileData[0] : fileData;
               if (file && file.url) {
                 if (window.updateFileDisplay) {
                   window.updateFileDisplay(input, file.url, file.name);
                 } else {
-        displayFilePreview(input, file.url, file.name, false);
+                  displayFilePreview(input, file.url, file.name, false);
                 }
               }
             }
@@ -4183,35 +4379,35 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
           }
         }
       } else if (typeof files.service_photo === 'object') {
-        // Новый формат: объект с ключами service_id или индексами
-        const serviceIdToIndex = new Map();
-        serviceItems.forEach((item, index) => {
+        // Новый формат: объект с ключами service_id (product_id в БД)
+        // Сначала создаем карту service_id -> элемент услуги
+        const serviceIdToItem = new Map();
+        serviceItems.forEach((item) => {
           const hiddenInput = item.querySelector('input[type="hidden"][name="service_id[]"]');
           if (hiddenInput && hiddenInput.value) {
             const serviceId = parseInt(hiddenInput.value, 10);
             if (!isNaN(serviceId)) {
-              serviceIdToIndex.set(serviceId, index);
+              serviceIdToItem.set(serviceId, item);
             }
           }
         });
         
         Object.keys(files.service_photo).forEach(key => {
           let serviceId = null;
-          let index = null;
           
+          // Проверяем, является ли ключ service_id (число)
           const keyAsNum = parseInt(key, 10);
-          if (!isNaN(keyAsNum) && serviceIdToIndex.has(keyAsNum)) {
+          if (!isNaN(keyAsNum) && serviceIdToItem.has(keyAsNum)) {
+            // Ключ - это service_id
             serviceId = keyAsNum;
-            index = serviceIdToIndex.get(serviceId);
-          } else if (key.startsWith('index_')) {
-            index = parseInt(key.replace('index_', ''), 10);
           } else {
-            index = parseInt(key, 10);
-            if (isNaN(index)) return;
+            // Пропускаем, если ключ не является service_id
+            return;
           }
           
-          if (index !== null && index >= 0 && serviceItems[index]) {
-            const input = serviceItems[index].querySelector('input[name="service_photo[]"]');
+          const item = serviceIdToItem.get(serviceId);
+          if (item) {
+            const input = item.querySelector('input[name="service_photo[]"]');
             if (input) {
               const fileData = files.service_photo[key];
               const file = Array.isArray(fileData) ? fileData[0] : fileData;
@@ -4219,7 +4415,7 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
                 if (window.updateFileDisplay) {
                   window.updateFileDisplay(input, file.url, file.name);
                 } else {
-        displayFilePreview(input, file.url, file.name, false);
+                  displayFilePreview(input, file.url, file.name, false);
                 }
               }
             }
@@ -4397,17 +4593,13 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
           }
         });
         
-          const productsContainer = document.querySelector('.products-container');
-          const productsList = productsContainer ? productsContainer.querySelector('.products-list') : null;
+          const itemsList = document.querySelector('.items-list');
           const productTemplate = document.querySelector('.product-item-tpl');
           
-          if (productsList && productTemplate) {
-            // Очистить существующие элементы
-            productsList.innerHTML = '';
-        
+          if (itemsList && productTemplate) {
         allProducts.forEach((product, index) => {
               const productItem = productTemplate.content.firstElementChild.cloneNode(true);
-              productsList.appendChild(productItem);
+              itemsList.insertBefore(productItem, itemsList.firstChild);
               
           if (window.bindProductItemEvents) {
             window.bindProductItemEvents(productItem);
@@ -4416,10 +4608,91 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
               const nameInput = productItem.querySelector('input[name="product_name[]"]');
               const descInput = productItem.querySelector('input[name="product_description[]"]');
               const exportInput = productItem.querySelector('input[name="annual_export[]"]');
+              const certInput = productItem.querySelector('input[name="product_certifications[]"]');
+              const currentMarketsInput = productItem.querySelector('input[name="product_current_markets[]"]');
               
               if (nameInput) nameInput.value = product.name || '';
               if (descInput) descInput.value = product.description || '';
               if (exportInput) exportInput.value = product.annual_export || '';
+              if (certInput) certInput.value = product.certifications || '';
+              
+              // Заполнение Mercados Actuales
+              if (currentMarketsInput && product.current_markets) {
+                currentMarketsInput.value = product.current_markets;
+                const dropdown = currentMarketsInput.closest('.custom-dropdown');
+                if (dropdown && typeof initCustomDropdown === 'function') {
+                  initCustomDropdown(dropdown, currentMarketsInput);
+                  const options = dropdown.querySelectorAll('.dropdown-option');
+                  for (let option of options) {
+                    if (option.dataset.value === product.current_markets) {
+                      const selectedText = dropdown.querySelector('.selected-text');
+                      if (selectedText) selectedText.textContent = option.textContent;
+                      option.classList.add('selected');
+                      break;
+                    }
+                  }
+                }
+              }
+              
+              // Заполнение Mercados de Interés (если есть в данных)
+              if (product.target_markets && Array.isArray(product.target_markets) && product.target_markets.length > 0) {
+                const mercadosBox = productItem.querySelector('.mercados_act');
+                if (mercadosBox) {
+                  const actList = mercadosBox.querySelector('.act-list');
+                  const actAdd = mercadosBox.querySelector('.act-add');
+                  if (actList && actAdd) {
+                    product.target_markets.forEach((market, idx) => {
+                      if (idx === 0) {
+                        const firstRow = actList.querySelector('.act-row');
+                        if (firstRow) {
+                          const dropdown = firstRow.querySelector('.custom-dropdown');
+                          const hiddenInput = firstRow.querySelector('input[type="hidden"]');
+                          if (dropdown && hiddenInput) {
+                            hiddenInput.value = market;
+                            if (typeof initCustomDropdown === 'function') {
+                              initCustomDropdown(dropdown, hiddenInput);
+                              const options = dropdown.querySelectorAll('.dropdown-option');
+                              for (let option of options) {
+                                if (option.dataset.value === market) {
+                                  const selectedText = dropdown.querySelector('.selected-text');
+                                  if (selectedText) selectedText.textContent = option.textContent;
+                                  option.classList.add('selected');
+                                  break;
+                                }
+                              }
+                            }
+                          }
+                        }
+                      } else {
+                        actAdd.click();
+                        setTimeout(() => {
+                          const rows = actList.querySelectorAll('.act-row');
+                          const newRow = rows[rows.length - 1];
+                          if (newRow) {
+                            const dropdown = newRow.querySelector('.custom-dropdown');
+                            const hiddenInput = newRow.querySelector('input[type="hidden"]');
+                            if (dropdown && hiddenInput) {
+                              hiddenInput.value = market;
+                              if (typeof initCustomDropdown === 'function') {
+                                initCustomDropdown(dropdown, hiddenInput);
+                                const options = dropdown.querySelectorAll('.dropdown-option');
+                                for (let option of options) {
+                                  if (option.dataset.value === market) {
+                                    const selectedText = dropdown.querySelector('.selected-text');
+                                    if (selectedText) selectedText.textContent = option.textContent;
+                                    option.classList.add('selected');
+                                    break;
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }, 100);
+                      }
+                    });
+                  }
+                }
+              }
               
               if (product.id) {
                 let hiddenInput = productItem.querySelector('input[type="hidden"][name="product_id[]"]');
@@ -4433,8 +4706,8 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
               }
             });
             
-            if (window.updateProductRemoveButtons) {
-              window.updateProductRemoveButtons();
+            if (window.updateRemoveButtons) {
+              window.updateRemoveButtons();
             }
           }
         }
@@ -4458,17 +4731,13 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
             }
           });
           
-          const servicesContainer = document.querySelector('.services-container');
-          const servicesList = servicesContainer ? servicesContainer.querySelector('.services-list') : null;
+          const itemsList = document.querySelector('.items-list');
           const serviceTemplate = document.querySelector('.service-item-tpl');
           
-          if (servicesList && serviceTemplate) {
-            // Очистить существующие элементы
-            servicesList.innerHTML = '';
-            
+          if (itemsList && serviceTemplate) {
             allServices.forEach((service, index) => {
               const serviceItem = serviceTemplate.content.firstElementChild.cloneNode(true);
-              servicesList.appendChild(serviceItem);
+              itemsList.insertBefore(serviceItem, itemsList.firstChild);
               
               if (window.bindServiceItemEvents) {
                 window.bindServiceItemEvents(serviceItem);
@@ -4498,10 +4767,91 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
               const nameInput = serviceItem.querySelector('input[name="service_name[]"]');
               const descInput = serviceItem.querySelector('input[name="service_description[]"]');
               const exportInput = serviceItem.querySelector('input[name="annual_export[]"]');
+              const certInput = serviceItem.querySelector('input[name="service_certifications[]"]');
+              const currentMarketsInput = serviceItem.querySelector('input[name="service_current_markets[]"]');
               
               if (nameInput) nameInput.value = service.name || '';
               if (descInput) descInput.value = service.description || '';
               if (exportInput) exportInput.value = service.annual_export || '';
+              if (certInput) certInput.value = service.certifications || '';
+              
+              // Заполнение Mercados Actuales
+              if (currentMarketsInput && service.current_markets) {
+                currentMarketsInput.value = service.current_markets;
+                const dropdown = currentMarketsInput.closest('.custom-dropdown');
+                if (dropdown && typeof initCustomDropdown === 'function') {
+                  initCustomDropdown(dropdown, currentMarketsInput);
+                  const options = dropdown.querySelectorAll('.dropdown-option');
+                  for (let option of options) {
+                    if (option.dataset.value === service.current_markets) {
+                      const selectedText = dropdown.querySelector('.selected-text');
+                      if (selectedText) selectedText.textContent = option.textContent;
+                      option.classList.add('selected');
+                      break;
+                    }
+                  }
+                }
+              }
+              
+              // Заполнение Mercados de Interés (если есть в данных)
+              if (service.target_markets && Array.isArray(service.target_markets) && service.target_markets.length > 0) {
+                const mercadosBox = serviceItem.querySelector('.mercados_act');
+                if (mercadosBox) {
+                  const actList = mercadosBox.querySelector('.act-list');
+                  const actAdd = mercadosBox.querySelector('.act-add');
+                  if (actList && actAdd) {
+                    service.target_markets.forEach((market, idx) => {
+                      if (idx === 0) {
+                        const firstRow = actList.querySelector('.act-row');
+                        if (firstRow) {
+                          const dropdown = firstRow.querySelector('.custom-dropdown');
+                          const hiddenInput = firstRow.querySelector('input[type="hidden"]');
+                          if (dropdown && hiddenInput) {
+                            hiddenInput.value = market;
+                            if (typeof initCustomDropdown === 'function') {
+                              initCustomDropdown(dropdown, hiddenInput);
+                              const options = dropdown.querySelectorAll('.dropdown-option');
+                              for (let option of options) {
+                                if (option.dataset.value === market) {
+                                  const selectedText = dropdown.querySelector('.selected-text');
+                                  if (selectedText) selectedText.textContent = option.textContent;
+                                  option.classList.add('selected');
+                                  break;
+                                }
+                              }
+                            }
+                          }
+                        }
+                      } else {
+                        actAdd.click();
+                        setTimeout(() => {
+                          const rows = actList.querySelectorAll('.act-row');
+                          const newRow = rows[rows.length - 1];
+                          if (newRow) {
+                            const dropdown = newRow.querySelector('.custom-dropdown');
+                            const hiddenInput = newRow.querySelector('input[type="hidden"]');
+                            if (dropdown && hiddenInput) {
+                              hiddenInput.value = market;
+                              if (typeof initCustomDropdown === 'function') {
+                                initCustomDropdown(dropdown, hiddenInput);
+                                const options = dropdown.querySelectorAll('.dropdown-option');
+                                for (let option of options) {
+                                  if (option.dataset.value === market) {
+                                    const selectedText = dropdown.querySelector('.selected-text');
+                                    if (selectedText) selectedText.textContent = option.textContent;
+                                    option.classList.add('selected');
+                                    break;
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }, 100);
+                      }
+                    });
+                  }
+                }
+              }
               
               if (service.id) {
                 let hiddenInput = serviceItem.querySelector('input[type="hidden"][name="service_id[]"]');
@@ -4515,23 +4865,9 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
               }
             });
             
-            if (window.updateServiceRemoveButtons) {
-              window.updateServiceRemoveButtons();
+            if (window.updateRemoveButtons) {
+              window.updateRemoveButtons();
             }
-          }
-        }
-        
-        // Заполняем certifications (общее для всех)
-        const firstItem = (result.products && result.products.all && result.products.all.length > 0) 
-          ? result.products.all[0] 
-          : (result.services && result.services.all && result.services.all.length > 0) 
-            ? result.services.all[0] 
-            : null;
-        
-        if (firstItem && firstItem.certifications) {
-          const certificationsInput = document.querySelector('input[name="certifications"]');
-          if (certificationsInput) {
-            certificationsInput.value = firstItem.certifications || '';
           }
         }
       }
@@ -4567,7 +4903,7 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
 })();
 </script>
 
-<script src="js/i18n.js?v=1.0.3"></script>
+<script src="js/i18n.js?v=1.0.4"></script>
 <script>
 function toggleRegfullLangMenu() {
   const menu = document.getElementById('regfull_lang_menu');

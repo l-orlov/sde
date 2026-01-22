@@ -249,15 +249,32 @@ try {
     
     // 5. Обновление company_data (все поля)
     // Загружаем текущие данные company_data
-    $query = "SELECT current_markets, target_markets, differentiation_factors, needs, 
-                     competitiveness, logistics, expectations, consents
-              FROM company_data WHERE company_id = ? LIMIT 1";
-    $stmt = mysqli_prepare($link, $query);
-    mysqli_stmt_bind_param($stmt, 'i', $companyId);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $currentCompanyData = mysqli_fetch_assoc($result);
-    mysqli_stmt_close($stmt);
+    $currentCompanyData = null;
+    
+    // Проверяем, существует ли таблица company_data и колонка current_markets
+    $checkTableQuery = "SHOW TABLES LIKE 'company_data'";
+    $checkTableResult = mysqli_query($link, $checkTableQuery);
+    $tableExists = ($checkTableResult && mysqli_num_rows($checkTableResult) > 0);
+    
+    if ($tableExists) {
+        $checkColumnQuery = "SHOW COLUMNS FROM company_data LIKE 'current_markets'";
+        $checkColumnResult = mysqli_query($link, $checkColumnQuery);
+        $columnExists = ($checkColumnResult && mysqli_num_rows($checkColumnResult) > 0);
+        
+        if ($columnExists) {
+            $query = "SELECT current_markets, target_markets, differentiation_factors, needs, 
+                         competitiveness, logistics, expectations, consents
+                  FROM company_data WHERE company_id = ? LIMIT 1";
+            $stmt = mysqli_prepare($link, $query);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'i', $companyId);
+                mysqli_stmt_execute($stmt);
+                $result = mysqli_stmt_get_result($stmt);
+                $currentCompanyData = mysqli_fetch_assoc($result);
+                mysqli_stmt_close($stmt);
+            }
+        }
+    }
     
     // Парсим текущие JSON данные
     $currentCompetitiveness = $currentCompanyData && $currentCompanyData['competitiveness'] 

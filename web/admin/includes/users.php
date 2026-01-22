@@ -362,14 +362,15 @@ function setupFormEventHandlers() {
 	const addProductBtn = document.getElementById('add_product_btn');
 	if (addProductBtn) {
 		addProductBtn.addEventListener('click', function() {
-			const container = document.getElementById('products_list_container');
+			const container = document.getElementById('items_list_container');
 			if (!container) return;
 			
 			const productItems = container.querySelectorAll('.product-item-admin');
 			const newIndex = productItems.length;
 			
-			const newProductHtml = '<div class="product-item-admin" data-product-id="" data-product-index="' + newIndex + '" data-product-type="product">' +
-				'<h5 style="margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Producto ' + (newIndex + 1) + '</h5>' +
+			const newProductHtml = '<div class="product-item-admin" data-product-id="" data-product-index="' + newIndex + '" data-product-type="product" style="position: relative; margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">' +
+				'<div class="item-badge-admin item-badge-product-admin" style="position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; color: #fff; background: #4CAF50; text-transform: uppercase; z-index: 10;">Producto</div>' +
+				'<h5 style="margin-top: 30px; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Producto ' + (newIndex + 1) + '</h5>' +
 				'<div class="form-group"><label>Producto <span class="req">*</span></label>' +
 				'<input type="text" class="form-control product-name" data-index="' + newIndex + '" value="" required></div>' +
 				'<div class="form-group"><label>Descripción <span class="req">*</span></label>' +
@@ -378,7 +379,12 @@ function setupFormEventHandlers() {
 				'<input type="text" class="form-control product-export" data-index="' + newIndex + '" value=""></div>' +
 				'</div>';
 			
-			container.insertAdjacentHTML('beforeend', newProductHtml);
+			// Добавляем в начало списка
+			if (container.firstChild) {
+				container.insertAdjacentHTML('afterbegin', newProductHtml);
+			} else {
+				container.insertAdjacentHTML('beforeend', newProductHtml);
+			}
 		});
 	}
 	
@@ -386,7 +392,7 @@ function setupFormEventHandlers() {
 	const addServiceBtn = document.getElementById('add_service_btn');
 	if (addServiceBtn) {
 		addServiceBtn.addEventListener('click', function() {
-			const container = document.getElementById('services_list_container');
+			const container = document.getElementById('items_list_container');
 			if (!container) return;
 			
 			const serviceItems = container.querySelectorAll('.service-item-admin');
@@ -420,8 +426,9 @@ function setupFormEventHandlers() {
 				activityOptionsHtml += '<option value="' + option.replace(/'/g, "&#39;") + '">' + option + '</option>';
 			});
 			
-			const newServiceHtml = '<div class="service-item-admin" data-service-id="" data-service-index="' + newIndex + '" data-service-type="service">' +
-				'<h5 style="margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Servicio ' + (newIndex + 1) + '</h5>' +
+			const newServiceHtml = '<div class="service-item-admin" data-service-id="" data-service-index="' + newIndex + '" data-service-type="service" style="position: relative; margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">' +
+				'<div class="item-badge-admin item-badge-service-admin" style="position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; color: #fff; background: #FF9800; text-transform: uppercase; z-index: 10;">Servicio</div>' +
+				'<h5 style="margin-top: 30px; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Servicio ' + (newIndex + 1) + '</h5>' +
 				'<div class="form-group"><label>Actividad <span class="req">*</span></label>' +
 				'<select class="form-control service-activity" data-index="' + newIndex + '" required>' + activityOptionsHtml + '</select></div>' +
 				'<div class="form-group"><label>Servicio <span class="req">*</span></label>' +
@@ -432,7 +439,12 @@ function setupFormEventHandlers() {
 				'<input type="text" class="form-control service-export" data-index="' + newIndex + '" value=""></div>' +
 				'</div>';
 			
-			container.insertAdjacentHTML('beforeend', newServiceHtml);
+			// Добавляем в начало списка
+			if (container.firstChild) {
+				container.insertAdjacentHTML('afterbegin', newServiceHtml);
+			} else {
+				container.insertAdjacentHTML('beforeend', newServiceHtml);
+			}
 		});
 	}
 	

@@ -26,10 +26,23 @@ try {
     global $link;
     
     // Загружаем все продукты и услуги с учетом type
-    $query = "SELECT id, is_main, type, activity, name, description, annual_export, certifications
-              FROM products
-              WHERE user_id = ?
-              ORDER BY id ASC";
+    // Проверяем, есть ли поля current_markets и target_markets в таблице products
+    $checkFieldsQuery = "SHOW COLUMNS FROM products LIKE 'current_markets'";
+    $checkResult = $link->query($checkFieldsQuery);
+    $hasCurrentMarketsField = ($checkResult && $checkResult->num_rows > 0);
+    
+    if ($hasCurrentMarketsField) {
+        $query = "SELECT id, is_main, type, activity, name, description, annual_export, certifications, current_markets, target_markets
+                  FROM products
+                  WHERE user_id = ?
+                  ORDER BY type ASC, id ASC";
+    } else {
+        $query = "SELECT id, is_main, type, activity, name, description, annual_export, certifications
+                  FROM products
+                  WHERE user_id = ?
+                  ORDER BY type ASC, id ASC";
+    }
+    
     $stmt = $link->prepare($query);
     $stmt->bind_param("i", $userId);
     $stmt->execute();
@@ -41,10 +54,17 @@ try {
     $hasServices = false;
     
     while ($row = $result->fetch_assoc()) {
+        // Определяем тип продукта/услуги
+        $itemType = $row['type'] ?? null;
+        // Если type пустой, NULL или не равен 'service', считаем продуктом
+        if (empty($itemType) || $itemType === '' || $itemType !== 'service') {
+            $itemType = 'product';
+        }
+        
         $item = [
             'id' => intval($row['id']),
             'is_main' => (bool)$row['is_main'],
-            'type' => $row['type'] ?? 'product',
+            'type' => $itemType,
             'activity' => $row['activity'] ?? null,
             'name' => $row['name'],
             'description' => $row['description'] ?? '',
@@ -52,7 +72,22 @@ try {
             'certifications' => $row['certifications'] ?? ''
         ];
         
-        if ($row['type'] === 'service') {
+        // Добавляем current_markets и target_markets если они есть
+        if ($hasCurrentMarketsField) {
+            $item['current_markets'] = $row['current_markets'] ?? '';
+            $targetMarkets = $row['target_markets'] ?? null;
+            if ($targetMarkets) {
+                $decoded = json_decode($targetMarkets, true);
+                $item['target_markets'] = ($decoded !== null && is_array($decoded)) ? $decoded : [];
+            } else {
+                $item['target_markets'] = [];
+            }
+        } else {
+            $item['current_markets'] = '';
+            $item['target_markets'] = [];
+        }
+        
+        if ($itemType === 'service') {
             $allServices[] = $item;
             $hasServices = true;
         } else {
