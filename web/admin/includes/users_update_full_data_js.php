@@ -118,7 +118,10 @@ try {
     mysqli_stmt_close($stmt);
     
     // 2. Обновление продуктов и услуг (массив)
-    $certifications = isset($input['certifications']) ? htmlspecialchars(trim($input['certifications'])) : '';
+    // Проверяем, есть ли поля current_markets и target_markets в таблице products
+    $checkFieldsQuery = "SHOW COLUMNS FROM products LIKE 'current_markets'";
+    $checkResult = mysqli_query($link, $checkFieldsQuery);
+    $hasMarketsFields = ($checkResult && mysqli_num_rows($checkResult) > 0);
     
     if (isset($input['products']) && is_array($input['products'])) {
         // Загружаем все существующие продукты и услуги
@@ -163,6 +166,8 @@ try {
             $itemDescription = isset($item['description']) ? htmlspecialchars(trim($item['description'])) : '';
             $itemAnnualExport = isset($item['annual_export']) ? htmlspecialchars(trim($item['annual_export'])) : '';
             $itemActivity = isset($item['activity']) ? htmlspecialchars(trim($item['activity'])) : null;
+            $itemCertifications = isset($item['certifications']) ? htmlspecialchars(trim($item['certifications'])) : '';
+            $itemCurrentMarkets = isset($item['current_markets']) ? htmlspecialchars(trim($item['current_markets'])) : '';
             
             // Определяем is_main: первый продукт или первая услуга
             $isMain = 0;
@@ -174,16 +179,30 @@ try {
             
             if ($itemId && in_array($itemId, $existingProductIds)) {
                 // Обновляем существующий продукт/услугу
-                if ($itemType === 'service') {
-                    $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?, updated_at = UNIX_TIMESTAMP()
-                              WHERE id = ?";
-                    $stmt = mysqli_prepare($link, $query);
-                    mysqli_stmt_bind_param($stmt, 'ssssssii', $itemType, $itemActivity, $itemName, $itemDescription, $itemAnnualExport, $certifications, $isMain, $itemId);
+                if ($hasMarketsFields) {
+                    if ($itemType === 'service') {
+                        $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, current_markets = ?, is_main = ?, updated_at = UNIX_TIMESTAMP()
+                                  WHERE id = ?";
+                        $stmt = mysqli_prepare($link, $query);
+                        mysqli_stmt_bind_param($stmt, 'sssssssii', $itemType, $itemActivity, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $itemCurrentMarkets, $isMain, $itemId);
+                    } else {
+                        $query = "UPDATE products SET type = ?, name = ?, description = ?, annual_export = ?, certifications = ?, current_markets = ?, is_main = ?, updated_at = UNIX_TIMESTAMP()
+                                  WHERE id = ?";
+                        $stmt = mysqli_prepare($link, $query);
+                        mysqli_stmt_bind_param($stmt, 'ssssssii', $itemType, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $itemCurrentMarkets, $isMain, $itemId);
+                    }
                 } else {
-                    $query = "UPDATE products SET type = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?, updated_at = UNIX_TIMESTAMP()
-                              WHERE id = ?";
-                    $stmt = mysqli_prepare($link, $query);
-                    mysqli_stmt_bind_param($stmt, 'sssssii', $itemType, $itemName, $itemDescription, $itemAnnualExport, $certifications, $isMain, $itemId);
+                    if ($itemType === 'service') {
+                        $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?, updated_at = UNIX_TIMESTAMP()
+                                  WHERE id = ?";
+                        $stmt = mysqli_prepare($link, $query);
+                        mysqli_stmt_bind_param($stmt, 'ssssssii', $itemType, $itemActivity, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $isMain, $itemId);
+                    } else {
+                        $query = "UPDATE products SET type = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?, updated_at = UNIX_TIMESTAMP()
+                                  WHERE id = ?";
+                        $stmt = mysqli_prepare($link, $query);
+                        mysqli_stmt_bind_param($stmt, 'sssssii', $itemType, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $isMain, $itemId);
+                    }
                 }
                 
                 if (!mysqli_stmt_execute($stmt)) {
@@ -194,16 +213,30 @@ try {
                 $submittedProductIds[] = $itemId;
             } else {
                 // Создаем новый продукт/услугу
-                if ($itemType === 'service') {
-                    $query = "INSERT INTO products (company_id, user_id, type, activity, is_main, name, description, annual_export, certifications) 
-                              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                    $stmt = mysqli_prepare($link, $query);
-                    mysqli_stmt_bind_param($stmt, 'iississss', $companyId, $userId, $itemType, $itemActivity, $isMain, $itemName, $itemDescription, $itemAnnualExport, $certifications);
+                if ($hasMarketsFields) {
+                    if ($itemType === 'service') {
+                        $query = "INSERT INTO products (company_id, user_id, type, activity, is_main, name, description, annual_export, certifications, current_markets) 
+                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        $stmt = mysqli_prepare($link, $query);
+                        mysqli_stmt_bind_param($stmt, 'iississsss', $companyId, $userId, $itemType, $itemActivity, $isMain, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $itemCurrentMarkets);
+                    } else {
+                        $query = "INSERT INTO products (company_id, user_id, type, is_main, name, description, annual_export, certifications, current_markets) 
+                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        $stmt = mysqli_prepare($link, $query);
+                        mysqli_stmt_bind_param($stmt, 'iisisssss', $companyId, $userId, $itemType, $isMain, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $itemCurrentMarkets);
+                    }
                 } else {
-                    $query = "INSERT INTO products (company_id, user_id, type, is_main, name, description, annual_export, certifications) 
-                              VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-                    $stmt = mysqli_prepare($link, $query);
-                    mysqli_stmt_bind_param($stmt, 'iisissss', $companyId, $userId, $itemType, $isMain, $itemName, $itemDescription, $itemAnnualExport, $certifications);
+                    if ($itemType === 'service') {
+                        $query = "INSERT INTO products (company_id, user_id, type, activity, is_main, name, description, annual_export, certifications) 
+                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        $stmt = mysqli_prepare($link, $query);
+                        mysqli_stmt_bind_param($stmt, 'iississss', $companyId, $userId, $itemType, $itemActivity, $isMain, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications);
+                    } else {
+                        $query = "INSERT INTO products (company_id, user_id, type, is_main, name, description, annual_export, certifications) 
+                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                        $stmt = mysqli_prepare($link, $query);
+                        mysqli_stmt_bind_param($stmt, 'iisissss', $companyId, $userId, $itemType, $isMain, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications);
+                    }
                 }
                 
                 if (!mysqli_stmt_execute($stmt)) {

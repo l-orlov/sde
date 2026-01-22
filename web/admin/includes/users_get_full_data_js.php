@@ -134,10 +134,24 @@ try {
     // 5. Продукты и услуги (загружаем все, не только main)
     $products = ['all' => [], 'main' => null];
     $services = ['all' => [], 'main' => null];
-    $query = "SELECT id, is_main, type, activity, name, description, annual_export, certifications
-              FROM products
-              WHERE user_id = ?
-              ORDER BY type, id ASC";
+    
+    // Проверяем, есть ли поля current_markets и target_markets в таблице products
+    $checkFieldsQuery = "SHOW COLUMNS FROM products LIKE 'current_markets'";
+    $checkResult = mysqli_query($link, $checkFieldsQuery);
+    $hasMarketsFields = ($checkResult && mysqli_num_rows($checkResult) > 0);
+    
+    if ($hasMarketsFields) {
+        $query = "SELECT id, is_main, type, activity, name, description, annual_export, certifications, current_markets, target_markets
+                  FROM products
+                  WHERE user_id = ?
+                  ORDER BY type, id ASC";
+    } else {
+        $query = "SELECT id, is_main, type, activity, name, description, annual_export, certifications
+                  FROM products
+                  WHERE user_id = ?
+                  ORDER BY type, id ASC";
+    }
+    
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $userId);
     mysqli_stmt_execute($stmt);
@@ -163,6 +177,21 @@ try {
             'annual_export' => $row['annual_export'] ?? '',
             'certifications' => $row['certifications'] ?? ''
         ];
+        
+        // Добавляем current_markets и target_markets если они есть
+        if ($hasMarketsFields) {
+            $itemData['current_markets'] = $row['current_markets'] ?? '';
+            $targetMarkets = $row['target_markets'] ?? null;
+            if ($targetMarkets) {
+                $decoded = json_decode($targetMarkets, true);
+                $itemData['target_markets'] = ($decoded !== null && is_array($decoded)) ? $decoded : [];
+            } else {
+                $itemData['target_markets'] = [];
+            }
+        } else {
+            $itemData['current_markets'] = '';
+            $itemData['target_markets'] = [];
+        }
         
         if ($itemType === 'service') {
             $allServices[] = $itemData;

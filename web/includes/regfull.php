@@ -1001,7 +1001,8 @@ document.addEventListener('DOMContentLoaded', () => {
     allItems.forEach((item, index) => {
       const removeBtn = item.querySelector('.remove-product, .remove-service');
       if (removeBtn) {
-        removeBtn.hidden = (allItems.length === 1);
+        // Всегда показываем кнопку удаления, можно удалять все элементы
+        removeBtn.hidden = false;
       }
     });
   }
@@ -1053,6 +1054,56 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!list.children.length) addRow();
   }
   
+  // Функция для удаления продукта/услуги
+  async function deleteProductOrService(item, isService = false) {
+    // Проверяем наличие ID (если элемент уже сохранен в БД)
+    const hiddenInput = item.querySelector(isService ? 'input[type="hidden"][name="service_id[]"]' : 'input[type="hidden"][name="product_id[]"]');
+    const productId = hiddenInput ? parseInt(hiddenInput.value, 10) : null;
+    
+    // Если элемент новый (нет ID), просто удаляем из DOM
+    if (!productId || isNaN(productId)) {
+      item.remove();
+      updateRemoveButtons();
+      return;
+    }
+    
+    // Если элемент сохранен в БД, показываем подтверждение
+    const itemType = isService ? 'servicio' : 'producto';
+    const itemName = item.querySelector(isService ? 'input[name="service_name[]"]' : 'input[name="product_name[]"]')?.value || itemType;
+    
+    if (!confirm(`¿Está seguro de que desea eliminar el ${itemType} "${itemName}"?\n\nEsta acción no se puede deshacer.`)) {
+      return;
+    }
+    
+    // Отправляем запрос на удаление
+    try {
+      const response = await fetch('includes/regfull_delete_product_js.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ product_id: productId })
+      });
+      
+      const result = await response.json();
+      
+      if (result.ok === 1) {
+        // Показываем сообщение об успехе
+        alert(result.res || `${itemType} eliminado correctamente.`);
+        
+        // Удаляем элемент из DOM
+        item.remove();
+        updateRemoveButtons();
+      } else {
+        // Показываем сообщение об ошибке и оставляем элемент
+        alert('Error: ' + (result.err || 'No se pudo eliminar el ' + itemType + '.'));
+      }
+    } catch (error) {
+      console.error('Error deleting product/service:', error);
+      alert('Error de conexión. No se pudo eliminar el ' + itemType + '.');
+    }
+  }
+  
   // Привязка обработчиков для продукта
   function bindProductItemEvents(item) {
     bindFileInputEvents(item);
@@ -1071,11 +1122,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const removeBtn = item.querySelector('.remove-product');
     if (removeBtn && !removeBtn._bound) {
-      removeBtn.addEventListener('click', () => {
-        const allItems = itemsList.querySelectorAll('.product-item, .service-item');
-        if (allItems.length <= 1) return;
-        item.remove();
-        updateRemoveButtons();
+      removeBtn.addEventListener('click', async () => {
+        await deleteProductOrService(item, false);
       });
       removeBtn._bound = true;
     }
@@ -1108,11 +1156,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const removeBtn = item.querySelector('.remove-service');
     if (removeBtn && !removeBtn._bound) {
-      removeBtn.addEventListener('click', () => {
-        const allItems = itemsList.querySelectorAll('.product-item, .service-item');
-        if (allItems.length <= 1) return;
-        item.remove();
-        updateRemoveButtons();
+      removeBtn.addEventListener('click', async () => {
+        await deleteProductOrService(item, true);
       });
       removeBtn._bound = true;
     }

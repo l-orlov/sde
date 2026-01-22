@@ -56,10 +56,6 @@ function initChangeTracking(data) {
                 mainActivityField.value = originalFormData.main_activity;
             }
             
-            const currentMarketsField = document.getElementById('form_current_markets');
-            if (currentMarketsField && originalFormData.current_markets) {
-                currentMarketsField.value = originalFormData.current_markets;
-            }
             
             // Добавляем обработчики событий для всех редактируемых полей
             setupChangeTracking();
@@ -73,7 +69,7 @@ function setupChangeTracking() {
         'form_user_email', 'form_user_phone',
         'form_name', 'form_tax_id', 'form_legal_name', 'form_start_date', 'form_website',
         'form_main_product_name', 'form_main_product_description',
-        'form_main_product_annual_export', 'form_certifications'
+        'form_main_product_annual_export'
     ];
     
     textFields.forEach(fieldId => {
@@ -104,7 +100,7 @@ function setupChangeTracking() {
     // Dropdown поля (select)
     const selectFields = [
         'form_user_is_admin',
-        'form_organization_type', 'form_main_activity', 'form_current_markets'
+        'form_organization_type', 'form_main_activity'
     ];
     
     selectFields.forEach(fieldId => {
@@ -151,9 +147,7 @@ function getOriginalValue(fieldId) {
         'form_main_activity': 'main_activity',
         'form_main_product_name': 'main_product.name',
         'form_main_product_description': 'main_product.description',
-        'form_main_product_annual_export': 'main_product.annual_export',
-        'form_certifications': 'main_product.certifications',
-        'form_current_markets': 'current_markets'
+        'form_main_product_annual_export': 'main_product.annual_export'
     };
     
     const path = fieldMap[fieldId];
@@ -362,11 +356,6 @@ function generateUserFormHTML(data, userId) {
     
     const hasItems = allItems.length > 0;
     
-    // Certificaciones (общие для всех продуктов/услуг, берем из первого элемента)
-    const certificationsValue = hasItems && allItems.length > 0 ? (allItems[0].certifications || '') : '';
-    html += '<div class="form-group"><label>Certificaciones</label>';
-    html += '<textarea class="form-control" id="form_certifications">' + escapeHtml(certificationsValue) + '</textarea></div>';
-    
     // Единый контейнер для всех продуктов и услуг
     html += '<div id="items_list_container" style="margin-top: 20px;">';
     
@@ -392,6 +381,28 @@ function generateUserFormHTML(data, userId) {
             
             html += '<div class="form-group"><label>Exportación Anual (USD)</label>';
             html += '<input type="text" class="form-control product-export" data-index="' + itemIndex + '" value="' + escapeHtml(item.annual_export || '') + '"></div>';
+            
+            // Certificaciones (индивидуальное для каждого продукта)
+            html += '<div class="form-group"><label>Certificaciones</label>';
+            html += '<textarea class="form-control product-certifications" data-index="' + itemIndex + '" data-product-id="' + (itemId || '') + '">' + escapeHtml(item.certifications || '') + '</textarea></div>';
+            
+            // Mercados Actuales (индивидуальное для каждого продукта)
+            const markets = ['América del Norte', 'América del Sur', 'Europa', 'Asia', 'África', 'Oceanía'];
+            const currentMarketsValue = item.current_markets || '';
+            html += '<div class="form-group"><label>Mercados Actuales (Continente) <span class="req">*</span></label>';
+            html += '<select class="form-control product-current-markets" data-index="' + itemIndex + '" data-product-id="' + (itemId || '') + '" required>';
+            html += '<option value="">...</option>';
+            markets.forEach(market => {
+                const selected = (currentMarketsValue === market) ? ' selected' : '';
+                html += '<option value="' + escapeHtml(market) + '"' + selected + '>' + escapeHtml(market) + '</option>';
+            });
+            html += '</select></div>';
+            
+            // Mercados de Interés (индивидуальное для каждого продукта)
+            const targetMarketsValue = item.target_markets || [];
+            const targetMarketsDisplay = Array.isArray(targetMarketsValue) ? targetMarketsValue.join(', ') : escapeHtml(targetMarketsValue);
+            html += '<div class="form-group"><label>Mercados de Interés (Continente)</label>';
+            html += '<div class="readonly-field product-target-markets" data-index="' + itemIndex + '" data-product-id="' + (itemId || '') + '">' + targetMarketsDisplay + '</div></div>';
             
             // Фото продукта
             let productPhotos = [];
@@ -467,6 +478,28 @@ function generateUserFormHTML(data, userId) {
             html += '<div class="form-group"><label>Exportación Anual (USD)</label>';
             html += '<input type="text" class="form-control service-export" data-index="' + itemIndex + '" value="' + escapeHtml(item.annual_export || '') + '"></div>';
             
+            // Certificaciones (индивидуальное для каждой услуги)
+            html += '<div class="form-group"><label>Certificaciones</label>';
+            html += '<textarea class="form-control service-certifications" data-index="' + itemIndex + '" data-service-id="' + (itemId || '') + '">' + escapeHtml(item.certifications || '') + '</textarea></div>';
+            
+            // Mercados Actuales (индивидуальное для каждой услуги)
+            const markets = ['América del Norte', 'América del Sur', 'Europa', 'Asia', 'África', 'Oceanía'];
+            const currentMarketsValue = item.current_markets || '';
+            html += '<div class="form-group"><label>Mercados Actuales (Continente) <span class="req">*</span></label>';
+            html += '<select class="form-control service-current-markets" data-index="' + itemIndex + '" data-service-id="' + (itemId || '') + '" required>';
+            html += '<option value="">...</option>';
+            markets.forEach(market => {
+                const selected = (currentMarketsValue === market) ? ' selected' : '';
+                html += '<option value="' + escapeHtml(market) + '"' + selected + '>' + escapeHtml(market) + '</option>';
+            });
+            html += '</select></div>';
+            
+            // Mercados de Interés (индивидуальное для каждой услуги)
+            const targetMarketsValue = item.target_markets || [];
+            const targetMarketsDisplay = Array.isArray(targetMarketsValue) ? targetMarketsValue.join(', ') : escapeHtml(targetMarketsValue);
+            html += '<div class="form-group"><label>Mercados de Interés (Continente)</label>';
+            html += '<div class="readonly-field service-target-markets" data-index="' + itemIndex + '" data-service-id="' + (itemId || '') + '">' + targetMarketsDisplay + '</div></div>';
+            
             // Фото услуги
             let servicePhotos = [];
             if (itemId && files.service_photo && typeof files.service_photo === 'object') {
@@ -505,28 +538,6 @@ function generateUserFormHTML(data, userId) {
     html += '<button type="button" class="btn btn-secondary" id="add_product_btn" style="margin-right: 10px;">Agregar Producto</button>';
     html += '<button type="button" class="btn btn-secondary" id="add_service_btn">Agregar Servicio</button>';
     html += '</div>';
-    
-    // Mercados Actuales (редактируемое поле)
-    html += '<div class="form-group"><label>Mercados Actuales (Continente) <span class="req">*</span></label>';
-    html += '<select class="form-control" id="form_current_markets" required>';
-    html += '<option value="">...</option>';
-    const markets = ['América del Norte', 'América del Sur', 'Europa', 'Asia', 'África', 'Oceanía'];
-    const currentMarketsValue = companyData.current_markets || '';
-    // Если current_markets - массив (старый формат), берем первый элемент
-    const currentMarketsStr = Array.isArray(currentMarketsValue) ? (currentMarketsValue[0] || '') : currentMarketsValue;
-    markets.forEach(market => {
-        html += '<option value="' + escapeHtml(market) + '"' + (currentMarketsStr === market ? ' selected' : '') + '>' + escapeHtml(market) + '</option>';
-    });
-    html += '</select></div>';
-    
-    // Mercados de Interés (только чтение)
-    if (companyData.target_markets) {
-        const targetMarketsDisplay = Array.isArray(companyData.target_markets) 
-            ? companyData.target_markets.join(', ') 
-            : escapeHtml(companyData.target_markets);
-        html += '<div class="form-group"><label>Mercados de Interés (Continente)</label>';
-        html += '<div class="readonly-field">' + targetMarketsDisplay + '</div></div>';
-    }
     
     html += '</div>';
     
@@ -868,10 +879,6 @@ function saveUserFullData(userId) {
         main_activity: isFieldChanged('form_main_activity') 
             ? (document.getElementById('form_main_activity')?.value || '') 
             : (originalFormData.main_activity || ''),
-        current_markets: isFieldChanged('form_current_markets') 
-            ? (document.getElementById('form_current_markets')?.value || '') 
-            : (originalFormData.current_markets || ''),
-        certifications: getFieldValue('form_certifications', ''),
         // Продукты (массив)
         products: collectProductsData(),
         // Секция 4: Competitividad
@@ -1043,16 +1050,22 @@ function validateForm() {
         errors.push('Descripción del producto');
     }
     
-    // Mercados Actuales (обязательное поле)
-    const currentMarketsField = document.getElementById('form_current_markets');
-    const currentMarketsValue = isFieldChanged('form_current_markets') 
-        ? (currentMarketsField ? currentMarketsField.value : '') 
-        : (originalFormData.current_markets || '');
-    if (isFieldChanged('form_current_markets')) {
-        if (!currentMarketsValue) errors.push('Mercados Actuales (Continente)');
-    } else if (!originalFormData.current_markets) {
-        errors.push('Mercados Actuales (Continente)');
-    }
+    // Проверяем Mercados Actuales для каждого продукта/услуги
+    const productItems = document.querySelectorAll('.product-item-admin');
+    productItems.forEach((item, index) => {
+        const currentMarketsInput = item.querySelector('.product-current-markets');
+        if (currentMarketsInput && !currentMarketsInput.value) {
+            errors.push('Mercados Actuales (Continente) для Producto ' + (index + 1));
+        }
+    });
+    
+    const serviceItems = document.querySelectorAll('.service-item-admin');
+    serviceItems.forEach((item, index) => {
+        const currentMarketsInput = item.querySelector('.service-current-markets');
+        if (currentMarketsInput && !currentMarketsInput.value) {
+            errors.push('Mercados Actuales (Continente) para Servicio ' + (index + 1));
+        }
+    });
     
     return errors;
 }
@@ -1107,11 +1120,14 @@ function collectProductsData() {
     
     // Собираем продукты
     const productItems = document.querySelectorAll('.product-item-admin');
-    productItems.forEach((item, index) => {
+    productItems.forEach((item) => {
         const productId = item.getAttribute('data-product-id');
-        const nameInput = item.querySelector('.product-name[data-index="' + index + '"]');
-        const descInput = item.querySelector('.product-description[data-index="' + index + '"]');
-        const exportInput = item.querySelector('.product-export[data-index="' + index + '"]');
+        const itemIndex = item.getAttribute('data-product-index');
+        const nameInput = item.querySelector('.product-name');
+        const descInput = item.querySelector('.product-description');
+        const exportInput = item.querySelector('.product-export');
+        const certInput = item.querySelector('.product-certifications');
+        const currentMarketsInput = item.querySelector('.product-current-markets');
         
         if (nameInput && descInput) {
             products.push({
@@ -1119,19 +1135,24 @@ function collectProductsData() {
                 type: 'product',
                 name: nameInput.value.trim() || '',
                 description: descInput.value.trim() || '',
-                annual_export: exportInput ? exportInput.value.trim() : ''
+                annual_export: exportInput ? exportInput.value.trim() : '',
+                certifications: certInput ? certInput.value.trim() : '',
+                current_markets: currentMarketsInput ? currentMarketsInput.value.trim() : ''
             });
         }
     });
     
     // Собираем услуги
     const serviceItems = document.querySelectorAll('.service-item-admin');
-    serviceItems.forEach((item, index) => {
+    serviceItems.forEach((item) => {
         const serviceId = item.getAttribute('data-service-id');
-        const activitySelect = item.querySelector('.service-activity[data-index="' + index + '"]');
-        const nameInput = item.querySelector('.service-name[data-index="' + index + '"]');
-        const descInput = item.querySelector('.service-description[data-index="' + index + '"]');
-        const exportInput = item.querySelector('.service-export[data-index="' + index + '"]');
+        const itemIndex = item.getAttribute('data-service-index');
+        const activitySelect = item.querySelector('.service-activity');
+        const nameInput = item.querySelector('.service-name');
+        const descInput = item.querySelector('.service-description');
+        const exportInput = item.querySelector('.service-export');
+        const certInput = item.querySelector('.service-certifications');
+        const currentMarketsInput = item.querySelector('.service-current-markets');
         
         if (nameInput && descInput && activitySelect) {
             services.push({
@@ -1140,7 +1161,9 @@ function collectProductsData() {
                 activity: activitySelect.value.trim() || '',
                 name: nameInput.value.trim() || '',
                 description: descInput.value.trim() || '',
-                annual_export: exportInput ? exportInput.value.trim() : ''
+                annual_export: exportInput ? exportInput.value.trim() : '',
+                certifications: certInput ? certInput.value.trim() : '',
+                current_markets: currentMarketsInput ? currentMarketsInput.value.trim() : ''
             });
         }
     });
