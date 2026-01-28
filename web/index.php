@@ -14,7 +14,7 @@ DBconnect();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>sde</title>
-    <link rel="stylesheet" href="css/style.css?t=<?=time()?>">
+    <link rel="stylesheet" href="css/style.css?v=<?= asset_version('css/style.css') ?>">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="img/icons/logo_icon.png">
     <link rel="shortcut icon" type="image/png" href="img/icons/logo_icon.png">

@@ -8,7 +8,15 @@ async function setLang(page, lang) {
   localStorage.setItem('lang', lang);
 
   try {
-    const url = `lang/${page}/${lang}.json?v=1.0.4`;
+    let v = '';
+    try {
+      const s = document.querySelector('script[src*="i18n.js"]');
+      if (s && s.src) {
+        const m = s.src.match(/[?&]v=([^&]+)/);
+        v = m ? m[1] : '';
+      }
+    } catch (e) {}
+    const url = `lang/${page}/${lang}.json` + (v ? '?v=' + v : '');
     const res = await fetch(url);
 
     if (!res.ok) {

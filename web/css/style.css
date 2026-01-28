@@ -2131,7 +2131,7 @@ to {
 .estadio-text-column {
   flex: 0 0 45%;
   background-color: white;
-  padding: 60px 50px 0 50px;
+  padding: 60px 50px 0 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -2174,7 +2174,7 @@ to {
   padding: 30px 30px;
 }
 .estadio-text-column {
-  padding: 40px 30px;
+  padding: 40px 30px 40px 0;
 }
 .estadio-title {
   font-size: 36px;
@@ -2259,7 +2259,7 @@ to {
 .termal-text-column {
   flex: 0 0 45%;
   background-color: white;
-  padding: 60px 50px 0 50px;
+  padding: 60px 0 0 50px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -2311,7 +2311,7 @@ to {
   padding: 30px 30px;
 }
 .termal-text-column {
-  padding: 40px 30px 0 30px;
+  padding: 40px 0 0 30px;
 }
 .termal-title {
   font-size: 36px;
@@ -2381,43 +2381,142 @@ to {
 }
 .gallery-container {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.gallery-row {
+  width: 100%;
 }
 .gallery-item {
-  width: calc(25% - 15px);
-  margin-bottom: 20px;
   overflow: hidden;
   position: relative;
   cursor: pointer;
+  border-radius: 20px;
 }
 .gallery-image {
   width: 100%;
-  height: auto;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
   border-radius: 20px;
   display: block;
   transition: transform 0.3s ease;
 }
-/* RESPONSIVE */
+/* Ряд 1 — четыре кадра в ряд, чуть выше чем шире */
+.gallery-row-1 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+.gallery-row-1 .gallery-item {
+  aspect-ratio: 3 / 4;
+}
+/* Ряд 2 — равная высота, разная ширина (пропорции со скриншота: 0.79 : 0.60 : 1.05 : 0.72) */
+.gallery-row-2 {
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+  aspect-ratio: 3 / 1;
+}
+.gallery-row-2 .gallery-item {
+  flex: 0.79 0 0;
+  min-width: 0;
+}
+.gallery-row-2 .gallery-item:nth-child(1) { flex: 0.79 0 0; }
+.gallery-row-2 .gallery-item:nth-child(2) { flex: 0.60 0 0; }
+.gallery-row-2 .gallery-item:nth-child(3) { flex: 1.05 0 0; }
+.gallery-row-2 .gallery-item:nth-child(4) { flex: 0.72 0 0; }
+.gallery-row-3 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+.gallery-row-3 .gallery-item {
+  aspect-ratio: 3 / 4;
+}
+/* Оверлей при наведении (только на устройствах с hover, не на мобилках) */
+.gallery-item-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background-color: rgba(0, 51, 153, 0.31);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  text-align: center;
+  gap: 12px;
+}
+.gallery-item-title {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-transform: uppercase;
+  max-width: 100%;
+  word-wrap: break-word;
+  text-align: center;
+}
+.gallery-item-cta {
+  background-color: #003399;
+  color: #fff;
+  padding: 6px 20px;
+  border-radius: 25px;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-align: center;
+  text-transform: lowercase;
+}
+@media (hover: hover) {
+.gallery-item:hover .gallery-item-overlay {
+  opacity: 1;
+}
+.gallery-item:hover .gallery-image {
+  transform: scale(1.05);
+}}
+/* Средние экраны — 2 колонки */
 @media (max-width: 1024px) {
 .gallery-section {
   padding: 30px 30px;
 }
-.gallery-item {
-  width: calc(33.333% - 13.33px);
-}}
-@media (max-width: 768px) {
-.gallery-section {
-  padding: 30px 20px;
+.gallery-row-1 {
+  grid-template-columns: repeat(2, 1fr);
 }
-.gallery-item {
-  width: calc(50% - 10px);
+.gallery-row-2 {
+  flex-wrap: wrap;
+  aspect-ratio: auto;
+}
+.gallery-row-2 .gallery-item,
+.gallery-row-2 .gallery-item:nth-child(1),
+.gallery-row-2 .gallery-item:nth-child(2),
+.gallery-row-2 .gallery-item:nth-child(3),
+.gallery-row-2 .gallery-item:nth-child(4) {
+  flex: 1 1 calc(50% - 10px);
+  aspect-ratio: 4 / 3;
+}
+.gallery-row-3 {
+  grid-template-columns: repeat(2, 1fr);
 }}
+/* Мобильные — 1 колонка */
 @media (max-width: 480px) {
 .gallery-section {
   padding: 30px 15px;
 }
-.gallery-item {
-  width: 100%;
+.gallery-row-1,
+.gallery-row-3 {
+  grid-template-columns: 1fr;
+}
+.gallery-row-2 .gallery-item,
+.gallery-row-2 .gallery-item:nth-child(n) {
+  flex: 1 1 100%;
+  aspect-ratio: 4 / 3;
 }}
 /* GALLERY SECTION */
 

@@ -6,8 +6,8 @@
         </div>
         <div class="nav-container">
             <nav class="hero-nav">
-                <a data-i18n="nav_about" href="#nosotros" class="nav-link">Nosotros</a>
-                <a data-i18n="nav_exportable" href="#oferta" class="nav-link">Oferta exportable</a>
+                <a data-i18n="nav_exportable" href="#exportable" class="nav-link">Oferta exportable</a>
+                <a data-i18n="nav_turismo" href="#turismo" class="nav-link">Turismo</a>
                 <a data-i18n="nav_news" href="#noticias" class="nav-link">Noticias</a>
                 <a data-i18n="nav_contact" href="#contactos" class="nav-link">Contactos</a>
                 <a href="https://wa.me/" class="nav-whatsapp" target="_blank">
@@ -45,7 +45,7 @@
 <!-- HEADER -->
 
 <!-- ESTADIO SECTION -->
-<div class="estadio-section">
+<div class="estadio-section" id="turismo">
     <div class="estadio-container">
         <div class="estadio-text-column">
             <h2 class="estadio-title" data-i18n-html="estadio_title">ESTADIO UNICO<br>MADRE DE CIUDADES</h2>
@@ -109,41 +109,95 @@
 <!-- GALLERY SECTION -->
 <div class="gallery-section">
     <div class="gallery-container">
-        <div class="gallery-item" data-modal-id="1">
-            <img src="img/landing/parque_ashpa_kausay.png" alt="COMPLEJO ASHPA KAUSAY PARQUE ECOLÓGICO" class="gallery-image">
+        <div class="gallery-row gallery-row-1">
+            <div class="gallery-item" data-modal-id="1">
+                <img src="img/landing/parque_ashpa_kausay.png" alt="COMPLEJO ASHPA KAUSAY PARQUE ECOLÓGICO" class="gallery-image">
+                <div class="gallery-item-overlay" aria-hidden="true">
+                    <span class="gallery-item-title"></span>
+                    <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                </div>
+            </div>
+            <div class="gallery-item" data-modal-id="2">
+                <img src="img/landing/parque_aguirre.png" alt="EL PARQUE AGUIRRE UN LUGAR PARA RESPIRAR PAZ" class="gallery-image">
+                <div class="gallery-item-overlay" aria-hidden="true">
+                    <span class="gallery-item-title"></span>
+                    <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                </div>
+            </div>
+            <div class="gallery-item" data-modal-id="3">
+                <img src="img/landing/costanera.png" alt="COSTANERA" class="gallery-image">
+                <div class="gallery-item-overlay" aria-hidden="true">
+                    <span class="gallery-item-title"></span>
+                    <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                </div>
+            </div>
+            <div class="gallery-item" data-modal-id="4">
+                <img src="img/landing/monumento_francisco_aguirre.png" alt="MONUMENTO A FRANCISCO DE AGUIRRE" class="gallery-image">
+                <div class="gallery-item-overlay" aria-hidden="true">
+                    <span class="gallery-item-title"></span>
+                    <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                </div>
+            </div>
         </div>
-        <div class="gallery-item" data-modal-id="2">
-            <img src="img/landing/parque_aguirre.png" alt="EL PARQUE AGUIRRE UN LUGAR PARA RESPIRAR PAZ" class="gallery-image">
+        <div class="gallery-row gallery-row-2">
+            <div class="gallery-item" data-modal-id="5">
+                <img src="img/landing/plaza_libertad.png" alt="LA PLAZA LIBERTAD" class="gallery-image">
+                <div class="gallery-item-overlay" aria-hidden="true">
+                    <span class="gallery-item-title"></span>
+                    <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                </div>
+            </div>
+            <div class="gallery-item" data-modal-id="6">
+                <img src="img/landing/jardin_botanico.png" alt="JARDIN BOTANICO" class="gallery-image">
+                <div class="gallery-item-overlay" aria-hidden="true">
+                    <span class="gallery-item-title"></span>
+                    <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                </div>
+            </div>
+            <div class="gallery-item" data-modal-id="7">
+                <img src="img/landing/estadio_hockey.png" alt="ESTADIO DE HOCKEY" class="gallery-image">
+                <div class="gallery-item-overlay" aria-hidden="true">
+                    <span class="gallery-item-title"></span>
+                    <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                </div>
+            </div>
+            <div class="gallery-item" data-modal-id="11">
+                <img src="img/landing/parque_santo.png" alt="UN PARQUE CASI SANTO" class="gallery-image">
+                <div class="gallery-item-overlay" aria-hidden="true">
+                    <span class="gallery-item-title"></span>
+                    <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                </div>
+            </div>
         </div>
-        <div class="gallery-item" data-modal-id="3">
-            <img src="img/landing/costanera.png" alt="COSTANERA" class="gallery-image">
-        </div>
-        <div class="gallery-item" data-modal-id="4">
-            <img src="img/landing/monumento_francisco_aguirre.png" alt="MONUMENTO A FRANCISCO DE AGUIRRE" class="gallery-image">
-        </div>
-        <div class="gallery-item" data-modal-id="5">
-            <img src="img/landing/plaza_libertad.png" alt="LA PLAZA LIBERTAD" class="gallery-image">
-        </div>
-        <div class="gallery-item" data-modal-id="6">
-            <img src="img/landing/jardin_botanico.png" alt="JARDIN BOTANICO" class="gallery-image">
-        </div>
-        <div class="gallery-item" data-modal-id="7">
-            <img src="img/landing/estadio_hockey.png" alt="ESTADIO DE HOCKEY" class="gallery-image">
-        </div>
-        <div class="gallery-item" data-modal-id="8">
-            <img src="img/landing/parque_norte.png" alt="PARQUE NORTE" class="gallery-image">
-        </div>
-        <div class="gallery-item" data-modal-id="9">
-            <img src="img/landing/parque_sur.png" alt="OVALO PARQUE SUR" class="gallery-image">
-        </div>
-        <div class="gallery-item" data-modal-id="10">
-            <img src="img/landing/complejo_casa_taboada.png" alt="COMPLEJO CASA TABOADA" class="gallery-image">
-        </div>
-        <div class="gallery-item" data-modal-id="11">
-            <img src="img/landing/parque_santo.png" alt="UN PARQUE CASI SANTO" class="gallery-image">
-        </div>
-        <div class="gallery-item" data-modal-id="12">
-            <img src="img/landing/domo_parque_encuentro.png" alt="DOMO EN PARQUE DEL ENCUENTRO" class="gallery-image">
+        <div class="gallery-row gallery-row-3">
+            <div class="gallery-item" data-modal-id="9">
+                <img src="img/landing/parque_sur.png" alt="OVALO PARQUE SUR" class="gallery-image">
+                <div class="gallery-item-overlay" aria-hidden="true">
+                    <span class="gallery-item-title"></span>
+                    <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                </div>
+            </div>
+            <div class="gallery-item" data-modal-id="10">
+                <img src="img/landing/complejo_casa_taboada.png" alt="COMPLEJO CASA TABOADA" class="gallery-image">
+                <div class="gallery-item-overlay" aria-hidden="true">
+                    <span class="gallery-item-title"></span>
+                    <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                </div>
+            </div>
+            <div class="gallery-item" data-modal-id="8">
+                <img src="img/landing/parque_norte.png" alt="PARQUE NORTE" class="gallery-image">
+                <div class="gallery-item-overlay" aria-hidden="true">
+                    <span class="gallery-item-title"></span>
+                    <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                </div>
+            </div>
+            <div class="gallery-item" data-modal-id="12">
+                <img src="img/landing/domo_parque_encuentro.png" alt="DOMO EN PARQUE DEL ENCUENTRO" class="gallery-image">
+                <div class="gallery-item-overlay" aria-hidden="true">
+                    <span class="gallery-item-title"></span>
+                    <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -165,9 +219,7 @@
 </div>
 <!-- MODAL WINDOW -->
 
-<script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/imagesloaded@5.0.0/imagesloaded.pkgd.min.js"></script>
-<script src="js/i18n.js?v=1.0.4"></script>
+<script src="js/i18n.js?v=<?= asset_version('js/i18n.js') ?>"></script>
 <script>
 function toggleLangMenu() {
   const menu = document.getElementById('landing_header_lang_menu');
@@ -227,6 +279,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.style.overflow = '';
   }
   
+  // Fill overlay title from image alt
+  galleryItems.forEach(item => {
+    const img = item.querySelector('.gallery-image');
+    const titleEl = item.querySelector('.gallery-item-title');
+    if (img && titleEl) titleEl.textContent = img.getAttribute('alt') || '';
+  });
+
   // Open modal on gallery item click
   galleryItems.forEach(item => {
     item.addEventListener('click', () => {
@@ -245,29 +304,6 @@ document.addEventListener('DOMContentLoaded', () => {
       closeModal();
     }
   });
-  
-  // Initialize Masonry layout
-  const galleryContainer = document.querySelector('.gallery-container');
-  if (galleryContainer && typeof Masonry !== 'undefined' && typeof imagesLoaded !== 'undefined') {
-    imagesLoaded(galleryContainer, () => {
-      const masonry = new Masonry(galleryContainer, {
-        itemSelector: '.gallery-item',
-        columnWidth: '.gallery-item',
-        percentPosition: true,
-        gutter: 20
-      });
-    });
-  } else if (galleryContainer && typeof Masonry !== 'undefined') {
-    // Fallback if imagesLoaded is not available
-    setTimeout(() => {
-      const masonry = new Masonry(galleryContainer, {
-        itemSelector: '.gallery-item',
-        columnWidth: '.gallery-item',
-        percentPosition: true,
-        gutter: 20
-      });
-    }, 500);
-  }
 });
 document.addEventListener('click', function (e) {
   const langBox = document.querySelector('.landing_header_lang');

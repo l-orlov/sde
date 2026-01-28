@@ -43,8 +43,8 @@ if ($page =='logout' ) include __DIR__ . '/includes/logout.php';
         rel="stylesheet">
 
     <!-- Custom styles for this template-->
-    <link rel="stylesheet" href="<?= $basePath ?>css/style.css?v=1.0.4">
-    <link rel="stylesheet" href="<?= $basePath ?>css/styleA.css?v=1.0.4">
+    <link rel="stylesheet" href="<?= $basePath ?>css/style.css?v=<?= asset_version('admin/css/style.css') ?>">
+    <link rel="stylesheet" href="<?= $basePath ?>css/styleA.css?v=<?= asset_version('admin/css/styleA.css') ?>">
 </head>
 
 <body id="page-top">

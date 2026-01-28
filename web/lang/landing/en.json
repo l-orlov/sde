@@ -1,5 +1,5 @@
 {
-  "nav_about": "About",
+  "nav_turismo": "Tourism",
   "nav_exportable": "Exportable Offer",
   "nav_news": "News",
   "nav_contact": "Contact",
@@ -50,5 +50,6 @@
   "modal_11_title": "AN ALMOST HOLY PARK",
   "modal_11_content": "<p>Mama Antula is an example of philanthropy and service. Mama Antula Park, recently inaugurated, uniquely combines the playful and the holy.</p><p>The park offers recreational areas, \"stations\" that trace the life of the saint, a panoramic viewpoint and a beautifully illuminated statue, suggesting a spiritual and aesthetic experience for visitors.</p><p>It is a space that honors the memory of Mama Antula while providing a place for reflection, recreation and spiritual connection in the heart of Santiago del Estero.</p>",
   "modal_12_title": "DOME IN MEETING PARK",
-  "modal_12_content": "<p>It is a tourist attraction that was formerly a municipal zoo. It features a dome dedicated to children, where they learn about characters (Santi, Chami, Yachay (robot)) and animals (Puma, Tatu) who protect the environment with recyclable materials.</p><p>It includes a laser show and a simulated spaceship launch.</p><p>Meeting Park is an interreligious park focused on peace education and understanding. It highlights the diversity of beliefs and reciprocal encounter.</p><p>It was designed as a place for peace education for children, to help them understand the culture, art and architecture of various religions (Catholicism, Judaism, Islam, Protestantism, Buddhism).</p><p>It contains five buildings inspired by great monuments: a mosque, a synagogue, a Sistine Chapel, a Buddhist temple and a Protestant temple, serving as a regional and national tourist attraction.</p>"
+  "modal_12_content": "<p>It is a tourist attraction that was formerly a municipal zoo. It features a dome dedicated to children, where they learn about characters (Santi, Chami, Yachay (robot)) and animals (Puma, Tatu) who protect the environment with recyclable materials.</p><p>It includes a laser show and a simulated spaceship launch.</p><p>Meeting Park is an interreligious park focused on peace education and understanding. It highlights the diversity of beliefs and reciprocal encounter.</p><p>It was designed as a place for peace education for children, to help them understand the culture, art and architecture of various religions (Catholicism, Judaism, Islam, Protestantism, Buddhism).</p><p>It contains five buildings inspired by great monuments: a mosque, a synagogue, a Sistine Chapel, a Buddhist temple and a Protestant temple, serving as a regional and national tourist attraction.</p>",
+  "gallery_ver_mas": "see more"
 }

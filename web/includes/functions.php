@@ -1,4 +1,14 @@
 <?
+/**
+ * Версия ассета по времени изменения файла (для cache busting).
+ * $path — путь относительно корня web/ (например 'css/style.css', 'js/i18n.js', 'admin/css/style.css').
+ */
+function asset_version($path) {
+    $webRoot = dirname(__DIR__);
+    $full = $webRoot . '/' . ltrim($path, '/');
+    return file_exists($full) ? (string) filemtime($full) : (string) time();
+}
+
 function DBconnect() {
     global $link;
 

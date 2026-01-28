@@ -826,7 +826,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-<script src="js/i18n.js?v=1.0.4"></script>
+<script src="js/i18n.js?v=<?= asset_version('js/i18n.js') ?>"></script>
 <script>
 function toggleHomeLangMenu() {
   const menu = document.getElementById('home_lang_menu');
