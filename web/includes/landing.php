@@ -111,14 +111,14 @@
     <div class="gallery-container">
         <div class="gallery-row gallery-row-1">
             <div class="gallery-item" data-modal-id="1">
-                <img src="img/landing/parque_ashpa_kausay.png" alt="COMPLEJO ASHPA KAUSAY PARQUE ECOLÓGICO" class="gallery-image">
+                <img src="img/landing/parque_ashpa_kausay.png" alt="COMPLEJO ASHPA KAUSAY (PARQUE ECOLÓGICO)" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
                 </div>
             </div>
             <div class="gallery-item" data-modal-id="2">
-                <img src="img/landing/parque_aguirre.png" alt="EL PARQUE AGUIRRE UN LUGAR PARA RESPIRAR PAZ" class="gallery-image">
+                <img src="img/landing/parque_aguirre.png" alt="EL PARQUE AGUIRRE (UN LUGAR PARA RESPIRAR PAZ)" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>

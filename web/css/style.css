@@ -2434,12 +2434,11 @@ to {
 .gallery-row-3 .gallery-item {
   aspect-ratio: 3 / 4;
 }
-/* Оверлей при наведении (только на устройствах с hover, не на мобилках) */
 .gallery-item-overlay {
   position: absolute;
   inset: 0;
   border-radius: 20px;
-  background-color: rgba(0, 51, 153, 0.31);
+  background-color: rgba(0, 51, 153, 0.6);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -2462,7 +2461,7 @@ to {
   text-align: center;
 }
 .gallery-item-cta {
-  background-color: #003399;
+  background-color: transparent;
   color: #fff;
   padding: 6px 20px;
   border-radius: 25px;
@@ -2470,7 +2469,7 @@ to {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  border: none;
+  border: 2px solid #fff;
   text-align: center;
   text-transform: lowercase;
 }
