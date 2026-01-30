@@ -1,4 +1,5 @@
 node_modules
+vendor
 tmp
 config.php
 config_prod.php

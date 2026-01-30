@@ -6,7 +6,7 @@
         </div>
         <div class="nav-container">
             <nav class="hero-nav">
-                <a data-i18n="nav_exportable" href="#exportable" class="nav-link">Oferta exportable</a>
+                <a data-i18n="nav_exportable" href="generar_oferta_pdf.php" class="nav-link" target="_blank" rel="noopener" onclick="this.href='generar_oferta_pdf.php?t='+Date.now();">Oferta exportable</a>
                 <a data-i18n="nav_turismo" href="#turismo" class="nav-link">Turismo</a>
                 <a data-i18n="nav_news" href="#noticias" class="nav-link">Noticias</a>
                 <a data-i18n="nav_contact" href="#contactos" class="nav-link">Contactos</a>
