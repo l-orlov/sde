@@ -159,8 +159,12 @@ try {
                         if (empty($storageType)) {
                             $storageType = 'local';
                         }
-                        $storage = StorageFactory::createByType($storageType);
-                        $productPhotos[$pid] = $storage->getUrl($row['file_path']);
+                        if ($storageType === 'local') {
+                            $productPhotos[$pid] = get_serve_file_url($row['id']);
+                        } else {
+                            $storage = StorageFactory::createByType($storageType);
+                            $productPhotos[$pid] = $storage->getUrl($row['file_path']);
+                        }
                     } catch (Exception $e) {
                         $productPhotos[$pid] = null;
                     }

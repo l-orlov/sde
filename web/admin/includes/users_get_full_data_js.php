@@ -364,7 +364,9 @@ try {
         $productExists = $row['product_exists'] !== null;
         
         try {
-            if (class_exists('StorageFactory')) {
+            if (class_exists('StorageFactory') && ($row['storage_type'] ?? '') === 'local') {
+                $url = function_exists('get_serve_file_url') ? get_serve_file_url($row['id']) : ('/serve_file.php?id=' . (int) $row['id']);
+            } elseif (class_exists('StorageFactory')) {
                 $storage = StorageFactory::createByType($row['storage_type']);
                 $url = $storage->getUrl($row['file_path']);
             } else {

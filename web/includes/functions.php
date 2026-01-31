@@ -46,3 +46,18 @@ function DBconnect() {
 function clear_phone($phone) {
     return preg_replace('/\D/', '', $phone);
 }
+
+/**
+ * URL пути к serve_file.php для раздачи загруженных файлов по ID.
+ * Учитывает web_base из config (если сайт в подпапке, напр. /sde).
+ * $file_id — ID записи в таблице files.
+ */
+function get_serve_file_url($file_id) {
+    static $web_base = null;
+    if ($web_base === null) {
+        $configPath = __DIR__ . '/config/config.php';
+        $config = file_exists($configPath) ? (require $configPath) : [];
+        $web_base = rtrim($config['web_base'] ?? '', '/');
+    }
+    return $web_base . '/serve_file.php?id=' . (int) $file_id;
+}

@@ -47,8 +47,12 @@ try {
         $isMain = $row['is_main'] ?? false;
         $productExists = $row['product_exists'] !== null;
         
-        $storage = StorageFactory::createByType($row['storage_type']);
-        $url = $storage->getUrl($row['file_path']);
+        if (($row['storage_type'] ?? '') === 'local') {
+            $url = get_serve_file_url($row['id']);
+        } else {
+            $storage = StorageFactory::createByType($row['storage_type']);
+            $url = $storage->getUrl($row['file_path']);
+        }
         
         $fileData = [
             'id' => $fileId,

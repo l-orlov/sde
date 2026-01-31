@@ -167,6 +167,11 @@ class FileManager {
         $result = $stmt->get_result();
         
         if ($row = $result->fetch_assoc()) {
+            // Для локального хранилища отдаём URL через serve_file.php, чтобы файлы
+            // открывались независимо от того, где на диске лежит base_path (избегаем 404).
+            if (($row['storage_type'] ?? '') === 'local') {
+                return get_serve_file_url($fileId);
+            }
             $storage = StorageFactory::createByType($row['storage_type']);
             return $storage->getUrl($row['file_path']);
         }
@@ -191,8 +196,9 @@ class FileManager {
         $result = $stmt->get_result();
         
         if ($row = $result->fetch_assoc()) {
-            $storage = StorageFactory::createByType($row['storage_type']);
-            $row['url'] = $storage->getUrl($row['file_path']);
+            $row['url'] = ($row['storage_type'] ?? '') === 'local'
+                ? get_serve_file_url($row['id'])
+                : StorageFactory::createByType($row['storage_type'])->getUrl($row['file_path']);
             return $row;
         }
         
@@ -225,8 +231,9 @@ class FileManager {
         
         $files = [];
         while ($row = $result->fetch_assoc()) {
-            $storage = StorageFactory::createByType($row['storage_type']);
-            $row['url'] = $storage->getUrl($row['file_path']);
+            $row['url'] = ($row['storage_type'] ?? '') === 'local'
+                ? get_serve_file_url($row['id'])
+                : StorageFactory::createByType($row['storage_type'])->getUrl($row['file_path']);
             $files[] = $row;
         }
         
