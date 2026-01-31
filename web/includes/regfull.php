@@ -53,6 +53,11 @@ if (isset($_SESSION['uid'])) {
     // Используем COALESCE: сначала companies, потом users
     $displayName = $companyData['name'] ?? $userData['company_name'] ?? '';
     $displayTaxId = $companyData['tax_id'] ?? $userData['tax_id'] ?? '';
+    // Формат CUIT при выводе: 20-18858351-3
+    $taxIdDigits = preg_replace('/\D/', '', (string) $displayTaxId);
+    if (strlen($taxIdDigits) === 11) {
+        $displayTaxId = substr($taxIdDigits, 0, 2) . '-' . substr($taxIdDigits, 2, 8) . '-' . substr($taxIdDigits, 10, 1);
+    }
     
     // Загрузка адресов
     if ($companyId) {
@@ -240,9 +245,9 @@ function esc_attr($value) {
     <!-- Nombre -->
     <div class="label"><label for="name" data-i18n="regfull_company_name">Nombre de la Empresa/Emprendimiento <span class="req">*</span></label></div>
     <div class="field"><input type="search" id="name" name="name" value="<?= esc_attr($displayName) ?>" required></div>
-    <!-- CUIT -->
+    <!-- CUIT: 11 dígitos, máscara XX-XXXXXXXX-X -->
     <div class="label"><label for="tax_id" data-i18n="regfull_cuit">CUIT / Identificación Fiscal <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="tax_id" name="tax_id" value="<?= esc_attr($displayTaxId) ?>" data-i18n-placeholder="regfull_cuit_placeholder" placeholder="XX-XXXXXXXX-X" required></div>
+    <div class="field"><input type="search" id="tax_id" name="tax_id" value="<?= esc_attr($displayTaxId) ?>" data-i18n-placeholder="regfull_cuit_placeholder" placeholder="XX-XXXXXXXX-X" inputmode="numeric" maxlength="13" required></div>
     <!-- Razón social -->
     <div class="label"><label for="legal_name" data-i18n="regfull_razon_social">Razón social <span class="req">*</span></label></div>
     <div class="field"><input type="search" id="legal_name" name="legal_name" value="<?= esc_attr($companyData['legal_name'] ?? '') ?>" required></div>
@@ -255,6 +260,7 @@ function esc_attr($value) {
     <!-- Redes sociales -->
     <div class="label"><span data-i18n="regfull_social_networks">Redes sociales:</span></div>
     <div class="field" id="social-wrapper">
+      <div class="social-rows">
       <div class="social_row">
         <div class="custom-dropdown">
           <div class="dropdown-selected">
@@ -271,14 +277,15 @@ function esc_attr($value) {
             <div class="dropdown-option" data-value="YouTube">YouTube</div>
             <div class="dropdown-option" data-value="Otra">Otra</div>
           </div>
-          <input type="hidden" class="net" name="social_network_type[]" value="">
+          <input type="hidden" class="net" value="">
         </div>
         <input class="net-other" type="text" data-i18n-placeholder="regfull_social_enter_network" placeholder="Ingresa la red…" hidden>
-        <input class="net-final" type="hidden" name="social_network_type[]">
+        <input class="net-final" type="hidden" name="social_network_type[]" value="">
         <div class="inline">
           <input name="social_url[]" type="url" data-i18n-placeholder="regfull_website_placeholder" placeholder="http://…">
-          <button type="button" class="remove" hidden>&times;</button>
+          <button type="button" class="remove" aria-label="Eliminar" hidden>&times;</button>
         </div>
+      </div>
       </div>
       <button type="button" class="add_more" id="add-social" data-i18n="regfull_add_more">agregar más</button>
     </div>
@@ -521,6 +528,7 @@ function esc_attr($value) {
 document.addEventListener('DOMContentLoaded', () => {
   const wrapper = document.getElementById('social-wrapper');
   const addBtn  = document.getElementById('add-social');
+  const socialRowsContainer = wrapper ? wrapper.querySelector('.social-rows') : null;
   function bindRow(row) {
     const dropdown = row.querySelector('.custom-dropdown');
     const hiddenInput = row.querySelector('input.net');
@@ -568,7 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   function updateRemoveButtons() {
-    const rows = wrapper.querySelectorAll('.social_row');
+    const rows = wrapper ? wrapper.querySelectorAll('.social_row') : [];
     rows.forEach((row, idx) => {
       const rm = row.querySelector('.remove');
       if (!rm) return;
@@ -576,7 +584,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   addBtn.addEventListener('click', () => {
-    const first = wrapper.querySelector('.social_row');
+    const first = (socialRowsContainer || wrapper).querySelector('.social_row');
+    if (!first) return;
     const clone = first.cloneNode(true);
     const dropdown = clone.querySelector('.custom-dropdown');
     const hiddenInput = clone.querySelector('input.net');
@@ -601,13 +610,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const rm = clone.querySelector('.remove');
     if (rm) rm.hidden = false;
-    addBtn.before(clone);
+    (socialRowsContainer || wrapper).appendChild(clone);
     bindRow(clone);
     updateRemoveButtons();
   });
-  const firstRow = wrapper.querySelector('.social_row');
+  const firstRow = (socialRowsContainer || wrapper).querySelector('.social_row');
   if (firstRow) bindRow(firstRow);
   updateRemoveButtons();
+  window.bindSocialRow = bindRow;
+  window.updateSocialRemoveButtons = updateRemoveButtons;
   
   // Initialize all custom dropdowns (except social media ones which are handled by bindRow)
   document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
@@ -623,6 +634,45 @@ document.addEventListener('DOMContentLoaded', () => {
       initCustomDropdown(dropdown, hiddenInput);
     }
   });
+  
+  // Маска CUIT: 11 dígitos, formato 20-18858351-3 (guión como / en fecha)
+  const taxIdInput = document.getElementById('tax_id');
+  if (taxIdInput) {
+    const formatCuit = (v) => {
+      v = v.replace(/\D/g, '').slice(0, 11);
+      if (v.length <= 2) return v;
+      if (v.length <= 9) return v.slice(0, 2) + '-' + v.slice(2);
+      if (v.length === 10) return v.slice(0, 2) + '-' + v.slice(2, 10) + '-';
+      return v.slice(0, 2) + '-' + v.slice(2, 10) + '-' + v.slice(10, 11);
+    };
+    taxIdInput.addEventListener('input', function() {
+      this.value = formatCuit(this.value);
+    });
+  }
+  
+  // Маска ввода даты dd/mm/yyyy: после dd и mm автоматически подставляется /
+  const startDateInput = document.getElementById('start_date');
+  if (startDateInput) {
+    startDateInput.addEventListener('input', function(e) {
+      let v = this.value.replace(/\D/g, '');
+      if (v.length > 8) v = v.slice(0, 8);
+      let formatted = '';
+      if (v.length >= 2) {
+        formatted = v.slice(0, 2) + '/';
+        if (v.length >= 4) {
+          formatted += v.slice(2, 4) + '/';
+          if (v.length > 4) formatted += v.slice(4);
+        } else {
+          formatted += v.slice(2);
+        }
+      } else {
+        formatted = v;
+      }
+      if (this.value !== formatted) {
+        this.value = formatted;
+      }
+    });
+  }
 });
 </script>
 <!-- EMPRESA -->
@@ -1336,19 +1386,21 @@ document.addEventListener('DOMContentLoaded', () => {
       <!-- 4) Ferias -->
       <div class="label"><label data-i18n="regfull_fairs">Ferias <span class="req">*</span></label></div>
       <div class="field">
-        <div class="yesno_line">
-          <?php $fairs = $companyDataJson['competitiveness']['fairs'] ?? ''; ?>
+        <div class="yesno_line with_input">
+          <?php $fairs = $companyDataJson['competitiveness']['fairs'] ?? ''; $fairsDetail = $companyDataJson['competitiveness']['fairs_detail'] ?? ''; ?>
           <label class="yn"><input type="radio" name="fairs" value="si" <?= $fairs === 'si' ? 'checked' : '' ?>><span data-i18n="regfull_yes">Si</span></label>
           <label class="yn"><input type="radio" name="fairs" value="no" <?= $fairs === 'no' ? 'checked' : '' ?>><span data-i18n="regfull_no">No</span></label>
+          <input type="search" name="fairs_detail" class="detail" data-i18n-placeholder="regfull_fairs_detail_placeholder" value="<?= esc_attr($fairsDetail) ?>">
         </div>
       </div>
       <!-- 5) Rondas -->
       <div class="label"><label data-i18n="regfull_rounds">Rondas <span class="req">*</span></label></div>
       <div class="field">
-        <div class="yesno_line">
-          <?php $rounds = $companyDataJson['competitiveness']['rounds'] ?? ''; ?>
+        <div class="yesno_line with_input">
+          <?php $rounds = $companyDataJson['competitiveness']['rounds'] ?? ''; $roundsDetail = $companyDataJson['competitiveness']['rounds_detail'] ?? ''; ?>
           <label class="yn"><input type="radio" name="rounds" value="si" <?= $rounds === 'si' ? 'checked' : '' ?>><span data-i18n="regfull_yes">Si</span></label>
           <label class="yn"><input type="radio" name="rounds" value="no" <?= $rounds === 'no' ? 'checked' : '' ?>><span data-i18n="regfull_no">No</span></label>
+          <input type="search" name="rounds_detail" class="detail" data-i18n-placeholder="regfull_rounds_detail_placeholder" value="<?= esc_attr($roundsDetail) ?>">
         </div>
       </div>
       <!-- 6) Experiencia Exportadora previa -->
@@ -2110,6 +2162,15 @@ document.addEventListener('DOMContentLoaded', () => {
       
       checkRequired('name', 'Nombre de la Empresa');
       checkRequired('tax_id', 'CUIT / Identificación Fiscal');
+      const taxIdDigits = (document.getElementById('tax_id').value || '').replace(/\D/g, '');
+      if (taxIdDigits.length !== 11) {
+        errors.push('CUIT / Identificación Fiscal debe tener exactamente 11 dígitos');
+        document.getElementById('tax_id').style.borderColor = '#f44336';
+        document.getElementById('tax_id').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        const taxIdEl = document.getElementById('tax_id');
+        if (taxIdEl) taxIdEl.style.borderColor = '';
+      }
       checkRequired('legal_name', 'Razón social');
       
       const startDateField = document.querySelector('[name="start_date"]');
@@ -2463,18 +2524,49 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Удалена проверка общего поля current_markets, так как теперь оно внутри каждого продукта/услуги
       
+      // Factores de Diferenciación: si está marcado "Otros", el campo de texto es obligatorio
+      const otrosDiffChecked = Array.from(document.querySelectorAll('input[name="differentiation_factors[]"]')).some(cb => cb.value === 'Otros' && cb.checked);
+      const otherDiffInput = document.querySelector('input[name="other_differentiation"]');
+      if (otrosDiffChecked && (!otherDiffInput || !otherDiffInput.value.trim())) {
+        errors.push('Factores de Diferenciación: si selecciona "Otros", debe especificar');
+        if (otherDiffInput) {
+          otherDiffInput.style.borderColor = '#f44336';
+          otherDiffInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else if (otherDiffInput) {
+        otherDiffInput.style.borderColor = '';
+      }
+      
       checkRequired('company_history', 'Historia de la Empresa');
       const awards = document.querySelector('input[name="awards"]:checked');
       if (!awards) {
         errors.push('Premios');
+      } else if (awards.value === 'si') {
+        const awardsDetail = document.querySelector('input[name="awards_detail"]');
+        if (!awardsDetail || !awardsDetail.value.trim()) {
+          errors.push('Premios: si elige "Si", debe especificar');
+          if (awardsDetail) { awardsDetail.style.borderColor = '#f44336'; awardsDetail.focus(); }
+        } else if (awardsDetail) awardsDetail.style.borderColor = '';
       }
       const fairs = document.querySelector('input[name="fairs"]:checked');
       if (!fairs) {
         errors.push('Ferias');
+      } else if (fairs.value === 'si') {
+        const fairsDetail = document.querySelector('input[name="fairs_detail"]');
+        if (!fairsDetail || !fairsDetail.value.trim()) {
+          errors.push('Ferias: si elige "Si", debe especificar');
+          if (fairsDetail) { fairsDetail.style.borderColor = '#f44336'; fairsDetail.focus(); }
+        } else if (fairsDetail) fairsDetail.style.borderColor = '';
       }
       const rounds = document.querySelector('input[name="rounds"]:checked');
       if (!rounds) {
         errors.push('Rondas');
+      } else if (rounds.value === 'si') {
+        const roundsDetail = document.querySelector('input[name="rounds_detail"]');
+        if (!roundsDetail || !roundsDetail.value.trim()) {
+          errors.push('Rondas: si elige "Si", debe especificar');
+          if (roundsDetail) { roundsDetail.style.borderColor = '#f44336'; roundsDetail.focus(); }
+        } else if (roundsDetail) roundsDetail.style.borderColor = '';
       }
       checkDropdown('export_experience', 'Experiencia Exportadora');
       checkRequired('commercial_references', 'Referencias comerciales');
@@ -2516,7 +2608,13 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (errors.length > 0) {
         msgEl.className = 'err';
-        msgEl.textContent = 'Por favor, complete los campos obligatorios';
+        const cuitErr = errors.find(e => e && e.includes('11 dígitos'));
+        const otrosErr = errors.find(e => e && e.includes('Otros') && e.includes('especificar'));
+        const premiosErr = errors.find(e => e && e.startsWith('Premios:'));
+        const feriasErr = errors.find(e => e && e.startsWith('Ferias:'));
+        const rondasErr = errors.find(e => e && e.startsWith('Rondas:'));
+        const detailErr = premiosErr || feriasErr || rondasErr;
+        msgEl.textContent = cuitErr ? cuitErr : (otrosErr ? otrosErr : (detailErr ? detailErr : 'Por favor, complete los campos obligatorios'));
         msgEl.style.display = 'block';
         msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
@@ -2617,12 +2715,48 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       
       btnSave.disabled = true;
-      btnSave.textContent = 'Comprimiendo archivos...';
       msgEl.style.display = 'none';
       msgEl.className = '';
       msgEl.textContent = '';
       
       try {
+        if (window.waitForRegfullUploads) {
+          btnSave.textContent = 'Esperando carga de archivos...';
+          await window.waitForRegfullUploads();
+        }
+        if (window.getFileState && window.uploadFileForInput) {
+          const fileState = window.getFileState();
+          document.querySelectorAll('.product-item input[name="product_photo[]"], .service-item input[name="service_photo[]"]').forEach(function(input) {
+            if (input.files && input.files.length > 0) {
+              const productItem = input.closest('.product-item');
+              const serviceItem = input.closest('.service-item');
+              let fileKey = null;
+              if (productItem) {
+                const all = document.querySelectorAll('.product-item');
+                const idx = Array.prototype.indexOf.call(all, productItem);
+                fileKey = 'product_photo_index_' + idx;
+              } else if (serviceItem) {
+                const all = document.querySelectorAll('.service-item');
+                const idx = Array.prototype.indexOf.call(all, serviceItem);
+                fileKey = 'service_photo_index_' + idx;
+              }
+              if (fileKey && !fileState.newFiles[fileKey]) {
+                window.pendingRegfullUploads = window.pendingRegfullUploads || [];
+                const p = window.uploadFileForInput(input.files[0], input);
+                if (p && p.then) {
+                  window.pendingRegfullUploads.push(p);
+                }
+              }
+            }
+          });
+          if (window.pendingRegfullUploads && window.pendingRegfullUploads.length > 0) {
+            btnSave.textContent = 'Esperando carga de archivos...';
+            await Promise.all(window.pendingRegfullUploads);
+            window.pendingRegfullUploads = [];
+          }
+        }
+        btnSave.textContent = 'Comprimiendo archivos...';
+        
         const formDataToSend = new FormData();
         const fileInputs = document.querySelectorAll('input[type="file"]');
         const filePromises = [];
@@ -2671,8 +2805,34 @@ document.addEventListener('DOMContentLoaded', () => {
           formDataToSend.append(name, value);
         };
         
+        // main_activity отправляем первым, чтобы бэкенд точно получил (из dropdown или hidden)
+        (function() {
+          const mainActivityInput = document.querySelector('input[name="main_activity"]');
+          if (!mainActivityInput) return;
+          let val = (mainActivityInput.value || '').trim();
+          const dd = mainActivityInput.closest('.custom-dropdown');
+          if (dd) {
+            const sel = dd.querySelector('.dropdown-option.selected');
+            if (sel && (sel.dataset.value || sel.textContent)) {
+              val = (sel.dataset.value || sel.textContent || '').trim();
+            }
+          }
+          if (val !== '0' && val !== '…') {
+            formDataToSend.append('main_activity', val || '');
+          }
+        })();
+        // tax_id: solo 11 dígitos (sin guiones)
+        (function() {
+          const taxIdEl = document.getElementById('tax_id');
+          if (taxIdEl) {
+            const digits = (taxIdEl.value || '').replace(/\D/g, '').slice(0, 11);
+            if (digits.length === 11) appendToFormData('tax_id', digits);
+          }
+        })();
+        
         document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], input:not([type]), textarea').forEach(field => {
           if (field.type !== 'file' && !field.hidden && field.name) {
+            if (field.name === 'tax_id') return;
             // Для estimated_term отправляем даже если значение пустое
             if (field.name === 'estimated_term') {
               appendToFormData(field.name, field.value || '');
@@ -2682,60 +2842,53 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
         
-        // Собираем target_markets для каждого продукта отдельно
+        // Mercados Actuales и Mercados de Interés — собираем по индексу продукта/услуги (чтобы индексы совпадали на бэкенде)
         document.querySelectorAll('.product-item').forEach((item, productIndex) => {
+          const currentInput = item.querySelector('input[name="product_current_markets[]"]');
+          appendToFormData('product_current_markets[]', (currentInput && currentInput.value) ? currentInput.value.trim() : '');
           const targetMarketsInputs = item.querySelectorAll('input[name="product_target_markets[]"]');
           targetMarketsInputs.forEach(input => {
             if (input.value && input.value.trim() && input.value.trim() !== '…') {
-              // Отправляем с индексом продукта для правильной обработки на сервере
               appendToFormData(`product_target_markets[${productIndex}][]`, input.value);
             }
           });
         });
-        
-        // Собираем target_markets для каждой услуги отдельно
         document.querySelectorAll('.service-item').forEach((item, serviceIndex) => {
+          const currentInput = item.querySelector('input[name="service_current_markets[]"]');
+          appendToFormData('service_current_markets[]', (currentInput && currentInput.value) ? currentInput.value.trim() : '');
           const targetMarketsInputs = item.querySelectorAll('input[name="service_target_markets[]"]');
           targetMarketsInputs.forEach(input => {
             if (input.value && input.value.trim() && input.value.trim() !== '…') {
-              // Отправляем с индексом услуги для правильной обработки на сервере
               appendToFormData(`service_target_markets[${serviceIndex}][]`, input.value);
             }
           });
         });
         
+        // Синхронизируем main_activity из dropdown в hidden перед сбором, чтобы значение точно ушло
+        const mainActivityField = document.querySelector('input[name="main_activity"]');
+        if (mainActivityField) {
+          const mainActivityDropdown = mainActivityField.closest('.custom-dropdown');
+          if (mainActivityDropdown) {
+            const sel = mainActivityDropdown.querySelector('.dropdown-option.selected');
+            if (sel && (sel.dataset.value || sel.textContent)) {
+              const v = (sel.dataset.value || sel.textContent || '').trim();
+              if (v && v !== '…') {
+                mainActivityField.value = v;
+                mainActivityField.setAttribute('value', v);
+              }
+            }
+          }
+        }
+        
         document.querySelectorAll('input[type="hidden"]').forEach(field => {
           if (field.name) {
-            // Пропускаем product_target_markets[] и service_target_markets[] - они уже обработаны выше
-            if (field.name === 'product_target_markets[]' || field.name === 'service_target_markets[]') {
+            // Пропускаем — уже обработаны выше
+            if (field.name === 'product_target_markets[]' || field.name === 'service_target_markets[]' ||
+                field.name === 'product_current_markets[]' || field.name === 'service_current_markets[]' ||
+                field.name === 'main_activity') {
               return;
             }
-            
-            // Для main_activity отправляем только валидные значения
-            if (field.name === 'main_activity') {
-              // Проверяем и value, и атрибут value, и также проверяем визуальное отображение
-              let value = (field.value || field.getAttribute('value') || '').trim();
-              
-              // Если значение пустое, проверяем визуальное отображение dropdown
-              if (!value || value === '') {
-                const dropdown = field.closest('.custom-dropdown');
-                if (dropdown) {
-                  const selectedOption = dropdown.querySelector('.dropdown-option.selected');
-                  if (selectedOption && selectedOption.dataset.value) {
-                    value = selectedOption.dataset.value.trim();
-                  }
-                }
-              }
-              
-              // Всегда отправляем значение, даже если оно пустое (но не "0" или "…")
-              if (value !== '0' && value !== '…') {
-                appendToFormData(field.name, value);
-                // Отладка
-                console.log('Sending main_activity:', value, 'from field.value:', field.value, 'from attribute:', field.getAttribute('value'));
-              } else {
-                console.log('Skipping main_activity (invalid value):', value);
-              }
-            } else if (field.value) {
+            if (field.value) {
               appendToFormData(field.name, field.value);
             }
           }
@@ -2824,24 +2977,32 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             });
           } else if (fileType === 'product_photo' && typeof existing === 'object' && !Array.isArray(existing)) {
-            // Обработка product_photo с индексами продуктов
-            Object.keys(existing).forEach(key => {
-              let index = null;
-              if (key.startsWith('index_')) {
-                index = parseInt(key.replace('index_', ''), 10);
-              } else {
-                index = parseInt(key, 10);
-                if (isNaN(index)) return;
+            // Отправляем существующие product_photo по product_id (привязка по id, без путаницы с порядком строк)
+            document.querySelectorAll('.product-item').forEach(function(item, idx) {
+              const pidInput = item.querySelector('input[type="hidden"][name="product_id[]"]');
+              const productId = pidInput && pidInput.value ? pidInput.value.trim() : '';
+              if (!productId) return;
+              const fileData = existing[productId] || existing[String(productId)] || existing[idx] || existing['index_' + idx] || existing[String(idx)];
+              if (!fileData) return;
+              const fileKeyByIndex = idx === 0 ? 'product_photo' : 'product_photo_index_' + idx;
+              if (fileState.newFiles[fileKeyByIndex] || (idx === 0 && fileState.newFiles['product_photo'])) return;
+              const file = Array.isArray(fileData) ? fileData[0] : fileData;
+              if (file && file.id) {
+                appendToFormData('existing_file_product_photo_product_' + productId, file.id);
               }
-              
-              const fileKey = `product_photo_index_${index}`;
-              // Отправляем существующий файл только если нет нового файла
-              if (!fileState.newFiles[fileKey] && !fileState.newFiles['product_photo']) {
-                const fileData = existing[key];
-                const file = Array.isArray(fileData) ? fileData[0] : fileData;
-                if (file && file.id) {
-                  appendToFormData('existing_file_' + fileKey, file.id);
-                }
+            });
+          } else if (fileType === 'service_photo' && typeof existing === 'object' && !Array.isArray(existing)) {
+            document.querySelectorAll('.service-item').forEach(function(item, idx) {
+              const pidInput = item.querySelector('input[type="hidden"][name="service_id[]"]');
+              const productId = pidInput && pidInput.value ? pidInput.value.trim() : '';
+              if (!productId) return;
+              const fileData = existing[productId] || existing[String(productId)] || existing[idx] || existing['index_' + idx] || existing[String(idx)];
+              if (!fileData) return;
+              const fileKeyByIndex = idx === 0 ? 'service_photo' : 'service_photo_index_' + idx;
+              if (fileState.newFiles[fileKeyByIndex] || (idx === 0 && fileState.newFiles['service_photo'])) return;
+              const file = Array.isArray(fileData) ? fileData[0] : fileData;
+              if (file && file.id) {
+                appendToFormData('existing_file_service_photo_product_' + productId, file.id);
               }
             });
           } else if (existing && (Array.isArray(existing) ? existing.length > 0 : existing)) {
@@ -3712,22 +3873,26 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     // Примечание: current_markets и target_markets теперь индивидуальные для каждого продукта/услуги
     // и загружаются через loadExistingProducts()
     
-    // Заполнение export_experience dropdown
+    // Заполнение export_experience dropdown (надёжное сопоставление по data-value или тексту)
     if (data.export_experience) {
       const exportExperienceInput = document.querySelector('input[name="export_experience"]');
       if (exportExperienceInput) {
-        exportExperienceInput.value = data.export_experience;
-        const dropdown = exportExperienceInput.closest('.custom-dropdown');
-        if (dropdown) {
-          const options = dropdown.querySelectorAll('.dropdown-option');
-          for (let option of options) {
-            if (option.dataset.value === data.export_experience) {
-              const selectedText = dropdown.querySelector('.selected-text');
-              if (selectedText) {
-                selectedText.textContent = option.textContent;
+        const v = String(data.export_experience).trim();
+        if (v) {
+          exportExperienceInput.value = v;
+          const dropdown = exportExperienceInput.closest('.custom-dropdown');
+          if (dropdown) {
+            const options = dropdown.querySelectorAll('.dropdown-option');
+            for (let option of options) {
+              const dVal = (option.dataset.value || '').trim();
+              const text = (option.textContent || '').trim();
+              if (dVal === v || text === v) {
+                const selectedText = dropdown.querySelector('.selected-text');
+                if (selectedText) selectedText.textContent = option.textContent;
+                option.classList.add('selected');
+                options.forEach(opt => { if (opt !== option) opt.classList.remove('selected'); });
+                break;
               }
-              option.classList.add('selected');
-              break;
             }
           }
         }
@@ -3772,132 +3937,69 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       }
     }
     
-    // Заполнение main_activity (аналогично organization_type)
+    // Заполнение main_activity (надёжное сопоставление по data-value или тексту)
     if (data.main_activity) {
-      const mainActivityDropdown = document.querySelector('input[name="main_activity"]');
-      if (mainActivityDropdown) {
-        // Всегда устанавливаем значение из БД
-        mainActivityDropdown.value = data.main_activity;
-        const dropdown = mainActivityDropdown.closest('.custom-dropdown');
-        if (dropdown) {
-          const options = dropdown.querySelectorAll('.dropdown-option');
-          for (let option of options) {
-            if (option.dataset.value === data.main_activity) {
-              const selectedText = dropdown.querySelector('.selected-text');
-              if (selectedText) {
-                selectedText.textContent = option.textContent;
+      const mainActivityInput = document.querySelector('input[name="main_activity"]');
+      if (mainActivityInput) {
+        const v = String(data.main_activity).trim();
+        if (v && v !== '0' && v !== '…') {
+          mainActivityInput.value = v;
+          const dropdown = mainActivityInput.closest('.custom-dropdown');
+          if (dropdown) {
+            const options = dropdown.querySelectorAll('.dropdown-option');
+            for (let option of options) {
+              const dVal = (option.dataset.value || '').trim();
+              const text = (option.textContent || '').trim();
+              if (dVal === v || text === v) {
+                const selectedText = dropdown.querySelector('.selected-text');
+                if (selectedText) selectedText.textContent = option.textContent;
+                option.classList.add('selected');
+                options.forEach(opt => { if (opt !== option) opt.classList.remove('selected'); });
+                mainActivityInput.dispatchEvent(new Event('change', { bubbles: true }));
+                break;
               }
-              option.classList.add('selected');
-              // Удаляем selected у других опций
-              options.forEach(opt => {
-                if (opt !== option) {
-                  opt.classList.remove('selected');
-                }
-              });
-              break;
-            }
-          }
-          // Триггерим событие change для обновления dropdown
-          mainActivityDropdown.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      }
-    }
-    
-    
-    // Заполнение locality_legal
-    if (data.locality_legal) {
-      const localityLegalDropdown = document.querySelector('input[name="locality_legal"]');
-      if (localityLegalDropdown) {
-        localityLegalDropdown.value = data.locality_legal;
-        const dropdown = localityLegalDropdown.closest('.custom-dropdown');
-        if (dropdown) {
-          const options = dropdown.querySelectorAll('.dropdown-option');
-          for (let option of options) {
-            if (option.dataset.value === data.locality_legal) {
-              const selectedText = dropdown.querySelector('.selected-text');
-              if (selectedText) {
-                selectedText.textContent = option.textContent;
-              }
-              option.classList.add('selected');
-              break;
             }
           }
         }
       }
     }
     
-    // Заполнение department_legal
-    if (data.department_legal) {
-      const departmentLegalDropdown = document.querySelector('input[name="department_legal"]');
-      if (departmentLegalDropdown) {
-        departmentLegalDropdown.value = data.department_legal;
-        const dropdown = departmentLegalDropdown.closest('.custom-dropdown');
-        if (dropdown) {
-          const options = dropdown.querySelectorAll('.dropdown-option');
-          for (let option of options) {
-            if (option.dataset.value === data.department_legal) {
-              const selectedText = dropdown.querySelector('.selected-text');
-              if (selectedText) {
-                selectedText.textContent = option.textContent;
-              }
-              option.classList.add('selected');
-              break;
-            }
-          }
+    
+    // Сопоставление опции по значению (trim, по data-value или по тексту)
+    function setDropdownByValue(inputEl, value) {
+      if (!inputEl || !value) return;
+      const v = String(value).trim();
+      if (!v) return;
+      inputEl.value = v;
+      const dropdown = inputEl.closest('.custom-dropdown');
+      if (!dropdown) return;
+      const options = dropdown.querySelectorAll('.dropdown-option');
+      for (let option of options) {
+        const dVal = (option.dataset.value || '').trim();
+        const text = (option.textContent || '').trim();
+        if (dVal === v || text === v) {
+          const selectedText = dropdown.querySelector('.selected-text');
+          if (selectedText) selectedText.textContent = option.textContent;
+          option.classList.add('selected');
+          options.forEach(opt => { if (opt !== option) opt.classList.remove('selected'); });
+          break;
         }
       }
     }
     
-    // Заполнение locality_admin
-    if (data.locality_admin) {
-      const localityAdminDropdown = document.querySelector('input[name="locality_admin"]');
-      if (localityAdminDropdown) {
-        localityAdminDropdown.value = data.locality_admin;
-        const dropdown = localityAdminDropdown.closest('.custom-dropdown');
-        if (dropdown) {
-          const options = dropdown.querySelectorAll('.dropdown-option');
-          for (let option of options) {
-            if (option.dataset.value === data.locality_admin) {
-              const selectedText = dropdown.querySelector('.selected-text');
-              if (selectedText) {
-                selectedText.textContent = option.textContent;
-              }
-              option.classList.add('selected');
-              break;
-            }
-          }
-        }
-      }
-    }
-    
-    // Заполнение department_admin
-    if (data.department_admin) {
-      const departmentAdminDropdown = document.querySelector('input[name="department_admin"]');
-      if (departmentAdminDropdown) {
-        departmentAdminDropdown.value = data.department_admin;
-        const dropdown = departmentAdminDropdown.closest('.custom-dropdown');
-        if (dropdown) {
-          const options = dropdown.querySelectorAll('.dropdown-option');
-          for (let option of options) {
-            if (option.dataset.value === data.department_admin) {
-              const selectedText = dropdown.querySelector('.selected-text');
-              if (selectedText) {
-                selectedText.textContent = option.textContent;
-              }
-              option.classList.add('selected');
-              break;
-            }
-          }
-        }
-      }
-    }
+    // Заполнение locality_legal / department_legal / locality_admin / department_admin
+    setDropdownByValue(document.querySelector('input[name="locality_legal"]'), data.locality_legal);
+    setDropdownByValue(document.querySelector('input[name="department_legal"]'), data.department_legal);
+    setDropdownByValue(document.querySelector('input[name="locality_admin"]'), data.locality_admin);
+    setDropdownByValue(document.querySelector('input[name="department_admin"]'), data.department_admin);
     
     // Заполнение социальных сетей
     if (data.social_networks && data.social_networks.length > 0) {
       const socialWrapper = document.getElementById('social-wrapper');
-      if (socialWrapper) {
-        // Очистить существующие строки, кроме первой
-        const existingRows = socialWrapper.querySelectorAll('.social_row');
+      const socialRowsEl = socialWrapper ? socialWrapper.querySelector('.social-rows') : null;
+      const container = socialRowsEl || socialWrapper;
+      if (container) {
+        const existingRows = container.querySelectorAll('.social_row');
         for (let i = 1; i < existingRows.length; i++) {
           existingRows[i].remove();
         }
@@ -3905,17 +4007,15 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
         data.social_networks.forEach((social, index) => {
           let row;
           if (index === 0) {
-            row = socialWrapper.querySelector('.social_row');
+            row = container.querySelector('.social_row');
           } else {
-            // Клонировать первую строку для новых
-            const firstRow = socialWrapper.querySelector('.social_row');
+            const firstRow = container.querySelector('.social_row');
             if (firstRow) {
               row = firstRow.cloneNode(true);
               const removeBtn = row.querySelector('.remove');
-              if (removeBtn) {
-                removeBtn.hidden = false;
-              }
-              socialWrapper.appendChild(row);
+              if (removeBtn) removeBtn.hidden = false;
+              container.appendChild(row);
+              if (window.bindSocialRow) window.bindSocialRow(row);
             }
           }
           
@@ -3924,10 +4024,7 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
             const hiddenInput = row.querySelector('input.net');
             const finalInput = row.querySelector('input.net-final');
             
-            if (urlInput && social.url) {
-              urlInput.value = social.url;
-            }
-            
+            if (urlInput && social.url) urlInput.value = social.url;
             if (hiddenInput && social.network_type) {
               hiddenInput.value = social.network_type;
               const dropdown = hiddenInput.closest('.custom-dropdown');
@@ -3936,21 +4033,17 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
                 for (let option of options) {
                   if (option.dataset.value === social.network_type) {
                     const selectedText = dropdown.querySelector('.selected-text');
-                    if (selectedText) {
-                      selectedText.textContent = option.textContent;
-                    }
+                    if (selectedText) selectedText.textContent = option.textContent;
                     option.classList.add('selected');
                     break;
                   }
                 }
               }
             }
-            
-            if (finalInput && social.network_type) {
-              finalInput.value = social.network_type;
-            }
+            if (finalInput && social.network_type) finalInput.value = social.network_type;
           }
         });
+        if (window.updateSocialRemoveButtons) window.updateSocialRemoveButtons();
       }
     }
   }
@@ -4934,7 +5027,12 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
         console.log('File input change event:', e.target.name, 'files:', e.target.files);
         if (e.target.files && e.target.files.length > 0) {
           console.log('Calling uploadFile for:', e.target.files[0].name);
-          uploadFile(e.target.files[0], e.target);
+          window.pendingRegfullUploads = window.pendingRegfullUploads || [];
+          const p = uploadFile(e.target.files[0], e.target);
+          window.pendingRegfullUploads.push(p);
+          p.finally(function() {
+            window.pendingRegfullUploads = (window.pendingRegfullUploads || []).filter(function(x) { return x !== p; });
+          });
         } else {
           console.log('No files selected');
         }
@@ -4944,6 +5042,12 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   
   window.getFileState = function() {
     return fileState;
+  };
+  window.waitForRegfullUploads = function() {
+    return Promise.all(window.pendingRegfullUploads || []);
+  };
+  window.uploadFileForInput = function(file, input) {
+    return uploadFile(file, input);
   };
 })();
 </script>

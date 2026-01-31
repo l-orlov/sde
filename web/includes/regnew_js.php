@@ -13,10 +13,19 @@ $inputJSON = file_get_contents('php://input');
 $input = json_decode($inputJSON, true); // JSON to Array
 
 $company_name   =		isset($input['company_name'])	? htmlspecialchars($input['company_name'])	: '';
-$tax_id         =		isset($input['tax_id'])			? htmlspecialchars($input['tax_id'])			: '';
+$tax_id_raw     =		isset($input['tax_id'])			? trim((string) $input['tax_id'])			: '';
+$tax_id         =		preg_replace('/\D/', '', $tax_id_raw);
 $mail           =		isset($input['mail'])			? htmlspecialchars($input['mail'])			: '';
 $phone          =		isset($input['phone'])			? htmlspecialchars($input['phone'])			: '';
 $pass           =		isset($input['pass'])			? htmlspecialchars($input['pass'])			: '';
+
+// CUIT: obligatorio exactamente 11 dígitos (bloquear registro si no)
+if (strlen($tax_id) !== 11 || !ctype_digit($tax_id)) {
+    $return['err'] = 'CUIT / Identificación Fiscal debe tener exactamente 11 dígitos.';
+    echo json_encode($return);
+    exit;
+}
+$tax_id = htmlspecialchars($tax_id);
 
 // Remove all non-digit characters from a phone number
 $phone = clear_phone($phone);

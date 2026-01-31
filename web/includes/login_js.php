@@ -12,13 +12,19 @@ $return = ['res' => '', 'ok' => 0, 'err' => ''];
 $inputJSON = file_get_contents('php://input');
 $input = json_decode($inputJSON, true); // JSON to Array
 
-$tax_id = isset($input['tax_id']) ? htmlspecialchars($input['tax_id']) : '';
+$tax_id_raw = isset($input['tax_id']) ? trim((string) $input['tax_id']) : '';
+$tax_id = preg_replace('/\D/', '', $tax_id_raw);
 $pass = isset($input['pass']) ? htmlspecialchars($input['pass']) : '';
 
 if (empty($tax_id) || empty($pass)) {
 	$return['err'] = 'Por favor, ingrese su CUIL/CUIT y contraseña';
     echo json_encode($return);
     exit;
+}
+if (strlen($tax_id) !== 11) {
+	$return['err'] = 'CUIT / Identificación Fiscal debe tener exactamente 11 dígitos.';
+	echo json_encode($return);
+	exit;
 }
 
 $query="SELECT * FROM users WHERE tax_id = ? AND password = ?";

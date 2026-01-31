@@ -22,7 +22,7 @@
                 </div>
                 <div class="login_input_box">
                     <div class="login_input_inp">
-                        <input type="Text" id="tax_id" data-i18n-placeholder="register_tax_id_placeholder">
+                        <input type="text" id="tax_id" name="tax_id" data-i18n-placeholder="register_tax_id_placeholder" placeholder="XX-XXXXXXXX-X" inputmode="numeric" maxlength="13">
                     </div>
                 </div>
                 <div class="login_input_box">
@@ -60,6 +60,20 @@ function toggleLangMenu() {
 }
 document.addEventListener('DOMContentLoaded', () => {
   initLang('regnew');
+  // Маска CUIT: 11 dígitos, formato 20-18858351-3 (guión como / en fecha)
+  const taxIdInput = document.getElementById('tax_id');
+  if (taxIdInput) {
+    const formatCuit = (v) => {
+      v = v.replace(/\D/g, '').slice(0, 11);
+      if (v.length <= 2) return v;
+      if (v.length <= 9) return v.slice(0, 2) + '-' + v.slice(2);
+      if (v.length === 10) return v.slice(0, 2) + '-' + v.slice(2, 10) + '-';
+      return v.slice(0, 2) + '-' + v.slice(2, 10) + '-' + v.slice(10, 11);
+    };
+    taxIdInput.addEventListener('input', function() {
+      this.value = formatCuit(this.value);
+    });
+  }
 });
 document.addEventListener('click', function (e) {
   const langBox = document.querySelector('.login_lang');
@@ -75,13 +89,22 @@ function regUser() {
 	msgEl.classList.remove('err');
 
 	let company_name = document.getElementById('company_name').value.trim();
-	let tax_id = document.getElementById('tax_id').value.trim();
+	let tax_idRaw = document.getElementById('tax_id').value.trim();
+	let tax_idDigits = (tax_idRaw || '').replace(/\D/g, '');
 	let mail = document.getElementById('mail').value.trim();
 	let phone = document.getElementById('phone').value.trim();
 	let pass = document.getElementById('pass').value.trim();
 	let repass = document.getElementById('repass').value.trim();
-	
-	let requiredFields = { company_name, tax_id, mail, phone, pass, repass };
+
+	// CUIT: obligatorio exactamente 11 dígitos (bloquear registro si no)
+	if (tax_idDigits.length !== 11 || !/^\d{11}$/.test(tax_idDigits)) {
+		msgEl.innerHTML = 'CUIT / Identificación Fiscal debe tener exactamente 11 dígitos';
+		msgEl.classList.add('err');
+		document.getElementById('tax_id').focus();
+		return;
+	}
+
+	let requiredFields = { company_name, tax_id: tax_idDigits, mail, phone, pass, repass };
 	for (let field in requiredFields) {
 		const val = String(requiredFields[field]).trim();
 		if (!val) {
@@ -99,11 +122,12 @@ function regUser() {
 
 	let senddata = {
 		company_name: company_name,
-		tax_id: tax_id,
+		tax_id: tax_idDigits,
 		mail: mail,
 		phone: phone,
 		pass: pass
 	};
+	// Solo enviar si CUIT tiene 11 dígitos (ya validado arriba)
 	fetch('includes/regnew_js.php', { method: 'POST', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify( senddata )})
 	.then(response => response.json())
 	.then(data => {

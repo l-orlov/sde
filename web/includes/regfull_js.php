@@ -90,21 +90,24 @@ try {
     
     // ========== 1. СОХРАНЕНИЕ ДАННЫХ КОМПАНИИ ==========
     $name = isset($input['name']) ? htmlspecialchars(trim($input['name'])) : '';
-    $taxId = isset($input['tax_id']) ? htmlspecialchars(trim($input['tax_id'])) : '';
+    $taxIdRaw = isset($input['tax_id']) ? trim((string) $input['tax_id']) : '';
+    $taxId = preg_replace('/\D/', '', $taxIdRaw);
+    if (strlen($taxId) !== 11 || !ctype_digit($taxId)) {
+        if (ob_get_level()) ob_clean();
+        $return['err'] = 'CUIT / Identificación Fiscal debe tener exactamente 11 dígitos.';
+        header('Content-Type: application/json');
+        echo json_encode($return);
+        exit;
+    }
+    $taxId = htmlspecialchars($taxId);
     $legalName = isset($input['legal_name']) ? htmlspecialchars(trim($input['legal_name'])) : '';
     $startDate = isset($input['start_date']) ? htmlspecialchars(trim($input['start_date'])) : null;
     $website = isset($input['website']) ? htmlspecialchars(trim($input['website'])) : '';
     $organizationType = isset($input['organization_type']) ? htmlspecialchars(trim($input['organization_type'])) : '';
-    $mainActivity = '';
-    if (isset($input['main_activity']) && !empty($input['main_activity'])) {
-        $trimmed = trim($input['main_activity']);
-        // Сохраняем только валидные значения (не "0", не "…", не пустое)
-        if ($trimmed !== '' && $trimmed !== '0' && $trimmed !== '…') {
-            $mainActivity = htmlspecialchars($trimmed);
-        }
+    $mainActivity = isset($input['main_activity']) ? htmlspecialchars(trim((string) $input['main_activity'])) : '';
+    if ($mainActivity === '0' || $mainActivity === '…') {
+        $mainActivity = '';
     }
-    // Отладка: логируем значение для проверки
-    error_log("main_activity received: " . ($input['main_activity'] ?? 'NOT SET') . " -> processed: " . $mainActivity);
     
     $startDateTimestamp = null;
     if ($startDate) {
@@ -667,7 +670,9 @@ try {
             'awards' => isset($input['awards']) ? htmlspecialchars(trim($input['awards'])) : '',
             'awards_detail' => isset($input['awards_detail']) ? htmlspecialchars(trim($input['awards_detail'])) : '',
             'fairs' => isset($input['fairs']) ? htmlspecialchars(trim($input['fairs'])) : '',
+            'fairs_detail' => isset($input['fairs_detail']) ? htmlspecialchars(trim($input['fairs_detail'])) : '',
             'rounds' => isset($input['rounds']) ? htmlspecialchars(trim($input['rounds'])) : '',
+            'rounds_detail' => isset($input['rounds_detail']) ? htmlspecialchars(trim($input['rounds_detail'])) : '',
             'export_experience' => isset($input['export_experience']) ? htmlspecialchars(trim($input['export_experience'])) : '',
             'commercial_references' => isset($input['commercial_references']) ? htmlspecialchars(trim($input['commercial_references'])) : '',
             'other_differentiation' => isset($input['other_differentiation']) ? htmlspecialchars(trim($input['other_differentiation'])) : '',
@@ -695,6 +700,46 @@ try {
         $diffFactors = $input['differentiation_factors'];
     }
     $jsonData['differentiation_factors'] = $diffFactors;
+    
+    // Si "Otros" está en Factores de Diferenciación, el campo other_differentiation es obligatorio
+    $otherDiff = isset($input['other_differentiation']) ? trim((string) $input['other_differentiation']) : '';
+    $jsonData['competitiveness']['other_differentiation'] = $otherDiff !== '' ? htmlspecialchars($otherDiff) : '';
+    if (in_array('Otros', $diffFactors, true) && $otherDiff === '') {
+        if (ob_get_level()) ob_clean();
+        $return['err'] = 'Factores de Diferenciación: si selecciona "Otros", debe especificar.';
+        header('Content-Type: application/json');
+        echo json_encode($return);
+        exit;
+    }
+    
+    // Premios/Ferias/Rondas: si respuesta "Si", el detalle es obligatorio
+    $awardsVal = isset($input['awards']) ? trim((string) $input['awards']) : '';
+    $awardsDetail = isset($input['awards_detail']) ? trim((string) $input['awards_detail']) : '';
+    if ($awardsVal === 'si' && $awardsDetail === '') {
+        if (ob_get_level()) ob_clean();
+        $return['err'] = 'Premios: si elige "Si", debe especificar.';
+        header('Content-Type: application/json');
+        echo json_encode($return);
+        exit;
+    }
+    $fairsVal = isset($input['fairs']) ? trim((string) $input['fairs']) : '';
+    $fairsDetail = isset($input['fairs_detail']) ? trim((string) $input['fairs_detail']) : '';
+    if ($fairsVal === 'si' && $fairsDetail === '') {
+        if (ob_get_level()) ob_clean();
+        $return['err'] = 'Ferias: si elige "Si", debe especificar.';
+        header('Content-Type: application/json');
+        echo json_encode($return);
+        exit;
+    }
+    $roundsVal = isset($input['rounds']) ? trim((string) $input['rounds']) : '';
+    $roundsDetail = isset($input['rounds_detail']) ? trim((string) $input['rounds_detail']) : '';
+    if ($roundsVal === 'si' && $roundsDetail === '') {
+        if (ob_get_level()) ob_clean();
+        $return['err'] = 'Rondas: si elige "Si", debe especificar.';
+        header('Content-Type: application/json');
+        echo json_encode($return);
+        exit;
+    }
     
     $needs = [];
     if (isset($input['needs']) && is_array($input['needs'])) {
@@ -944,8 +989,35 @@ try {
             if (!$hasNewFile) {
                 $targetProductId = null;
                 
-                // Определяем product_id по fileKey
-                if ($fileKey === 'product_photo') {
+                // Приоритет: формат existing_file_product_photo_product_<id> / service_photo_product_<id> — привязка по id продукта (без путаницы с индексами)
+                if (preg_match('/^product_photo_product_(\d+)$/', $fileKey, $m)) {
+                    $pid = (int) $m[1];
+                    $check = mysqli_prepare($link, "SELECT id FROM products WHERE id = ? AND user_id = ?");
+                    if ($check) {
+                        mysqli_stmt_bind_param($check, 'ii', $pid, $userId);
+                        mysqli_stmt_execute($check);
+                        $res = mysqli_stmt_get_result($check);
+                        if ($res && mysqli_fetch_assoc($res)) {
+                            $targetProductId = $pid;
+                        }
+                        mysqli_stmt_close($check);
+                    }
+                } elseif (preg_match('/^service_photo_product_(\d+)$/', $fileKey, $m)) {
+                    $pid = (int) $m[1];
+                    $check = mysqli_prepare($link, "SELECT id FROM products WHERE id = ? AND user_id = ?");
+                    if ($check) {
+                        mysqli_stmt_bind_param($check, 'ii', $pid, $userId);
+                        mysqli_stmt_execute($check);
+                        $res = mysqli_stmt_get_result($check);
+                        if ($res && mysqli_fetch_assoc($res)) {
+                            $targetProductId = $pid;
+                        }
+                        mysqli_stmt_close($check);
+                    }
+                }
+                
+                // Определяем product_id по fileKey (форматы по индексу — для обратной совместимости)
+                if ($targetProductId === null && $fileKey === 'product_photo') {
                     // Старый формат - используем первый продукт
                     if (isset($productIdsByType['product'][0])) {
                         $targetProductId = $productIdsByType['product'][0];
@@ -1047,6 +1119,27 @@ try {
         } catch (Exception $e) {
             error_log("Error deleting temporary file {$fileId}: " . $e->getMessage());
         }
+    }
+    
+    // Удаление «осиротевших» файлов: не привязаны ни к продукту, или продукт удалён
+    $orphanQuery = "SELECT f.id FROM files f 
+        LEFT JOIN products p ON f.product_id = p.id AND p.user_id = f.user_id 
+        WHERE f.user_id = ? AND f.is_temporary = 0 
+        AND (f.product_id IS NULL OR p.id IS NULL)
+        AND f.file_type IN ('product_photo', 'service_photo')";
+    $orphanStmt = mysqli_prepare($link, $orphanQuery);
+    if ($orphanStmt) {
+        mysqli_stmt_bind_param($orphanStmt, 'i', $userId);
+        mysqli_stmt_execute($orphanStmt);
+        $orphanResult = mysqli_stmt_get_result($orphanStmt);
+        while ($row = mysqli_fetch_assoc($orphanResult)) {
+            try {
+                $fileManager->delete($row['id'], $userId);
+            } catch (Exception $e) {
+                error_log("Error deleting orphan file {$row['id']}: " . $e->getMessage());
+            }
+        }
+        mysqli_stmt_close($orphanStmt);
     }
     
     mysqli_commit($link);

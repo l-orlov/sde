@@ -37,7 +37,12 @@ if ($stmt) {
     if ($result && mysqli_num_rows($result) > 0) {
         $data = mysqli_fetch_assoc($result);
         $companyName = htmlspecialchars($data['company_name'] ?? '');
-        $taxId = htmlspecialchars($data['tax_id'] ?? '');
+        $taxId = $data['tax_id'] ?? '';
+        $taxIdDigits = preg_replace('/\D/', '', (string) $taxId);
+        if (strlen($taxIdDigits) === 11) {
+            $taxId = substr($taxIdDigits, 0, 2) . '-' . substr($taxIdDigits, 2, 8) . '-' . substr($taxIdDigits, 10, 1);
+        }
+        $taxId = htmlspecialchars($taxId);
     } else {
         $companyName = '';
         $taxId = '';
@@ -238,7 +243,7 @@ $visibleProducts = min(4, $totalProducts);
           
           <div class="home-form-field">
             <label data-i18n="home_form_tax_id" class="home-form-label">CUIL/CUIT:</label>
-            <input type="text" class="home-form-input" id="profile-tax-id" value="<?= $taxId ?>">
+            <input type="text" class="home-form-input" id="profile-tax-id" name="tax_id" value="<?= $taxId ?>" placeholder="XX-XXXXXXXX-X" inputmode="numeric" maxlength="13">
           </div>
           
           <div class="home-form-field">
@@ -586,6 +591,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
+  // Máscara CUIT: 11 dígitos, formato 20-18858351-3
+  const profileTaxIdInput = document.getElementById('profile-tax-id');
+  if (profileTaxIdInput) {
+    const formatCuit = (v) => {
+      v = (v || '').replace(/\D/g, '').slice(0, 11);
+      if (v.length <= 2) return v;
+      if (v.length <= 9) return v.slice(0, 2) + '-' + v.slice(2);
+      if (v.length === 10) return v.slice(0, 2) + '-' + v.slice(2, 10) + '-';
+      return v.slice(0, 2) + '-' + v.slice(2, 10) + '-' + v.slice(10, 11);
+    };
+    profileTaxIdInput.addEventListener('input', function() {
+      this.value = formatCuit(this.value);
+    });
+  }
+
   // Save profile button handler
   const saveProfileBtn = document.getElementById('btnSaveProfile');
   const profileMessage = document.getElementById('home-profile-message');
@@ -593,10 +613,17 @@ document.addEventListener('DOMContentLoaded', function() {
   if (saveProfileBtn) {
     saveProfileBtn.addEventListener('click', async function() {
       const companyName = document.getElementById('profile-company').value.trim();
-      const taxId = document.getElementById('profile-tax-id').value.trim();
+      const taxIdRaw = document.getElementById('profile-tax-id').value.trim();
+      const taxIdDigits = (taxIdRaw || '').replace(/\D/g, '');
       const email = document.getElementById('profile-email').value.trim();
       const phone = document.getElementById('profile-phone').value.trim();
       const password = document.getElementById('profile-password').value.trim();
+      
+      if (taxIdDigits.length !== 11 || !/^\d{11}$/.test(taxIdDigits)) {
+        showProfileMessage('CUIT / Identificación Fiscal debe tener exactamente 11 dígitos', 'error');
+        if (profileTaxIdInput) profileTaxIdInput.focus();
+        return;
+      }
       
       if (!email) {
         showProfileMessage('El correo electrónico es obligatorio', 'error');
@@ -619,7 +646,7 @@ document.addEventListener('DOMContentLoaded', function() {
       try {
         const data = {
           company_name: companyName,
-          tax_id: taxId,
+          tax_id: taxIdDigits,
           email: email,
           phone: phone
         };

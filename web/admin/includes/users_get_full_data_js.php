@@ -365,17 +365,37 @@ try {
         
         try {
             if (class_exists('StorageFactory') && ($row['storage_type'] ?? '') === 'local') {
-                $url = function_exists('get_serve_file_url') ? get_serve_file_url($row['id']) : ('/serve_file.php?id=' . (int) $row['id']);
+                if (function_exists('get_serve_file_url')) {
+                    $url = get_serve_file_url($row['id']);
+                } else {
+                    $configPath = getIncludesPath() . 'config/config.php';
+                    $config = file_exists($configPath) ? (require $configPath) : [];
+                    $webBase = rtrim($config['web_base'] ?? '', '/');
+                    $url = $webBase . '/serve_file.php?id=' . (int) $row['id'];
+                }
             } elseif (class_exists('StorageFactory')) {
                 $storage = StorageFactory::createByType($row['storage_type']);
                 $url = $storage->getUrl($row['file_path']);
             } else {
-                // Если StorageFactory не загружен, используем базовый путь
-                $url = $row['file_path'];
+                if (function_exists('get_serve_file_url')) {
+                    $url = get_serve_file_url($row['id']);
+                } else {
+                    $configPath = getIncludesPath() . 'config/config.php';
+                    $config = file_exists($configPath) ? (require $configPath) : [];
+                    $webBase = rtrim($config['web_base'] ?? '', '/');
+                    $url = $webBase . '/serve_file.php?id=' . (int) $row['id'];
+                }
             }
         } catch (Exception $e) {
             error_log("Warning: Error al obtener URL del archivo: " . $e->getMessage());
-            $url = $row['file_path']; // Fallback на базовый путь
+            if (function_exists('get_serve_file_url')) {
+                $url = get_serve_file_url($row['id']);
+            } else {
+                $configPath = getIncludesPath() . 'config/config.php';
+                $config = file_exists($configPath) ? (require $configPath) : [];
+                $webBase = rtrim($config['web_base'] ?? '', '/');
+                $url = $webBase . '/serve_file.php?id=' . (int) $row['id'];
+            }
         }
         
         $fileData = [

@@ -508,6 +508,23 @@ div.label span .req,
 }
 .social_row .remove:hover{ color:#EE3124; border-color:#EE3124; }
 .social_row .remove[hidden]{ display:none !important; }
+#social-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+#social-wrapper .social-rows {
+  display: block;
+}
+#social-wrapper .social-rows .social_row {
+  margin-bottom: 12px;
+}
+#social-wrapper .social-rows .social_row:last-child {
+  margin-bottom: 0;
+}
+#social-wrapper #add-social {
+  margin-top: 12px;
+  align-self: flex-start;
+}
 @media (max-width: 1000px){
 .social_row{
   grid-template-columns: 1fr;
@@ -2784,13 +2801,6 @@ to {
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
-
-.btn-export-tariffs:hover {
-  background: #ffc107;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 214, 10, 0.4);
-}
-
 .home-header-icons {
   display: flex;
   align-items: center;

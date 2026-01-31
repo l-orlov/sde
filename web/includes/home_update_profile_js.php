@@ -38,10 +38,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         $companyName = isset($input['company_name']) ? htmlspecialchars(trim($input['company_name'])) : '';
-        $taxId = isset($input['tax_id']) ? htmlspecialchars(trim($input['tax_id'])) : '';
+        $taxIdRaw = isset($input['tax_id']) ? trim((string) $input['tax_id']) : '';
+        $taxId = preg_replace('/\D/', '', $taxIdRaw);
         $email = isset($input['email']) ? htmlspecialchars(trim($input['email'])) : '';
         $phone = isset($input['phone']) ? htmlspecialchars(trim($input['phone'])) : '';
         $password = isset($input['password']) ? trim($input['password']) : '';
+        
+        if (strlen($taxId) !== 11 || !ctype_digit($taxId)) {
+            $return['err'] = 'CUIT / Identificación Fiscal debe tener exactamente 11 dígitos.';
+            if (ob_get_level()) ob_clean();
+            header('Content-Type: application/json');
+            echo json_encode($return);
+            exit;
+        }
+        $taxId = htmlspecialchars($taxId);
         
         if (empty($email)) {
             $return['err'] = 'El correo electrónico es obligatorio';

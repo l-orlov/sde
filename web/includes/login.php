@@ -24,7 +24,7 @@ if (isset($_GET['logout']) && $_GET['logout'] == '1') {
 				<div class="logins">
 					<div class="login_input_box">
 						<div class="login_input_inp">
-							<input style="width: 100%;" type="Text" id="tax_id" data-i18n-placeholder="login_tax_id_placeholder">
+							<input style="width: 100%;" type="text" id="tax_id" name="tax_id" data-i18n-placeholder="login_tax_id_placeholder" placeholder="XX-XXXXXXXX-X" inputmode="numeric" maxlength="13">
 						</div>
 						<div class="login_input_ico">
 							<img src="img/icons/telephone.png">
@@ -61,6 +61,20 @@ function toggleLangMenu() {
 }
 document.addEventListener('DOMContentLoaded', () => {
   initLang('login');
+  // Маска CUIT: 11 dígitos, formato 20-18858351-3 (guión como / en fecha)
+  const taxIdInput = document.getElementById('tax_id');
+  if (taxIdInput) {
+    const formatCuit = (v) => {
+      v = v.replace(/\D/g, '').slice(0, 11);
+      if (v.length <= 2) return v;
+      if (v.length <= 9) return v.slice(0, 2) + '-' + v.slice(2);
+      if (v.length === 10) return v.slice(0, 2) + '-' + v.slice(2, 10) + '-';
+      return v.slice(0, 2) + '-' + v.slice(2, 10) + '-' + v.slice(10, 11);
+    };
+    taxIdInput.addEventListener('input', function() {
+      this.value = formatCuit(this.value);
+    });
+  }
 });
 document.addEventListener('click', function (e) {
   const langBox = document.querySelector('.login_lang');
@@ -75,7 +89,9 @@ function login() {
 	msgEl.innerHTML = '';
 	msgEl.classList.remove('err');
 
-	let tax_id = document.getElementById('tax_id').value.trim();
+	let tax_idRaw = document.getElementById('tax_id').value.trim();
+	let tax_idDigits = tax_idRaw.replace(/\D/g, '');
+	let tax_id = tax_idDigits;
 	let pass = document.getElementById('pass').value.trim();
 	
 	let requiredFields = { tax_id, pass };
@@ -87,9 +103,15 @@ function login() {
 			return;
 		}
 	}
+	if (tax_idDigits.length !== 11) {
+		msgEl.innerHTML = 'CUIT / Identificación Fiscal debe tener exactamente 11 dígitos';
+		msgEl.classList.add('err');
+		document.getElementById('tax_id').focus();
+		return;
+	}
 
 	let senddata = {
-		tax_id: tax_id,
+		tax_id: tax_idDigits,
 		pass: pass
 	};
 	fetch('includes/login_js.php', { method: 'POST', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify( senddata )})
