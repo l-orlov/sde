@@ -375,7 +375,7 @@ $visibleProducts = min(4, $totalProducts);
             </div>
             <div class="home-presentation-content">
               <div data-i18n="product_goat_cheese" class="home-presentation-name">Queso de cabra madurado</div>
-              <button data-i18n="btn_download_pdf" class="btn btn-download-pdf">Descargar PDF</button>
+              <a href="pdf/home/company_pdf.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
             </div>
           </div>
           
@@ -388,7 +388,7 @@ $visibleProducts = min(4, $totalProducts);
             </div>
             <div class="home-presentation-content">
               <div data-i18n="product_natural_honey" class="home-presentation-name">Miel natural</div>
-              <button data-i18n="btn_download_pdf" class="btn btn-download-pdf">Descargar PDF</button>
+              <a href="pdf/home/company_pdf.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
             </div>
           </div>
           
@@ -401,7 +401,7 @@ $visibleProducts = min(4, $totalProducts);
             </div>
             <div class="home-presentation-content">
               <div data-i18n="product_peach_jam" class="home-presentation-name">Mermelada de durazno natural</div>
-              <button data-i18n="btn_download_pdf" class="btn btn-download-pdf">Descargar PDF</button>
+              <a href="pdf/home/company_pdf.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
             </div>
           </div>
           
@@ -414,7 +414,7 @@ $visibleProducts = min(4, $totalProducts);
             </div>
             <div class="home-presentation-content">
               <div data-i18n="product_dulce_leche" class="home-presentation-name">Dulce de leche artesanal</div>
-              <button data-i18n="btn_download_pdf" class="btn btn-download-pdf">Descargar PDF</button>
+              <a href="pdf/home/company_pdf.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
             </div>
           </div>
         </div>

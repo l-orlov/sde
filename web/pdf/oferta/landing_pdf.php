@@ -6,7 +6,11 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
-$vendorAutoload = __DIR__ . '/../vendor/autoload.php';
+$webRoot = dirname(dirname(__DIR__)); // web/ (o sde/)
+$vendorAutoload = $webRoot . '/../vendor/autoload.php';
+if (!file_exists($vendorAutoload)) {
+    $vendorAutoload = $webRoot . '/vendor/autoload.php';
+}
 if (!file_exists($vendorAutoload)) {
     header('Content-Type: text/plain; charset=utf-8');
     echo "Para generar el PDF, ejecute en la raíz del proyecto: composer install\n";
@@ -14,7 +18,7 @@ if (!file_exists($vendorAutoload)) {
 }
 require_once $vendorAutoload;
 
-require_once __DIR__ . '/includes/functions.php';
+require_once $webRoot . '/includes/functions.php';
 DBconnect();
 
 global $link;
@@ -30,24 +34,24 @@ $configInstitucional = [
     'mail'               => 'comercioexterior@santiago.gob.ar',
     'localidad_direccion'=> 'Santiago del Estero, Argentina',
 ];
-$webRoot = __DIR__;
+$assetsDir = __DIR__ . '/assets';
 $logoPath = $webRoot . '/img/logo.svg';
 $catImages = glob($webRoot . '/img/landing/*.png');
 $catImagePath = !empty($catImages) ? $catImages[0] : null;
 // Fondo oficial del primer slide (no es una foto del landing)
-$backgroundSlide1Path = $webRoot . '/img/pdf/background_slide1.jpg';
+$backgroundSlide1Path = $assetsDir . '/background_slide1.jpg';
 $backgroundSlide1Uri = (file_exists($backgroundSlide1Path)) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($backgroundSlide1Path)) : '';
-$pdfLogoPath = $webRoot . '/img/pdf/logo.png';
+$pdfLogoPath = $assetsDir . '/logo.png';
 $pdfLogoUri = (file_exists($pdfLogoPath)) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pdfLogoPath)) : '';
-$imgSlide2Path = $webRoot . '/img/pdf/img_slide2.png';
-$imgSlide3Path = $webRoot . '/img/pdf/img_slide3.png';
-$iconTelefonoPath = $webRoot . '/img/pdf/telefono.png';
-$iconMailPath = $webRoot . '/img/pdf/mail.png';
-$iconWebPath = $webRoot . '/img/pdf/web.png';
-$iconDireccionPath = $webRoot . '/img/pdf/direccion.png';
+$imgSlide2Path = $assetsDir . '/img_slide2.png';
+$imgSlide3Path = $assetsDir . '/img_slide3.png';
+$iconTelefonoPath = $assetsDir . '/telefono.png';
+$iconMailPath = $assetsDir . '/mail.png';
+$iconWebPath = $assetsDir . '/web.png';
+$iconDireccionPath = $assetsDir . '/direccion.png';
 $storageUploadsDir = $webRoot . '/uploads';
-if (is_file(__DIR__ . '/includes/config/config.php')) {
-    $storageConfig = @include __DIR__ . '/includes/config/config.php';
+if (is_file($webRoot . '/includes/config/config.php')) {
+    $storageConfig = @include $webRoot . '/includes/config/config.php';
     if (!empty($storageConfig['storage']['local']['base_path'])) {
         $storageUploadsDir = $storageConfig['storage']['local']['base_path'];
     }

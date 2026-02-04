@@ -1,3 +1,8 @@
+<?php
+$__landing_config = file_exists(__DIR__ . '/config/config.php') ? (require __DIR__ . '/config/config.php') : [];
+$__web_base = rtrim($__landing_config['web_base'] ?? '', '/');
+$__pdf_oferta_url = $__web_base . '/index.php?page=landing_pdf';
+?>
 <!-- HEADER -->
 <div class="hero-section">
     <header class="hero-header">
@@ -6,7 +11,7 @@
         </div>
         <div class="nav-container">
             <nav class="hero-nav">
-                <a data-i18n="nav_exportable" href="generar_oferta_pdf.php" class="nav-link" target="_blank" rel="noopener" onclick="this.href='generar_oferta_pdf.php?t='+Date.now();">Oferta exportable</a>
+                <a data-i18n="nav_exportable" href="<?= htmlspecialchars($__pdf_oferta_url) ?>" class="nav-link" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_url) ?>" onclick="this.href=this.getAttribute('data-pdf-url')+(this.getAttribute('data-pdf-url').indexOf('?')>=0?'&':'?')+'t='+Date.now();">Oferta exportable</a>
                 <a data-i18n="nav_turismo" href="#turismo" class="nav-link">Turismo</a>
                 <a data-i18n="nav_news" href="#noticias" class="nav-link">Noticias</a>
                 <a data-i18n="nav_contact" href="#contactos" class="nav-link">Contactos</a>

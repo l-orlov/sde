@@ -6,6 +6,12 @@ ob_implicit_flush();
 
 include "includes/functions.php";
 DBconnect();
+
+$page = isset($_REQUEST['page']) ? $_REQUEST['page'] : '';
+if ($page === 'landing_pdf') {
+    require __DIR__ . '/pdf/oferta/landing_pdf.php';
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -24,7 +30,7 @@ DBconnect();
 
 <?
 $page = isset($_REQUEST['page']) ? htmlspecialchars($_REQUEST['page']) : '';
-if ($page=='logout') include 'includes/logout.php';
+if ($page === 'logout') include 'includes/logout.php';
 
 if ( !isset($_SESSION['uid']) ) {
     SWITCH ( $page ) {

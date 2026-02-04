@@ -16,11 +16,16 @@ async function setLang(page, lang) {
         v = m ? m[1] : '';
       }
     } catch (e) {}
-    const url = `lang/${page}/${lang}.json` + (v ? '?v=' + v : '');
-    const res = await fetch(url);
+    let url = `lang/${page}/${lang}.json` + (v ? '?v=' + v : '');
+    let res = await fetch(url);
+    let fallbackLang = (lang === 'es') ? 'en' : 'es';
 
     if (!res.ok) {
-      throw new Error(`Failed to load ${url}, status ${res.status}`);
+      url = `lang/${page}/${fallbackLang}.json` + (v ? '?v=' + v : '');
+      res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Failed to load lang file, status ${res.status}`);
+      }
     }
 
     const dict = await res.json();
@@ -72,13 +77,13 @@ async function setLang(page, lang) {
   }
 }
 
-const supportedLangs = ['es', 'en', 'ru'];
+const supportedLangs = ['es', 'en'];
 
 function initLang(page = 'landing', defaultLang = 'es') {
   const storedLang = localStorage.getItem('lang');
   const browserLang = (navigator.language || '').split('-')[0];
-
-  const lang = storedLang ?? (supportedLangs.includes(browserLang) ? browserLang : defaultLang);
+  const requested = storedLang ?? (supportedLangs.includes(browserLang) ? browserLang : defaultLang);
+  const lang = supportedLangs.includes(requested) ? requested : defaultLang;
 
   setLang(page, lang);
 }
