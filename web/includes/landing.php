@@ -1,7 +1,7 @@
 <?php
 $__landing_config = file_exists(__DIR__ . '/config/config.php') ? (require __DIR__ . '/config/config.php') : [];
 $__web_base = rtrim($__landing_config['web_base'] ?? '', '/');
-$__pdf_oferta_url = $__web_base . '/index.php?page=landing_pdf';
+$__pdf_oferta_url = $__web_base . '/index.php?page=clasico_pdf';
 ?>
 <!-- HEADER -->
 <div class="hero-section">

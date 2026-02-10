@@ -8,8 +8,8 @@ include "includes/functions.php";
 DBconnect();
 
 $page = isset($_REQUEST['page']) ? $_REQUEST['page'] : '';
-if ($page === 'landing_pdf') {
-    require __DIR__ . '/pdf/oferta/landing_pdf.php';
+if ($page === 'clasico_pdf') {
+    require __DIR__ . '/pdf/oferta/clasico_pdf.php';
     exit;
 }
 ?>

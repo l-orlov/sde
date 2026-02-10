@@ -1,8 +1,8 @@
 <?php
 /**
- * Entrada para PDF de presentación de empresa. Dos estilos: D1 y D2.
- * Opcional: ?design=D1 o ?design=D2 para elegir uno; si no se pasa, se elige al azar.
+ * Entrada para PDF de presentación de empresa. Elige al azar diseño D1 o D2.
+ * Opcional: ?design=D1 o ?design=D2 para forzar uno (lo aplica el script incluido).
  */
-$designParam = isset($_GET['design']) ? strtolower(trim($_GET['design'])) : '';
-$design = ($designParam === 'd1' || $designParam === 'd2') ? $designParam : (mt_rand(0, 1) === 0 ? 'd1' : 'd2');
+// TODO: volver a aleatorio para producción: (mt_rand(0, 1) === 0) ? 'd1' : 'd2'
+$design = 'd3';
 require __DIR__ . '/company_pdf_' . $design . '.php';
