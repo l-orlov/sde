@@ -1,7 +1,11 @@
 <?php
 $__landing_config = file_exists(__DIR__ . '/config/config.php') ? (require __DIR__ . '/config/config.php') : [];
 $__web_base = rtrim($__landing_config['web_base'] ?? '', '/');
-$__pdf_oferta_url = $__web_base . '/index.php?page=clasico_pdf';
+$__pdf_oferta_urls = [
+    'clasico'    => $__web_base . '/index.php?page=clasico_pdf',
+    'corporativo' => $__web_base . '/index.php?page=corporativo_pdf',
+    'moderno'    => $__web_base . '/index.php?page=moderno_pdf',
+];
 ?>
 <!-- HEADER -->
 <div class="hero-section">
@@ -11,7 +15,20 @@ $__pdf_oferta_url = $__web_base . '/index.php?page=clasico_pdf';
         </div>
         <div class="nav-container">
             <nav class="hero-nav">
-                <a data-i18n="nav_exportable" href="<?= htmlspecialchars($__pdf_oferta_url) ?>" class="nav-link" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_url) ?>" onclick="this.href=this.getAttribute('data-pdf-url')+(this.getAttribute('data-pdf-url').indexOf('?')>=0?'&':'?')+'t='+Date.now();">Oferta exportable</a>
+                <div class="oferta-dropdown" id="oferta-dropdown">
+                    <button type="button" class="nav-link oferta-dropdown-trigger" data-i18n="nav_exportable" aria-expanded="false" aria-haspopup="true" id="oferta-dropdown-btn">Oferta exportable</button>
+                    <ul class="oferta-dropdown-menu" id="oferta-dropdown-menu" role="menu" aria-label="Formatos de oferta exportable">
+                        <li role="none">
+                            <a role="menuitem" class="oferta-dropdown-item" href="<?= htmlspecialchars($__pdf_oferta_urls['clasico']) ?>" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_urls['clasico']) ?>"><span class="oferta-dropdown-name">Clásico</span><img src="img/icons/clasico_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                        </li>
+                        <li role="none">
+                            <a role="menuitem" class="oferta-dropdown-item" href="<?= htmlspecialchars($__pdf_oferta_urls['corporativo']) ?>" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_urls['corporativo']) ?>"><span class="oferta-dropdown-name">Corporativo</span><img src="img/icons/corporativo_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                        </li>
+                        <li role="none">
+                            <a role="menuitem" class="oferta-dropdown-item" href="<?= htmlspecialchars($__pdf_oferta_urls['moderno']) ?>" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_urls['moderno']) ?>"><span class="oferta-dropdown-name">Moderno</span><img src="img/icons/moderno_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                        </li>
+                    </ul>
+                </div>
                 <a data-i18n="nav_turismo" href="#turismo" class="nav-link">Turismo</a>
                 <a data-i18n="nav_news" href="#noticias" class="nav-link">Noticias</a>
                 <a data-i18n="nav_contact" href="#contactos" class="nav-link">Contactos</a>
@@ -232,6 +249,30 @@ function toggleLangMenu() {
 }
 document.addEventListener('DOMContentLoaded', () => {
   initLang('landing');
+  // Oferta exportable dropdown
+  const ofertaDropdown = document.getElementById('oferta-dropdown');
+  const ofertaBtn = document.getElementById('oferta-dropdown-btn');
+  const ofertaMenu = document.getElementById('oferta-dropdown-menu');
+  if (ofertaDropdown && ofertaBtn && ofertaMenu) {
+    ofertaBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      ofertaDropdown.classList.toggle('open');
+      ofertaBtn.setAttribute('aria-expanded', ofertaDropdown.classList.contains('open'));
+    });
+    document.querySelectorAll('.oferta-dropdown-item').forEach(link => {
+      link.addEventListener('click', function() {
+        const url = this.getAttribute('data-pdf-url');
+        if (url) this.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+      });
+    });
+  }
+  document.addEventListener('click', (e) => {
+    if (ofertaDropdown && !ofertaDropdown.contains(e.target)) {
+      ofertaDropdown.classList.remove('open');
+      if (ofertaBtn) ofertaBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
   // Preload hover images for smooth transition
   const estadioHoverImage = new Image();
   estadioHoverImage.src = 'img/landing/landing_estadio_2.png';

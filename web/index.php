@@ -12,6 +12,10 @@ if ($page === 'clasico_pdf') {
     require __DIR__ . '/pdf/oferta/clasico_pdf.php';
     exit;
 }
+if ($page === 'corporativo_pdf') {
+    require __DIR__ . '/pdf/oferta/corporativo_pdf.php';
+    exit;
+}
 ?>
 
 <!DOCTYPE html>

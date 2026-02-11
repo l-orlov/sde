@@ -1595,7 +1595,7 @@ div.label span .req,
 }
 .hero-header {
   position: relative;
-  z-index: 1;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1604,7 +1604,7 @@ div.label span .req,
   gap: 10px;
   width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow: visible;
 }
 .logo {
   display: flex;
@@ -1631,6 +1631,7 @@ div.label span .req,
   max-width: 100%;
   display: flex;
   justify-content: center;
+  overflow: visible;
 }
 .hero-nav {
   display: flex;
@@ -1639,6 +1640,7 @@ div.label span .req,
   flex-wrap: wrap;
   min-width: 0;
   justify-content: center;
+  overflow: visible;
 }
 .nav-link {
   color: #1b1f23;
@@ -1646,6 +1648,66 @@ div.label span .req,
   font-size: 18px;
   font-weight: 500;
   position: relative;
+}
+.oferta-dropdown {
+  position: relative;
+}
+.oferta-dropdown-trigger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  color: #1b1f23;
+}
+.oferta-dropdown-trigger:hover {
+  text-decoration: underline;
+}
+.oferta-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 8px 0 0;
+  padding: 8px 0;
+  min-width: 200px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  list-style: none;
+  z-index: 1000;
+  overflow: visible;
+  white-space: nowrap;
+}
+.oferta-dropdown.open .oferta-dropdown-menu {
+  display: block;
+}
+.oferta-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  color: #1b1f23;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.oferta-dropdown-item:hover {
+  background: #f0f4f8;
+}
+.oferta-dropdown-name {
+  flex: 1;
+  text-align: left;
+}
+.oferta-dropdown-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
 }
 .nav-whatsapp {
   display: flex;
