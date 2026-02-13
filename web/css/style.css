@@ -3456,13 +3456,30 @@ to {
   z-index: 1;
 }
 
+.home-presentation-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
 .home-presentation-name {
   font-size: 18px;
   font-weight: 700;
   color: white;
-  margin: 0 0 10px 0;
+  margin: 0;
   text-align: left;
   line-height: 1.3;
+  flex: 1;
+}
+
+.home-presentation-format-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
 }
 
 .btn-download-pdf {

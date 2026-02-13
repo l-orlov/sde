@@ -355,7 +355,7 @@ $visibleProducts = min(4, $totalProducts);
       <!-- Presentations Section -->
       <section class="home-section">
         <div class="home-section-header">
-          <h2 data-i18n="home_presentations_title" class="home-section-title">Presentaciones generadas de productos y servicios <span class="home-section-count">4/4</span></h2>
+          <h2 data-i18n="home_presentations_title" class="home-section-title">Presentaciones generadas de productos y servicios <span class="home-section-count">3/3</span></h2>
           <div class="home-search-box">
             <input type="search" class="home-search-input" data-i18n-placeholder="home_search_placeholder_presentations">
             <svg class="home-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -368,53 +368,28 @@ $visibleProducts = min(4, $totalProducts);
         <div class="home-presentations-grid">
           <div class="home-presentation-card">
             <div class="home-presentation-image">
-              <img src="img/productos/foto1.jpg" alt="Queso de cabra madurado">
-              <div class="home-presentation-icon">
-                <img src="img/icons/ai_icon.png" alt="AI">
-              </div>
+              <img src="img/ClásicoCuadrado.png" alt="Clásico">
             </div>
             <div class="home-presentation-content">
-              <div data-i18n="product_goat_cheese" class="home-presentation-name">Queso de cabra madurado</div>
-              <a href="pdf/home/company_pdf.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
+              <a href="pdf/home/clasico_company.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
             </div>
           </div>
           
           <div class="home-presentation-card">
             <div class="home-presentation-image">
-              <img src="img/productos/foto2.jpg" alt="Miel natural">
-              <div class="home-presentation-icon">
-                <img src="img/icons/ai_icon.png" alt="AI">
-              </div>
+              <img src="img/CorporativoCuadrado.png" alt="Corporativo">
             </div>
             <div class="home-presentation-content">
-              <div data-i18n="product_natural_honey" class="home-presentation-name">Miel natural</div>
-              <a href="pdf/home/company_pdf.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
+              <a href="pdf/home/corporativo_company.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
             </div>
           </div>
           
           <div class="home-presentation-card">
             <div class="home-presentation-image">
-              <img src="img/productos/foto5.jpg" alt="Mermelada de durazno natural">
-              <div class="home-presentation-icon">
-                <img src="img/icons/ai_icon.png" alt="AI">
-              </div>
+              <img src="img/ModernoCuadrado.png" alt="Moderno">
             </div>
             <div class="home-presentation-content">
-              <div data-i18n="product_peach_jam" class="home-presentation-name">Mermelada de durazno natural</div>
-              <a href="pdf/home/company_pdf.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
-            </div>
-          </div>
-          
-          <div class="home-presentation-card">
-            <div class="home-presentation-image">
-              <img src="img/productos/foto6.jpg" alt="Dulce de leche artesanal">
-              <div class="home-presentation-icon">
-                <img src="img/icons/ai_icon.png" alt="AI">
-              </div>
-            </div>
-            <div class="home-presentation-content">
-              <div data-i18n="product_dulce_leche" class="home-presentation-name">Dulce de leche artesanal</div>
-              <a href="pdf/home/company_pdf.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
+              <a href="pdf/home/moderno_company.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
             </div>
           </div>
         </div>
