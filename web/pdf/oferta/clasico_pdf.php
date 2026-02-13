@@ -699,35 +699,38 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->Cell($s2TextW, 10, 'PROVINCIAL', 0, 1, 'L');
         $mpdf->Ln(8);
         $mpdf->SetTextColor(0, 0, 0);
-        $mpdf->SetFont('dejavusans', '', 13);
-        // Tres párrafos con frases en negrita; segmentos unidos para evitar comas o "y" solos en una línea (API: Write + SetFont)
-        $mpdf->Write($s2LineH, 'Santiago del Estero impulsa una ');
-        $mpdf->SetFont('dejavusans', 'B', 13);
-        $mpdf->Write($s2LineH, 'Oferta Exportable Provincial');
-        $mpdf->SetFont('dejavusans', '', 13);
-        $mpdf->Write($s2LineH, ' para ');
-        $mpdf->SetFont('dejavusans', 'B', 13);
-        $mpdf->Write($s2LineH, 'visibilizar, ordenar y promover su entramado productivo');
-        $mpdf->SetFont('dejavusans', '', 13);
-        $mpdf->Write($s2LineH, " ante organismos de promoción, misiones comerciales y compradores.\n");
+        $s2FontSize = 13;
+        $s2LineHeight = 6.5;
+        $s2Cell = function ($bold, $txt, $ln = 0) use ($mpdf, $s2LineHeight, $s2FontSize) {
+            $mpdf->SetFont('dejavusans', $bold ? 'B' : '', $s2FontSize);
+            $w = $mpdf->GetStringWidth($txt);
+            $mpdf->Cell($w, $s2LineHeight, $txt, 0, $ln, 'L');
+        };
+        $s2ParaX = $s2TextLeft;
+        $s2ParaTop = $s2TextTop + 12 + 10 + 8;
+        $mpdf->SetXY($s2ParaX, $s2ParaTop);
+        $s2Cell(true, 'Santiago del Estero', 0);
+        $s2Cell(false, ' impulsa una ', 0);
+        $s2Cell(true, 'Oferta Exportable', 1);
+        $s2Cell(true, 'Provincial', 0);
+        $s2Cell(false, ' para visibilizar, ordenar y promover su entramado ', 1);
+        $s2Cell(true, 'productivo', 0);
+        $s2Cell(false, ' ante organismos de promoción, misiones ', 1);
+        $s2Cell(false, 'comerciales y compradores.', 1);
         $mpdf->Ln(6);
-        $mpdf->Write($s2LineH, 'Esta presentación reúne ');
-        $mpdf->SetFont('dejavusans', 'B', 13);
-        $mpdf->Write($s2LineH, 'información declarada por las empresas registradas');
-        $mpdf->SetFont('dejavusans', '', 13);
-        $mpdf->Write($s2LineH, ', con foco en ');
-        $mpdf->SetFont('dejavusans', 'B', 13);
-        $mpdf->Write($s2LineH, "productos y servicios exportables.\n");
-        $mpdf->SetFont('dejavusans', '', 13);
+        $mpdf->SetX($s2ParaX);
+        $s2Cell(false, 'Esta presentación reúne ', 0);
+        $s2Cell(true, 'información declarada por las', 1);
+        $s2Cell(true, 'empresas registradas, con foco en productos y servicios ', 1);
+        $s2Cell(true, 'exportables.', 1);
         $mpdf->Ln(6);
-        $mpdf->Write($s2LineH, 'La iniciativa busca ');
-        $mpdf->SetFont('dejavusans', 'B', 13);
-        $mpdf->Write($s2LineH, 'facilitar el acceso a datos clave, mejorar la difusión institucional y habilitar oportunidades de vinculación comercial');
-        $mpdf->SetFont('dejavusans', '', 13);
-        $mpdf->Write($s2LineH, ', fortaleciendo una cultura exportadora ');
-        $mpdf->SetFont('dejavusans', 'B', 13);
-        $mpdf->Write($s2LineH, "moderna, inclusiva y federal.\n");
-        $mpdf->SetFont('dejavusans', '', 13);
+        $mpdf->SetX($s2ParaX);
+        $s2Cell(false, 'La iniciativa busca ', 0);
+        $s2Cell(true, 'facilitar el acceso a datos clave, mejorar la', 1);
+        $s2Cell(true, 'difusión institucional y habilitar oportunidades de', 1);
+        $s2Cell(true, 'vinculación comercial, fortaleciendo una cultura', 1);
+        $s2Cell(true, 'exportadora moderna, inclusiva y federal.', 1);
+        $mpdf->SetFont('dejavusans', '', $s2FontSize);
         // Badge número de página 02: área azul más ancha, "02" desplazado a la izquierda dentro del rectángulo
         $s2PageBoxW = 40;
         $s2PageBoxH = 13;
@@ -1185,6 +1188,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
     } elseif ($i === 5) {
         // Slide(s) Productos y servicios destacados: izquierda 70% (título + lista de productos con thumb, datos y descripción), derecha 30% (logo sin azul, imagen Producto 25%×50%, bloque negro 30%×45% con número)
         $productoSlidesChunks = array_chunk($productosParaSlides, 3);
+        $prodCompanyNameById = [];
+        foreach ($companies as $c) {
+            $prodCompanyNameById[(int)($c['id'] ?? 0)] = $c['name'] ?? '';
+        }
         $prodLeftW = round($wMm * 0.70);
         $prodRightW = $wMm - $prodLeftW;
         $prodImgW = round($wMm * 0.23);
@@ -1311,7 +1318,15 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->SetTextColor(0, 0, 0);
                 $mpdf->SetFont('dejavusans', 'B', 16);
                 $mpdf->Cell($prodContentW * 0.55, 9, $prod['name'] ?? '', 0, 1, 'L');
-                $mpdf->Ln(4);
+                $mpdf->Ln(2);
+                $mpdf->SetX($prodContentX);
+                $mpdf->SetFont('dejavusans', 'B', 11);
+                $mpdf->SetTextColor(80, 80, 80);
+                $mpdf->Cell($prodContentW * 0.55, 7, 'EMPRESA:', 0, 0, 'L');
+                $mpdf->SetFont('dejavusans', '', 10);
+                $mpdf->SetTextColor(0, 0, 0);
+                $mpdf->Cell($prodContentW * 0.45, 7, $prodCompanyNameById[(int)($prod['company_id'] ?? 0)] ?? '-', 0, 1, 'L');
+                $mpdf->Ln(1);
                 $mpdf->SetX($prodContentX);
                 $mpdf->SetFont('dejavusans', 'B', 11);
                 $mpdf->SetTextColor(80, 80, 80);
@@ -1319,7 +1334,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->SetFont('dejavusans', '', 10);
                 $mpdf->SetTextColor(0, 0, 0);
                 $mpdf->Cell($prodContentW * 0.45, 7, trim($prod['annual_export'] ?? '-') ?: '-', 0, 1, 'L');
-                $mpdf->Ln(2);
+                $mpdf->Ln(1);
                 $mpdf->SetX($prodContentX);
                 $mpdf->SetFont('dejavusans', 'B', 11);
                 $mpdf->SetTextColor(80, 80, 80);
@@ -1328,7 +1343,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->SetTextColor(0, 0, 0);
                 $certStr = trim($prod['certifications'] ?? '-') ?: '-';
                 $mpdf->Cell($prodContentW * 0.45, 7, (mb_strlen($certStr) > 28 ? mb_substr($certStr, 0, 27) . '…' : $certStr), 0, 1, 'L');
-                $mpdf->Ln(2);
+                $mpdf->Ln(1);
                 $mpdf->SetX($prodContentX);
                 $mpdf->SetFont('dejavusans', 'B', 11);
                 $mpdf->SetTextColor(80, 80, 80);

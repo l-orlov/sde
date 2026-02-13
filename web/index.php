@@ -16,6 +16,10 @@ if ($page === 'corporativo_pdf') {
     require __DIR__ . '/pdf/oferta/corporativo_pdf.php';
     exit;
 }
+if ($page === 'moderno_pdf') {
+    require __DIR__ . '/pdf/oferta/moderno_pdf.php';
+    exit;
+}
 ?>
 
 <!DOCTYPE html>

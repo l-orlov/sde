@@ -454,6 +454,10 @@ $logoBlockConfig = [
 ];
 
 // ——— Construir HTML de las 7 slides (en partes para no superar pcre.backtrack_limit) ———
+$companyNameById = [];
+foreach ($companies as $c) {
+    $companyNameById[(int)($c['id'] ?? 0)] = $c['name'] ?? '';
+}
 $htmlChunks = buildOfertaPdfHtml([
     'config'              => $configInstitucional,
     'logo_path'           => $logoPath,
@@ -465,6 +469,7 @@ $htmlChunks = buildOfertaPdfHtml([
     'metrics'             => $metrics,
     'empresas_destacadas'  => $empresasDestacadas,
     'productos_muestra'   => $productosMuestra,
+    'company_name_by_id'  => $companyNameById,
     'mercados_por_region' => $mercadosPorRegion,
     'contacto'            => $contactoInstitucional,
     'imagenes_producto'   => $imagenesPorProducto,
@@ -1372,6 +1377,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             imagedestroy($dst);
             return $tmp;
         };
+        $p7CompanyNameById = [];
+        foreach ($companies as $c) {
+            $p7CompanyNameById[(int)($c['id'] ?? 0)] = $c['name'] ?? '';
+        }
         foreach ($productoSlidesChunks as $idx => $chunk) {
             $mpdf->AddPage();
             $mpdf->SetXY(0, 0);
@@ -1454,15 +1463,22 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $p7textX = $p7colX + $p7ColPad;
                 $p7textW = $p7ColW - 2 * $p7ColPad;
                 $p7textY = $p7BlueY + $p7ColPad;
+                $p7RightPad = 10;
+                $p7LabelW = 40;
                 $mpdf->SetTextColor(255, 255, 255);
+                $mpdf->SetFont('dejavusans', 'B', 14);
+                $mpdf->SetXY($p7textX, $p7textY);
+                $mpdf->Cell($p7LabelW, 8, 'EMPRESA:', 0, 0, 'L');
+                $p7EmpresaName = $p7CompanyNameById[(int)($prod['company_id'] ?? 0)] ?? '-';
+                $mpdf->Cell($p7textW - $p7LabelW - $p7RightPad, 8, $p7EmpresaName, 0, 1, 'L');
+                $p7textY += 8;
                 $typeLabel = (isset($prod['type']) && strtolower($prod['type']) === 'service') ? 'SERVICIO:' : 'PRODUCTO:';
                 $mpdf->SetFont('dejavusans', 'B', 14);
                 $mpdf->SetXY($p7textX, $p7textY);
-                $p7LabelW = 32;
                 $mpdf->Cell($p7LabelW, 8, $typeLabel, 0, 0, 'L');
                 $mpdf->SetFont('dejavusans', 'B', 14);
                 $nameStr = $prod['name'] ?? '';
-                $mpdf->Cell($p7textW - $p7LabelW, 8, $nameStr, 0, 1, 'L');
+                $mpdf->Cell($p7textW - $p7LabelW - $p7RightPad, 8, $nameStr, 0, 1, 'L');
                 $mpdf->SetX($p7textX);
                 $mpdf->SetFont('dejavusans', '', 11);
                 $descStr = trim($prod['description'] ?? '') ?: 'Breve descripción del producto';
@@ -1642,6 +1658,7 @@ function buildOfertaPdfHtml($data) {
     $metrics = $data['metrics'];
     $empresas = $data['empresas_destacadas'];
     $productos = $data['productos_muestra'];
+    $companyNameById = $data['company_name_by_id'] ?? [];
     $mercados = $data['mercados_por_region'];
     $contacto = $data['contacto'];
     $imgProducto = $data['imagenes_producto'];
@@ -1803,6 +1820,8 @@ function buildOfertaPdfHtml($data) {
     $cards = '';
     foreach (array_slice($productos, 0, 6) as $p) {
         $pid = (int)($p['id'] ?? 0);
+        $cid = (int)($p['company_id'] ?? 0);
+        $companyName = isset($companyNameById[$cid]) ? $companyNameById[$cid] : '-';
         $path = $imgProducto[$pid] ?? null;
         $src = '';
         if ($path && file_exists($path)) {
@@ -1811,6 +1830,7 @@ function buildOfertaPdfHtml($data) {
         }
         $cards .= '<div style="background:#fff;border-radius:8px;overflow:hidden;padding:12px;text-align:center;">
             <div style="height:100px;background:#eee;border-radius:6px;overflow:hidden;">' . ($src ? '<img src="' . $src . '" alt="" style="width:100%;height:100%;object-fit:cover;" />' : '') . '</div>
+            <p style="margin:6px 0 2px;font-size:12px;color:#333;">EMPRESA: <strong>' . htmlspecialchars($companyName) . '</strong></p>
             <p style="margin:8px 0 4px;font-weight:700;color:#000;">' . htmlspecialchars($p['name'] ?? '') . '</p>
             <p style="margin:0;font-size:14px;color:#003399;">' . htmlspecialchars($p['activity'] ?? '') . '</p>
             <p style="margin:4px 0 0;font-size:12px;">' . htmlspecialchars(mb_substr($p['description'] ?? '', 0, 80)) . '</p>
