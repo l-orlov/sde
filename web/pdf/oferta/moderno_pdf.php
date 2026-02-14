@@ -47,7 +47,7 @@ $configInstitucional = [
     'mail'               => 'comercioexterior@santiago.gob.ar',
     'localidad_direccion'=> 'Santiago del Estero, Argentina',
 ];
-$assetsDir = __DIR__ . '/assets';
+$assetsDir = __DIR__ . '/../assets';
 $logoPath = $webRoot . '/img/logo.svg';
 $catImages = glob($webRoot . '/img/landing/*.png');
 $catImagePath = !empty($catImages) ? $catImages[0] : null;
