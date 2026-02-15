@@ -51,7 +51,12 @@ $assetsDir = __DIR__ . '/../assets';
 $logoPath = $webRoot . '/img/logo.svg';
 $catImages = glob($webRoot . '/img/landing/*.png');
 $catImagePath = !empty($catImages) ? $catImages[0] : null;
-// Fondo del primer slide: una de las 6 Portada al azar en cada descarga
+// Fondo del primer slide: solo Empresa0.jpg
+$backgroundSlide1Path = $assetsDir . '/Empresa0.jpg';
+if (!file_exists($backgroundSlide1Path)) {
+    $backgroundSlide1Path = null;
+}
+// Portadas para slide Contacto (otras imágenes)
 $portadaCandidates = [];
 foreach (['Portada1.webp', 'portada2.webp', 'portada3.jpg', 'portada4.jpg', 'portada5.jpg', 'portada6.jpg'] as $name) {
     $p = $assetsDir . '/' . $name;
@@ -59,17 +64,7 @@ foreach (['Portada1.webp', 'portada2.webp', 'portada3.jpg', 'portada4.jpg', 'por
         $portadaCandidates[] = $p;
     }
 }
-$backgroundSlide1Path = !empty($portadaCandidates) ? $portadaCandidates[array_rand($portadaCandidates)] : $assetsDir . '/background_slide1.jpg';
-if (!file_exists($backgroundSlide1Path)) {
-    $backgroundSlide1Path = null;
-}
-$backgroundContactPath = null;
-if (count($portadaCandidates) >= 2) {
-    $others = array_values(array_filter($portadaCandidates, function ($p) use ($backgroundSlide1Path) { return $p !== $backgroundSlide1Path; }));
-    $backgroundContactPath = $others[array_rand($others)];
-} elseif (!empty($portadaCandidates)) {
-    $backgroundContactPath = $backgroundSlide1Path;
-}
+$backgroundContactPath = !empty($portadaCandidates) ? $portadaCandidates[array_rand($portadaCandidates)] : $backgroundSlide1Path;
 if ($backgroundContactPath && !file_exists($backgroundContactPath)) {
     $backgroundContactPath = $backgroundSlide1Path;
 }
@@ -133,12 +128,25 @@ if (count($empresaCandidates) >= 3) {
 while (count($empresaSlide4Paths) < 3) {
     $empresaSlide4Paths[] = !empty($empresaCandidates) ? $empresaCandidates[array_rand($empresaCandidates)] : null;
 }
-// Imágenes Producto para slide Productos destacados (derecha: 25% × 50%)
+// Imágenes Producto para slide Productos destacados — все Producto*.jpg / Producto*.png из assets, рандомно на каждый слайд
 $productoImgCandidates = [];
-foreach (['Producto1.jpg', 'Producto2.jpg', 'Producto3.jpg', 'Producto4.jpg'] as $name) {
-    $p = $assetsDir . '/' . $name;
-    if (file_exists($p)) {
-        $productoImgCandidates[] = $p;
+if (is_dir($assetsDir)) {
+    foreach (scandir($assetsDir) as $f) {
+        if ($f === '.' || $f === '..') continue;
+        if (preg_match('/^Producto\d*\.(jpg|jpeg|png|webp)$/i', $f)) {
+            $p = $assetsDir . '/' . $f;
+            if (file_exists($p)) {
+                $productoImgCandidates[] = $p;
+            }
+        }
+    }
+}
+if (empty($productoImgCandidates)) {
+    foreach (['Producto1.jpg', 'Producto2.jpg', 'Producto3.jpg', 'Producto4.jpg'] as $name) {
+        $p = $assetsDir . '/' . $name;
+        if (file_exists($p)) {
+            $productoImgCandidates[] = $p;
+        }
     }
 }
 $pdfLogoPath = $assetsDir . '/logo.png';
@@ -235,11 +243,16 @@ if (!empty($companyIds)) {
     }
 }
 
-// Un producto o servicio por empresa para slides "Productos exportables" (grilla 2×3, 6 por página; productos y servicios)
+// Un producto o servicio por empresa para slides "Productos exportables" (un producto por slide)
 $productosParaSlides = [];
+$hasTargetMarkets = false;
+$targetMarketsCheck = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'target_markets'");
+if ($targetMarketsCheck && mysqli_num_rows($targetMarketsCheck) > 0) {
+    $hasTargetMarkets = true;
+}
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type
+    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type" . ($hasTargetMarkets ? ", p.target_markets" : "") . "
           FROM products p
           INNER JOIN (SELECT company_id, MIN(id) AS mid FROM products WHERE company_id IN ($ids) GROUP BY company_id) first
           ON p.company_id = first.company_id AND p.id = first.mid
@@ -276,12 +289,12 @@ if (!empty($productIds)) {
     }
 }
 
-// Logos por empresa (para slide Empresas destacadas — columna central: logo de cada empresa)
+// Logos por empresa (solo file_type='logo', product_id IS NULL/0 — nunca fotos de productos)
 $logosPorEmpresa = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
     $q = "SELECT c.id AS company_id, f.file_path FROM companies c
-          INNER JOIN files f ON f.user_id = c.user_id AND f.file_type = 'logo' AND (f.product_id IS NULL OR f.product_id = 0) AND (f.is_temporary = 0 OR f.is_temporary IS NULL)
+          INNER JOIN files f ON f.user_id = c.user_id AND f.file_type = 'logo' AND (f.product_id IS NULL OR f.product_id = 0)
           WHERE c.id IN ($ids) ORDER BY c.id, f.id DESC";
     $r = mysqli_query($link, $q);
     if ($r) {
@@ -576,10 +589,40 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $s1LogoPadFromImage = 10;
         $s1LogoBadgeW = 62;
         $s1LogoBadgeH = 28;
-        $s1LogoBadgeX = $s1BgMargin + $s1BgW - $s1LogoPadFromImage - $s1LogoBadgeW;
+        $s1LogoBadgeGap = 10;
         $s1LogoBadgeY = $s1BgMargin + $s1LogoPadFromImage;
+        $s1FirstCompanyId = !empty($companies[0]['id']) ? $companies[0]['id'] : null;
+        $s1CompanyLogoPath = null;
+        if ($s1FirstCompanyId && isset($logosPorEmpresa[$s1FirstCompanyId])) {
+            $s1CompanyLogoPath = $logosPorEmpresa[$s1FirstCompanyId];
+        } elseif ($s1FirstCompanyId && isset($imagenesPorEmpresa[$s1FirstCompanyId])) {
+            $s1CompanyLogoPath = $imagenesPorEmpresa[$s1FirstCompanyId];
+        }
+        $s1HasCompanyLogo = $s1CompanyLogoPath && file_exists($s1CompanyLogoPath);
+        $s1CompanyBadgeX = $s1HasCompanyLogo
+            ? $s1BgMargin + $s1BgW - $s1LogoPadFromImage - 2 * $s1LogoBadgeW - $s1LogoBadgeGap
+            : 0;
+        $s1SdeBadgeX = $s1HasCompanyLogo
+            ? $s1CompanyBadgeX + $s1LogoBadgeW + $s1LogoBadgeGap
+            : $s1BgMargin + $s1BgW - $s1LogoPadFromImage - $s1LogoBadgeW;
+        if ($s1HasCompanyLogo) {
+            $mpdf->SetFillColor(196, 52, 59);
+            $mpdf->Rect($s1CompanyBadgeX, $s1LogoBadgeY, $s1LogoBadgeW, $s1LogoBadgeH, 'F');
+            $imgSize = @getimagesize($s1CompanyLogoPath);
+            $maxW = $s1LogoBadgeW - 8;
+            $maxH = $s1LogoBadgeH - 8;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $r = $imgSize[0] / $imgSize[1];
+                $lw = ($maxH * $r <= $maxW) ? $maxH * $r : $maxW;
+                $lh = ($maxH * $r <= $maxW) ? $maxH : $maxW / $r;
+            } else {
+                $lw = $maxW;
+                $lh = $maxH;
+            }
+            $mpdf->Image($s1CompanyLogoPath, $s1CompanyBadgeX + ($s1LogoBadgeW - $lw) / 2, $s1LogoBadgeY + ($s1LogoBadgeH - $lh) / 2, $lw, $lh);
+        }
         $mpdf->SetFillColor(196, 52, 59);
-        $mpdf->Rect($s1LogoBadgeX, $s1LogoBadgeY, $s1LogoBadgeW, $s1LogoBadgeH, 'F');
+        $mpdf->Rect($s1SdeBadgeX, $s1LogoBadgeY, $s1LogoBadgeW, $s1LogoBadgeH, 'F');
         $s1LogoPath = (file_exists($pdfLogoWhitePath)) ? $pdfLogoWhitePath : $pdfLogoPath;
         if (file_exists($s1LogoPath)) {
             $imgSize = @getimagesize($s1LogoPath);
@@ -598,7 +641,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $lw = $maxW;
                 $lh = $maxH;
             }
-            $mpdf->Image($s1LogoPath, $s1LogoBadgeX + ($s1LogoBadgeW - $lw) / 2, $s1LogoBadgeY + ($s1LogoBadgeH - $lh) / 2, $lw, $lh);
+            $mpdf->Image($s1LogoPath, $s1SdeBadgeX + ($s1LogoBadgeW - $lw) / 2, $s1LogoBadgeY + ($s1LogoBadgeH - $lh) / 2, $lw, $lh);
         }
         $s1EdicionText = 'Edición ' . $configInstitucional['periodo_ano'];
         $s1EdicionBoxPad = 10;
@@ -614,108 +657,47 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->Cell($s1EdicionBoxW, 9, $s1EdicionText, 0, 0, 'C');
         $mpdf->SetLeftMargin(0);
         $mpdf->SetRightMargin(0);
+        // Slide PERFIL DE EMPRESA: bloque logos arriba izq; título y 4 bloques texto (más grande); derecha bloque rojo estrecho + logo empresa superpuesto (parte en blanco, parte en rojo)
         $mpdf->AddPage();
         $mpdf->SetXY(0, 0);
-        // Slide 2 moderno: izquierda = foto Productivo a toda altura (sin bloque rojo); derecha = fondo blanco, logo como slide 1, CONTEXTO PROVINCIAL centrado, párrafos
-        $s2Pad = 20;
-        $s2ImgW = round($wMm * 0.36);
-        $s2ImgH = round($hMm * 0.60);
-        $s2ImgMargin = 18;
-        $s2ImgX = 32;
-        $s2ImgY = ($hMm - $s2ImgH) / 2;
-        $s2LeftW = $s2ImgX + $s2ImgW + $s2ImgMargin;
-        $s2RightW = $wMm - $s2LeftW;
+        $pfPad = 20;
+        $pfRedR = 196;
+        $pfRedG = 52;
+        $pfRedB = 59;
         $mpdf->SetFillColor(255, 255, 255);
-        $mpdf->Rect(0, 0, $s2LeftW, $hMm, 'F');
-        $s2ImgPath = isset($productivoSlide2Paths[0]) ? $productivoSlide2Paths[0] : $productivoSlide2Path;
-        if ($s2ImgPath && file_exists($s2ImgPath) && extension_loaded('gd')) {
-            $info = @getimagesize($s2ImgPath);
-            $ext = $info ? strtolower(pathinfo($s2ImgPath, PATHINFO_EXTENSION)) : '';
-            $src = false;
-            if ($info && $info[2] === IMAGETYPE_JPEG) $src = @imagecreatefromjpeg($s2ImgPath);
-            elseif ($info && $info[2] === IMAGETYPE_PNG) $src = @imagecreatefrompng($s2ImgPath);
-            elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) $src = @imagecreatefromwebp($s2ImgPath);
-            if ($src && !empty($info[0]) && !empty($info[1])) {
-                $scale = 100 / 25.4;
-                $dw = (int) max(1, round($s2ImgW * $scale));
-                $dh = (int) max(1, round($s2ImgH * $scale));
-                $sw = imagesx($src);
-                $sh = imagesy($src);
-                $boxR = $dw / $dh;
-                $imgR = $sw / $sh;
-                if ($imgR >= $boxR) {
-                    $cropW = (int) round($sh * $boxR);
-                    $cropH = $sh;
-                    $srcX = (int) floor(($sw - $cropW) / 2);
-                    $srcY = 0;
-                } else {
-                    $cropW = $sw;
-                    $cropH = (int) round($sw / $boxR);
-                    $srcX = 0;
-                    $srcY = (int) floor(($sh - $cropH) / 2);
-                }
-                $dst = @imagecreatetruecolor($dw, $dh);
-                if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $dw, $dh, $cropW, $cropH)) {
-                    $tmp = sys_get_temp_dir() . '/moderno_s2_' . uniqid() . '.png';
-                    if (imagepng($dst, $tmp)) {
-                        $mpdf->Image($tmp, $s2ImgX, $s2ImgY, $s2ImgW, $s2ImgH);
-                        @unlink($tmp);
-                    }
-                    imagedestroy($dst);
-                }
-                imagedestroy($src);
+        $mpdf->Rect(0, 0, $wMm, $hMm, 'F');
+        $pfLeftW = round($wMm * 0.62);
+        $pfRightW = round($wMm * 0.18);
+        $pfRightX = $wMm - $pfRightW;
+        $pfEmp = !empty($companies[0]) ? $companies[0] : null;
+        $pfCid = $pfEmp ? (int)$pfEmp['id'] : 0;
+        $pfCompanyLogoPath = ($pfCid && isset($logosPorEmpresa[$pfCid])) ? $logosPorEmpresa[$pfCid] : (($pfCid && isset($imagenesPorEmpresa[$pfCid])) ? $imagenesPorEmpresa[$pfCid] : null);
+        $pfLogoSectionY = $pfPad;
+        $pfLogoSectionX = $pfPad;
+        $pfCompanyLogoW = 44;
+        $pfCompanyLogoH = 22;
+        $pfSdeLogoW = 52;
+        $pfSdeLogoH = 26;
+        $pfLogoGap = 12;
+        if ($pfCompanyLogoPath && file_exists($pfCompanyLogoPath)) {
+            $imgSize = @getimagesize($pfCompanyLogoPath);
+            $maxW = $pfCompanyLogoW - 4;
+            $maxH = $pfCompanyLogoH - 4;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $r = $imgSize[0] / $imgSize[1];
+                $lw = ($maxH * $r <= $maxW) ? $maxH * $r : $maxW;
+                $lh = ($maxH * $r <= $maxW) ? $maxH : $maxW / $r;
+            } else {
+                $lw = $maxW;
+                $lh = $maxH;
             }
-        } elseif ($s2ImgPath && file_exists($s2ImgPath)) {
-            $mpdf->Image($s2ImgPath, $s2ImgX, $s2ImgY, $s2ImgW, $s2ImgH);
+            $mpdf->Image($pfCompanyLogoPath, $pfLogoSectionX, $pfLogoSectionY + ($pfCompanyLogoH - $lh) / 2, $lw, $lh);
         }
-        $s2RedBlockW = round($s2ImgW * 0.58);
-        $s2RedGap = 5;
-        $s2RedBlockShift = 32;
-        $s2RedBlockHTop = min(max(19, 2 * ($s2ImgY - $s2RedGap)), 26);
-        $s2RedBlockHBot = min(max(19, 2 * ($hMm - $s2ImgY - $s2ImgH - $s2RedGap)), 26);
-        $s2RedAlpha = 0.65;
-        if (extension_loaded('gd')) {
-            $s2RedR = 196;
-            $s2RedG = 52;
-            $s2RedB = 59;
-            $s2TilePx = 20;
-            $s2TilePy = 20;
-            $s2Overlay = @imagecreatetruecolor($s2TilePx, $s2TilePy);
-            if ($s2Overlay) {
-                imagealphablending($s2Overlay, false);
-                imagesavealpha($s2Overlay, true);
-                $s2Trans = imagecolorallocatealpha($s2Overlay, 0, 0, 0, 127);
-                imagefill($s2Overlay, 0, 0, $s2Trans);
-                $s2RedAlphaVal = (int) round(127 * (1 - $s2RedAlpha));
-                $s2RedColor = imagecolorallocatealpha($s2Overlay, $s2RedR, $s2RedG, $s2RedB, $s2RedAlphaVal);
-                imagefilledrectangle($s2Overlay, 0, 0, $s2TilePx - 1, $s2TilePy - 1, $s2RedColor);
-                $s2RedTmp = sys_get_temp_dir() . '/moderno_s2_red_' . uniqid() . '.png';
-                if (imagepng($s2Overlay, $s2RedTmp)) {
-                    $mpdf->Image($s2RedTmp, 0, $s2RedGap + $s2RedBlockShift, $s2RedBlockW, $s2RedBlockHTop);
-                    $s2RedMidY = $s2RedGap + $s2RedBlockShift + $s2RedBlockHTop;
-                    $s2RedMidH = $hMm - $s2RedGap - $s2RedBlockShift - $s2RedBlockHBot - $s2RedMidY;
-                    $s2RedBlockWMid = round($s2RedBlockW * 0.3);
-                    $s2RedMidX = 66;
-                    if ($s2RedMidH > 2) {
-                        $mpdf->Image($s2RedTmp, $s2RedMidX, $s2RedMidY, $s2RedBlockWMid, $s2RedMidH);
-                    }
-                    $mpdf->Image($s2RedTmp, 0, $hMm - $s2RedGap - $s2RedBlockShift - $s2RedBlockHBot, $s2RedBlockW, $s2RedBlockHBot);
-                    @unlink($s2RedTmp);
-                }
-                imagedestroy($s2Overlay);
-            }
-        }
-        $mpdf->SetFillColor(255, 255, 255);
-        $mpdf->Rect($s2LeftW, 0, $s2RightW, $hMm, 'F');
-        $s2LogoW = 52;
-        $s2LogoH = 26;
-        $s2LogoX = $wMm - $s2Pad - $s2LogoW;
-        $s2LogoY = $s2Pad;
-        $s2LogoPath = $pdfLogoPath;
-        if (file_exists($s2LogoPath)) {
-            $imgSize = @getimagesize($s2LogoPath);
-            $maxW = $s2LogoW - 4;
-            $maxH = $s2LogoH - 4;
+        $pfSdeLogoX = $pfLogoSectionX + $pfCompanyLogoW + $pfLogoGap;
+        if (file_exists($pdfLogoPath)) {
+            $imgSize = @getimagesize($pdfLogoPath);
+            $maxW = $pfSdeLogoW - 4;
+            $maxH = $pfSdeLogoH - 4;
             if (!empty($imgSize[0]) && !empty($imgSize[1])) {
                 $r = $imgSize[0] / $imgSize[1];
                 if ($maxH * $r <= $maxW) {
@@ -729,243 +711,115 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $lw = $maxW;
                 $lh = $maxH;
             }
-            $mpdf->Image($s2LogoPath, $s2LogoX + ($s2LogoW - $lw) / 2, $s2LogoY + ($s2LogoH - $lh) / 2, $lw, $lh);
+            $mpdf->Image($pdfLogoPath, $pfSdeLogoX + ($pfSdeLogoW - $lw) / 2, $pfLogoSectionY + ($pfSdeLogoH - $lh) / 2, $lw, $lh);
         }
-        $s2TextPad = 45;
-        $s2TextLeft = $s2LeftW + $s2TextPad;
-        $s2TextW = $s2RightW - $s2TextPad - $s2Pad;
-        $s2TitleShiftLeft = 18;
-        $s2TitleLeft = $s2TextLeft - $s2TitleShiftLeft;
-        $s2TitleW = $s2TextW + $s2TitleShiftLeft;
-        $s2TitleTop = $s2LogoY + $s2LogoH + 20;
-        $mpdf->SetTextColor(160, 35, 35);
-        $mpdf->SetFont('dejavusans', 'B', 34);
-        $mpdf->SetXY($s2TitleLeft, $s2TitleTop);
-        $mpdf->Cell($s2TitleW, 12, 'CONTEXTO', 0, 1, 'C');
+        $pfTitleY = $pfLogoSectionY + max($pfCompanyLogoH, $pfSdeLogoH) + 14;
+        $mpdf->SetTextColor($pfRedR, $pfRedG, $pfRedB);
         $mpdf->SetFont('dejavusans', 'B', 32);
-        $mpdf->SetXY($s2TitleLeft, $s2TitleTop + 14);
-        $mpdf->Cell($s2TitleW, 12, 'PROVINCIAL', 0, 1, 'C');
-        $s2ParaTop = $s2TitleTop + 40;
-        $mpdf->SetTextColor(0, 0, 0);
-        $s2FontSize = 15;
-        $s2LineHeight = 7;
-        $mpdf->SetLeftMargin($s2TextLeft);
-        $mpdf->SetRightMargin($wMm - $s2Pad);
-        $s2Cell = function ($bold, $txt, $ln = 0) use ($mpdf, $s2LineHeight, $s2FontSize) {
-            $mpdf->SetFont('dejavusans', $bold ? 'B' : '', $s2FontSize);
-            $w = $mpdf->GetStringWidth($txt);
-            $mpdf->Cell($w, $s2LineHeight, $txt, 0, $ln, 'L');
-        };
-        $mpdf->SetXY($s2TextLeft, $s2ParaTop);
-        $s2Cell(true, 'Santiago del Estero', 0);
-        $s2Cell(false, ' impulsa una ', 0);
-        $s2Cell(true, 'Oferta Exportable', 1);
-        $s2Cell(true, 'Provincial', 0);
-        $s2Cell(false, ' para visibilizar, ordenar y promover su entramado ', 1);
-        $s2Cell(true, 'productivo', 0);
-        $s2Cell(false, ' ante organismos de promoción, misiones ', 1);
-        $s2Cell(false, 'comerciales y compradores.', 1);
-        $mpdf->Ln(9);
-        $mpdf->SetX($s2TextLeft);
-        $s2Cell(false, 'Esta presentación reúne ', 0);
-        $s2Cell(true, 'información declarada por las', 1);
-        $s2Cell(true, 'empresas registradas, con foco en productos y servicios ', 1);
-        $s2Cell(true, 'exportables.', 1);
-        $mpdf->Ln(9);
-        $mpdf->SetX($s2TextLeft);
-        $s2Cell(false, 'La iniciativa busca ', 0);
-        $s2Cell(true, 'facilitar el acceso a datos clave, mejorar la', 1);
-        $s2Cell(true, 'difusión institucional y habilitar oportunidades de', 1);
-        $s2Cell(true, 'vinculación comercial, fortaleciendo una cultura', 1);
-        $s2Cell(true, 'exportadora moderna, inclusiva y federal.', 1);
-        $mpdf->SetLeftMargin(0);
-        $mpdf->SetRightMargin(0);
-        // No incrementar $i: en la siguiente iteración (i=2) se hará AddPage() para el slide 3
-    } elseif ($i === 2) {
-        // Chunk 2 = slide 2 ya dibujado por API en i=1; solo añadir página para el slide 3
-        $mpdf->AddPage();
-    } elseif ($i === 3) {
-        // Slide 3: Identidad provincial — izquierda collage 5 imágenes identidad con marco rojo (3 lados); derecha blanco, L roja, logo como slide 2, IDENTIDAD PROVINCIAL y párrafo
-        $mpdf->SetXY(0, 0);
-        $s3Pad = 18;
-        $s3CollageW = round($wMm * 0.50);
-        $s3MarginV = 12;
-        $s3MarginL = 12;
-        $s3ContentW = $s3CollageW;
-        $s3MosaicW = $s3ContentW - $s3MarginL;
-        $s3MosaicH = $hMm - 2 * $s3MarginV;
-        $s3LeftColW = (int) floor($s3MosaicW * 0.55);
-        $s3RightColW = (int) ($s3MosaicW - $s3LeftColW);
-        $s3H1 = (int) floor($s3MosaicH / 2);
-        $s3H2 = $s3MosaicH - $s3H1;
-        $s3R1 = (int) floor($s3MosaicH / 3);
-        $s3R2 = (int) floor($s3MosaicH / 3);
-        $s3R3 = $s3MosaicH - $s3R1 - $s3R2;
-        $s3Boxes = [
-            ['x' => 0, 'y' => 0, 'w' => $s3LeftColW, 'h' => $s3H1],
-            ['x' => 0, 'y' => $s3H1, 'w' => $s3LeftColW, 'h' => $s3H2],
-            ['x' => $s3LeftColW, 'y' => 0, 'w' => $s3RightColW, 'h' => $s3R1],
-            ['x' => $s3LeftColW, 'y' => $s3R1, 'w' => $s3RightColW, 'h' => $s3R2],
-            ['x' => $s3LeftColW, 'y' => $s3R1 + $s3R2, 'w' => $s3RightColW, 'h' => $s3R3],
+        $mpdf->SetXY($pfPad, $pfTitleY);
+        $mpdf->Cell($pfLeftW - 2 * $pfPad, 12, 'PERFIL DE', 0, 1, 'L');
+        $mpdf->SetFont('dejavusans', 'B', 48);
+        $mpdf->SetXY($pfPad, $pfTitleY + 14);
+        $mpdf->Cell($pfLeftW - 2 * $pfPad, 18, 'EMPRESA', 0, 1, 'L');
+        $pfPerfil1 = 'Tipo de Organización';
+        $pfPerfil2 = trim($pfEmp['main_activity'] ?? '') ?: '-';
+        $pfLoc = $pfCid && isset($localidadPorEmpresa[$pfCid]) ? $localidadPorEmpresa[$pfCid] : '-';
+        $pfDepto = '-';
+        $pfDomicilio = '-';
+        $pfWeb = trim($pfEmp['website'] ?? '') ?: '-';
+        $pfRedes = ($pfCid && isset($redesPorEmpresa[$pfCid]) && !empty($redesPorEmpresa[$pfCid])) ? implode(' ', array_slice($redesPorEmpresa[$pfCid], 0, 3)) : '-';
+        $pfContacto = $configInstitucional;
+        $pfCargo = trim($pfContacto['area_responsable'] ?? '') ?: '-';
+        $pfEmail = trim($pfContacto['mail'] ?? '') ?: '-';
+        $pfTel = trim($pfContacto['telefono'] ?? '') ?: '-';
+        $pfBlockY = $pfTitleY + 50;
+        $pfBlockH = 44;
+        $pfColW = ($pfLeftW - 2 * $pfPad - 18) / 2;
+        $pfGap = 18;
+        $pfRows = [
+            ['01', 'PERFIL:', [$pfPerfil1, $pfPerfil2]],
+            ['02', 'UBICACIÓN:', [$pfLoc, $pfDepto, $pfDomicilio]],
+            ['03', 'CANALES:', [$pfWeb, $pfRedes]],
+            ['04', 'CONTACTO:', [$pfCargo, $pfEmail, $pfTel]],
         ];
-        $s3PicturesRightX = (int) round($s3MarginL + $s3LeftColW + $s3RightColW);
-        $s3Scale = 100 / 25.4;
-        $s3LoadCrop = function ($path, $boxW, $boxH) use ($s3Scale) {
-            if (!$path || !file_exists($path) || !extension_loaded('gd')) return null;
-            $info = @getimagesize($path);
-            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-            $src = false;
-            if ($info && $info[2] === IMAGETYPE_JPEG) $src = @imagecreatefromjpeg($path);
-            elseif ($info && $info[2] === IMAGETYPE_PNG) $src = @imagecreatefrompng($path);
-            elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) $src = @imagecreatefromwebp($path);
-            if (!$src) return null;
-            $sw = imagesx($src);
-            $sh = imagesy($src);
-            $ratio = $boxW / $boxH;
-            $imgR = $sw / $sh;
-            if ($imgR >= $ratio) {
-                $cropW = (int) round($sh * $ratio);
-                $cropH = $sh;
-                $srcX = (int) floor(($sw - $cropW) / 2);
-                $srcY = 0;
-            } else {
-                $cropW = $sw;
-                $cropH = (int) round($sw / $ratio);
-                $srcX = 0;
-                $srcY = (int) floor(($sh - $cropH) / 2);
-            }
-            $dwPx = (int) max(1, round($boxW * $s3Scale));
-            $dhPx = (int) max(1, round($boxH * $s3Scale));
-            $dst = @imagecreatetruecolor($dwPx, $dhPx);
-            if (!$dst || !@imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $dwPx, $dhPx, $cropW, $cropH)) {
-                if ($dst) imagedestroy($dst);
-                imagedestroy($src);
-                return null;
-            }
-            imagedestroy($src);
-            $tmp = sys_get_temp_dir() . '/mod_s3_' . uniqid() . '.png';
-            if (!imagepng($dst, $tmp)) {
-                imagedestroy($dst);
-                return null;
-            }
-            imagedestroy($dst);
-            return $tmp;
-        };
-        $s3RedR = 196;
-        $s3RedG = 52;
-        $s3RedB = 59;
-        $s3RedAlpha = 0.65;
-        $s3RightX = $s3PicturesRightX;
-        $s3RightW = $wMm - $s3RightX;
-        $s3BgWidth = round($wMm * 0.501114);
-        $mpdf->SetFillColor(255, 255, 255);
-        $mpdf->Rect($s3RightX, 0, $s3RightW, $hMm, 'F');
-        if (extension_loaded('gd')) {
-            $s3BgWpx = (int) max(1, round($s3BgWidth * $s3Scale));
-            $s3BgHpx = (int) max(1, round($hMm * $s3Scale));
-            $s3BgImg = @imagecreatetruecolor($s3BgWpx, $s3BgHpx);
-            if ($s3BgImg) {
-                imagealphablending($s3BgImg, false);
-                imagesavealpha($s3BgImg, true);
-                imagefill($s3BgImg, 0, 0, imagecolorallocatealpha($s3BgImg, 0, 0, 0, 127));
-                $s3BgAlpha = (int) round(127 * (1 - $s3RedAlpha));
-                $s3BgColor = imagecolorallocatealpha($s3BgImg, $s3RedR, $s3RedG, $s3RedB, $s3BgAlpha);
-                imagefilledrectangle($s3BgImg, 0, 0, $s3BgWpx - 1, $s3BgHpx - 1, $s3BgColor);
-                $s3BgTmp = sys_get_temp_dir() . '/moderno_s3_bg_' . uniqid() . '.png';
-                if (imagepng($s3BgImg, $s3BgTmp)) {
-                    $mpdf->Image($s3BgTmp, 0, 0, $s3BgWidth, $hMm);
-                    @unlink($s3BgTmp);
-                }
-                imagedestroy($s3BgImg);
-            }
-        } else {
-            $mpdf->SetFillColor($s3RedR, $s3RedG, $s3RedB);
-            $mpdf->Rect(0, 0, $s3BgWidth, $hMm, 'F');
+        $pfNumToTextGap = 6;
+        foreach ($pfRows as $idx => $row) {
+            $col = $idx % 2;
+            $rowIdx = (int)floor($idx / 2);
+            $bx = $pfPad + $col * ($pfColW + $pfGap);
+            $by = $pfBlockY + $rowIdx * $pfBlockH;
+            $mpdf->SetTextColor($pfRedR, $pfRedG, $pfRedB);
+            $mpdf->SetFont('dejavusans', 'B', 18);
+            $mpdf->SetXY($bx, $by);
+            $mpdf->Cell(24, 8, $row[0], 0, 1, 'L');
+            $mpdf->SetTextColor(0, 0, 0);
+            $mpdf->SetFont('dejavusans', 'B', 16);
+            $mpdf->SetXY($bx + $pfNumToTextGap, $by + 9);
+            $mpdf->Cell($pfColW - $pfNumToTextGap, 8, $row[1], 0, 1, 'L');
+            $mpdf->SetFont('dejavusans', '', 14);
+            $valStr = implode("\n", array_filter($row[2]));
+            $mpdf->SetXY($bx + $pfNumToTextGap, $by + 19);
+            $mpdf->MultiCell($pfColW - $pfNumToTextGap, 7, $valStr !== '' ? $valStr : '-', 0, 'L');
         }
-        foreach ([0, 1, 2, 3, 4] as $idx) {
-            $path = isset($identidadSlide3Paths[$idx]) ? $identidadSlide3Paths[$idx] : null;
-            $box = $s3Boxes[$idx];
-            $tmp = $s3LoadCrop($path, $box['w'], $box['h']);
-            $bx = $box['x'] + $s3MarginL;
-            $by = $box['y'] + $s3MarginV;
-            if ($tmp && file_exists($tmp)) {
-                $mpdf->Image($tmp, $bx, $by, $box['w'], $box['h']);
-                @unlink($tmp);
-            } elseif ($path && file_exists($path)) {
-                $mpdf->Image($path, $bx, $by, $box['w'], $box['h']);
-            } else {
-                $mpdf->SetFillColor(220, 220, 220);
-                $mpdf->Rect($bx, $by, $box['w'], $box['h'], 'F');
-            }
-        }
-        $s3RedBlockW = 130;
-        $s3RedBlockH = 72;
-        if (extension_loaded('gd')) {
-            $s3TilePx = 20;
-            $s3Overlay = @imagecreatetruecolor($s3TilePx, $s3TilePx);
-            if ($s3Overlay) {
-                imagealphablending($s3Overlay, false);
-                imagesavealpha($s3Overlay, true);
-                $s3Trans = imagecolorallocatealpha($s3Overlay, 0, 0, 0, 127);
-                imagefill($s3Overlay, 0, 0, $s3Trans);
-                $s3RedAlphaVal = (int) round(127 * (1 - $s3RedAlpha));
-                $s3RedColor = imagecolorallocatealpha($s3Overlay, $s3RedR, $s3RedG, $s3RedB, $s3RedAlphaVal);
-                imagefilledrectangle($s3Overlay, 0, 0, $s3TilePx - 1, $s3TilePx - 1, $s3RedColor);
-                $s3RedTmp = sys_get_temp_dir() . '/moderno_s3_red_' . uniqid() . '.png';
-                if (imagepng($s3Overlay, $s3RedTmp)) {
-                    $mpdf->Image($s3RedTmp, $wMm - $s3RedBlockW, 0, $s3RedBlockW, $s3RedBlockH);
-                    @unlink($s3RedTmp);
-                }
-                imagedestroy($s3Overlay);
-            }
-        } else {
-            $mpdf->SetFillColor($s3RedR, $s3RedG, $s3RedB);
-            $mpdf->Rect($wMm - $s3RedBlockW, 0, $s3RedBlockW, $s3RedBlockH, 'F');
-        }
-        $s3WhitePad = 20;
-        $s3WhiteW = $s3RedBlockW - $s3WhitePad;
-        $s3WhiteH = $s3RedBlockH - $s3WhitePad;
-        $mpdf->SetFillColor(255, 255, 255);
-        $mpdf->Rect($wMm - $s3WhiteW, 0, $s3WhiteW, $s3WhiteH, 'F');
-        $s3LogoX = $wMm - $s3WhiteW;
-        $s3LogoY = 0;
-        $s3LogoPath = $pdfLogoPath;
-        if (file_exists($s3LogoPath)) {
-            $imgSize = @getimagesize($s3LogoPath);
-            $maxW = min($s3WhiteW - 4, round($s3WhiteW * 0.62));
-            $maxH = min($s3WhiteH - 4, round($s3WhiteH * 0.62));
-            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
-                $r = $imgSize[0] / $imgSize[1];
-                if ($maxH * $r <= $maxW) {
-                    $lw = $maxH * $r;
-                    $lh = $maxH;
-                } else {
-                    $lw = $maxW;
-                    $lh = $maxW / $r;
+        $pfRedBlockMarginTop = 28;
+        $pfRedBlockMarginBottom = 28;
+        $pfRedBlockY = $pfRedBlockMarginTop;
+        $pfRedBlockH = $hMm - $pfRedBlockMarginTop - $pfRedBlockMarginBottom;
+        $mpdf->SetFillColor($pfRedR, $pfRedG, $pfRedB);
+        $mpdf->Rect($pfRightX, $pfRedBlockY, $pfRightW, $pfRedBlockH, 'F');
+        $pfLogoImgPath = ($pfCid && isset($logosPorEmpresa[$pfCid])) ? $logosPorEmpresa[$pfCid] : (($pfCid && isset($imagenesPorEmpresa[$pfCid])) ? $imagenesPorEmpresa[$pfCid] : null);
+        $pfLogoSize = 136;
+        $pfLogoOverlap = 12;
+        $pfLogoX = $pfRightX - $pfLogoSize + $pfLogoOverlap + 55;
+        $pfLogoImgY = $pfRedBlockY + ($pfRedBlockH - $pfLogoSize) / 2;
+        if ($pfLogoImgPath && file_exists($pfLogoImgPath)) {
+            if (extension_loaded('gd')) {
+                $info = @getimagesize($pfLogoImgPath);
+                $ext = $info ? strtolower(pathinfo($pfLogoImgPath, PATHINFO_EXTENSION)) : '';
+                $src = false;
+                if ($info && $info[2] === IMAGETYPE_JPEG) $src = @imagecreatefromjpeg($pfLogoImgPath);
+                elseif ($info && $info[2] === IMAGETYPE_PNG) $src = @imagecreatefrompng($pfLogoImgPath);
+                elseif (($ext === 'webp' || ($info && isset($info[2]) && $info[2] === 18)) && function_exists('imagecreatefromwebp')) $src = @imagecreatefromwebp($pfLogoImgPath);
+                if ($src && !empty($info[0]) && !empty($info[1])) {
+                    $scale = 100 / 25.4;
+                    $dw = (int)max(1, round($pfLogoSize * $scale));
+                    $dh = (int)max(1, round($pfLogoSize * $scale));
+                    $sw = imagesx($src);
+                    $sh = imagesy($src);
+                    $boxR = 1;
+                    $imgR = $sw / $sh;
+                    if ($imgR >= $boxR) {
+                        $cropW = (int)round($sh * $boxR);
+                        $cropH = $sh;
+                        $srcX = (int)floor(($sw - $cropW) / 2);
+                        $srcY = 0;
+                    } else {
+                        $cropW = $sw;
+                        $cropH = (int)round($sw / $boxR);
+                        $srcX = 0;
+                        $srcY = (int)floor(($sh - $cropH) / 2);
+                    }
+                    $dst = @imagecreatetruecolor($dw, $dh);
+                    if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $dw, $dh, $cropW, $cropH)) {
+                        $tmp = sys_get_temp_dir() . '/moderno_pf_' . uniqid() . '.png';
+                        if (imagepng($dst, $tmp)) {
+                            $mpdf->Image($tmp, $pfLogoX, $pfLogoImgY, $pfLogoSize, $pfLogoSize);
+                            @unlink($tmp);
+                        }
+                        imagedestroy($dst);
+                    }
+                    imagedestroy($src);
                 }
             } else {
-                $lw = $maxW;
-                $lh = $maxH;
+                $mpdf->Image($pfLogoImgPath, $pfLogoX, $pfLogoImgY, $pfLogoSize, $pfLogoSize);
             }
-            $mpdf->Image($s3LogoPath, $s3LogoX + ($s3WhiteW - $lw) / 2, $s3LogoY + ($s3WhiteH - $lh) / 2, $lw, $lh);
         }
-        $s3TextLeft = $s3RightX + $s3Pad;
-        $s3TextW = $wMm - $s3TextLeft - $s3Pad;
-        $s3TitleY = $s3RedBlockH + 52;
-        $mpdf->SetTextColor($s3RedR, $s3RedG, $s3RedB);
-        $mpdf->SetFont('dejavusans', 'B', 38);
-        $mpdf->SetXY($s3TextLeft, $s3TitleY);
-        $mpdf->Cell($s3TextW, 14, 'IDENTIDAD', 0, 1, 'L');
-        $mpdf->SetFont('dejavusans', 'B', 34);
-        $mpdf->SetXY($s3TextLeft, $s3TitleY + 16);
-        $mpdf->Cell($s3TextW, 14, 'PROVINCIAL', 0, 1, 'L');
-        $s3ParaY = $s3TitleY + 16 + 14 + 22;
-        $mpdf->SetTextColor(0, 0, 0);
-        $mpdf->SetFont('dejavusans', '', 15);
-        $mpdf->SetXY($s3TextLeft, $s3ParaY);
-        $mpdf->MultiCell($s3TextW, 7, 'Un territorio con capacidad productiva diversa y proyección para la vinculación comercial.', 0, 'L');
         $mpdf->SetLeftMargin(0);
         $mpdf->SetRightMargin(0);
+    } elseif ($i === 2) {
+        // Skip (Nuestra Historia movido antes de Competitividad)
+    } elseif ($i === 3) {
+        // Skip (Identidad provincial eliminado)
     } elseif ($i === 4) {
         // Slide 4: imagen 85% altura; encima rojo semi-transparente con borde inferior en V (ángulo al centro); bloque blanco con el mismo borde en V; logo como slide 1; título y subtítulo centrados
         $mpdf->AddPage();
@@ -1070,10 +924,40 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $s4LogoBadgeH = 28;
         $s4LogoMargin = 12;
         $s4LogoPad = 10;
-        $s4LogoBadgeX = $wMm - $s4LogoMargin - $s4LogoPad - $s4LogoBadgeW;
+        $s4LogoBadgeGap = 10;
+        $s4FirstCompanyId = !empty($companies[0]['id']) ? $companies[0]['id'] : null;
+        $s4CompanyLogoPath = null;
+        if ($s4FirstCompanyId && isset($logosPorEmpresa[$s4FirstCompanyId])) {
+            $s4CompanyLogoPath = $logosPorEmpresa[$s4FirstCompanyId];
+        } elseif ($s4FirstCompanyId && isset($imagenesPorEmpresa[$s4FirstCompanyId])) {
+            $s4CompanyLogoPath = $imagenesPorEmpresa[$s4FirstCompanyId];
+        }
+        $s4HasCompanyLogo = $s4CompanyLogoPath && file_exists($s4CompanyLogoPath);
+        $s4CompanyBadgeX = $s4HasCompanyLogo
+            ? $wMm - $s4LogoMargin - $s4LogoPad - 2 * $s4LogoBadgeW - $s4LogoBadgeGap
+            : 0;
+        $s4SdeBadgeX = $s4HasCompanyLogo
+            ? $s4CompanyBadgeX + $s4LogoBadgeW + $s4LogoBadgeGap
+            : $wMm - $s4LogoMargin - $s4LogoPad - $s4LogoBadgeW;
         $s4LogoBadgeY = $s4LogoMargin + $s4LogoPad;
+        if ($s4HasCompanyLogo) {
+            $mpdf->SetFillColor(196, 52, 59);
+            $mpdf->Rect($s4CompanyBadgeX, $s4LogoBadgeY, $s4LogoBadgeW, $s4LogoBadgeH, 'F');
+            $imgSize = @getimagesize($s4CompanyLogoPath);
+            $maxW = $s4LogoBadgeW - 8;
+            $maxH = $s4LogoBadgeH - 8;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $r = $imgSize[0] / $imgSize[1];
+                $lw = ($maxH * $r <= $maxW) ? $maxH * $r : $maxW;
+                $lh = ($maxH * $r <= $maxW) ? $maxH : $maxW / $r;
+            } else {
+                $lw = $maxW;
+                $lh = $maxH;
+            }
+            $mpdf->Image($s4CompanyLogoPath, $s4CompanyBadgeX + ($s4LogoBadgeW - $lw) / 2, $s4LogoBadgeY + ($s4LogoBadgeH - $lh) / 2, $lw, $lh);
+        }
         $mpdf->SetFillColor(196, 52, 59);
-        $mpdf->Rect($s4LogoBadgeX, $s4LogoBadgeY, $s4LogoBadgeW, $s4LogoBadgeH, 'F');
+        $mpdf->Rect($s4SdeBadgeX, $s4LogoBadgeY, $s4LogoBadgeW, $s4LogoBadgeH, 'F');
         $s4LogoPath = (file_exists($pdfLogoWhitePath)) ? $pdfLogoWhitePath : $pdfLogoPath;
         if (file_exists($s4LogoPath)) {
             $imgSize = @getimagesize($s4LogoPath);
@@ -1091,12 +975,11 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                     $lh = $maxW / $r;
                 }
             }
-            $mpdf->Image($s4LogoPath, $s4LogoBadgeX + ($s4LogoBadgeW - $lw) / 2, $s4LogoBadgeY + ($s4LogoBadgeH - $lh) / 2, $lw, $lh);
+            $mpdf->Image($s4LogoPath, $s4SdeBadgeX + ($s4LogoBadgeW - $lw) / 2, $s4LogoBadgeY + ($s4LogoBadgeH - $lh) / 2, $lw, $lh);
         }
         $s4TitleY = round($hMm * 0.70);
-        $s4TitleLine1 = 'EMPRESAS Y PRODUCTOS';
+        $s4TitleLine1 = 'PRODUCTOS Y SERVICIOS';
         $s4TitleLine2 = 'EXPORTABLES';
-        $s4Subtitle = 'Empresas registradas y productos/servicios exportables declarados para su difusión institucional.';
         $mpdf->SetTextColor($s4RedR, $s4RedG, $s4RedB);
         $mpdf->SetFont('dejavusans', 'B', 32);
         $mpdf->SetXY(0, $s4TitleY);
@@ -1104,159 +987,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetFont('dejavusans', 'B', 26);
         $mpdf->SetXY(0, $s4TitleY + 14);
         $mpdf->Cell($wMm, 10, $s4TitleLine2, 0, 1, 'C');
-        $mpdf->SetTextColor(50, 50, 50);
-        $mpdf->SetFont('dejavusans', '', 11);
-        $mpdf->SetXY($s4Pad, $s4TitleY + 32);
-        $mpdf->MultiCell($wMm - 2 * $s4Pad, 5, $s4Subtitle, 0, 'C');
         $mpdf->SetLeftMargin(0);
         $mpdf->SetRightMargin(0);
-        // Una slide por empresa: fondo blanco; barra roja vertical izquierda (ancha, semi-transparente); izq logo + título "NOMBRE DE" / nombre + 5 bloques; derecha solo imagen (recortada, proporcional)
-        $pageNum = 5;
-        $s5RedR = 196;
-        $s5RedG = 52;
-        $s5RedB = 59;
-        foreach ($companies as $emp) {
-            $mpdf->AddPage();
-            $mpdf->SetXY(0, 0);
-            $cid = (int) $emp['id'];
-            $s5RedBarW = 14;
-            $s5Pad = 18;
-            $s5LeftZoneW = round($wMm * 0.62);
-            $s5RightZoneX = $s5RedBarW + $s5LeftZoneW;
-            $s5RightZoneW = $wMm - $s5RightZoneX;
-            $mpdf->SetFillColor(255, 255, 255);
-            $mpdf->Rect(0, 0, $wMm, $hMm, 'F');
-            if (method_exists($mpdf, 'SetAlpha')) {
-                $mpdf->SetAlpha(0.5);
-            }
-            $mpdf->SetFillColor($s5RedR, $s5RedG, $s5RedB);
-            $mpdf->Rect(0, 0, $s5RedBarW, $hMm, 'F');
-            if (method_exists($mpdf, 'SetAlpha')) {
-                $mpdf->SetAlpha(1);
-            }
-            $s5LogoX = $s5RedBarW + $s5Pad;
-            $s5LogoY = 14;
-            $s5LogoPath = $pdfLogoPath;
-            $s5LogoW = 38;
-            $s5LogoH = 18;
-            if (file_exists($s5LogoPath)) {
-                $imgSize = @getimagesize($s5LogoPath);
-                if (!empty($imgSize[0]) && !empty($imgSize[1])) {
-                    $r = $imgSize[0] / $imgSize[1];
-                    if ($s5LogoH * $r <= $s5LogoW) {
-                        $lw = $s5LogoH * $r;
-                        $lh = $s5LogoH;
-                    } else {
-                        $lw = $s5LogoW;
-                        $lh = $s5LogoW / $r;
-                    }
-                    $mpdf->Image($s5LogoPath, $s5LogoX, $s5LogoY, $lw, $lh);
-                }
-            }
-            $s5TitleY = 90;
-            $nombreEmpresa = $emp['name'] ?? '';
-            $nombreUpper = function_exists('mb_strtoupper') ? mb_strtoupper($nombreEmpresa) : strtoupper($nombreEmpresa);
-            $mpdf->SetTextColor($s5RedR, $s5RedG, $s5RedB);
-            $mpdf->SetFont('dejavusans', 'B', 40);
-            $mpdf->SetXY($s5RedBarW + $s5Pad, $s5TitleY);
-            $mpdf->Cell($s5LeftZoneW - 2 * $s5Pad, 11, 'NOMBRE DE', 0, 1, 'L');
-            $mpdf->SetFont('dejavusans', 'B', 40);
-            $mpdf->SetXY($s5RedBarW + $s5Pad, $s5TitleY + 13);
-            $mpdf->Cell($s5LeftZoneW - 2 * $s5Pad, 14, $nombreUpper, 0, 1, 'L');
-            $s5BlockY = 140;
-            $s5BlockH = 42;
-            $s5ColW = ($s5LeftZoneW - 2 * $s5Pad - 24) / 3;
-            $s5NumOffset = -7;
-            $s5LabelLineH = 7;
-            $s5Rows = [
-                ['01', "ACTIVIDAD\nPRINCIPAL", $emp['main_activity'] ?? '-'],
-                ['02', 'LOCALIDAD', $localidadPorEmpresa[$cid] ?? '-'],
-                ['03', 'SITIO WEB', $emp['website'] ?? '-'],
-                ['04', 'REDES', isset($redesPorEmpresa[$cid]) ? implode(' ', $redesPorEmpresa[$cid]) : '-'],
-                ['05', 'AÑO DE INICIO', !empty($emp['start_date']) ? date('Y', (int)$emp['start_date']) : '-'],
-            ];
-            foreach ($s5Rows as $idx => $row) {
-                $col = $idx % 3;
-                $rowIdx = (int) floor($idx / 3);
-                $bx = $s5RedBarW + $s5Pad + $col * ($s5ColW + 8);
-                $by = $s5BlockY + $rowIdx * $s5BlockH;
-                $mpdf->SetTextColor($s5RedR, $s5RedG, $s5RedB);
-                $mpdf->SetFont('dejavusans', 'B', 15);
-                $mpdf->SetXY($bx + $s5NumOffset, $by);
-                $mpdf->Cell(16, 7, $row[0], 0, 1, 'L');
-                $mpdf->SetTextColor(0, 0, 0);
-                $mpdf->SetFont('dejavusans', 'B', 18);
-                $mpdf->SetXY($bx, $by + 7);
-                $mpdf->MultiCell($s5ColW, $s5LabelLineH, $row[1], 0, 'L');
-                $mpdf->SetFont('dejavusans', '', 12);
-                $valStr = is_string($row[2]) ? $row[2] : (string)$row[2];
-                $mpdf->SetXY($bx, $by + 26);
-                $mpdf->MultiCell($s5ColW, 5, $valStr, 0, 'L');
-            }
-            $s5RedBlockInset = 108;
-            $s5RedBlockX = $s5RightZoneX + $s5RedBlockInset;
-            $s5RedBlockW = $s5RightZoneW - $s5RedBlockInset;
-            $s5RedBlockTop = 32;
-            $s5RedBlockBottom = 16;
-            $s5RedBlockY = $s5RedBlockTop;
-            $s5RedBlockH = $hMm - $s5RedBlockTop - $s5RedBlockBottom;
-            $mpdf->SetFillColor($s5RedR, $s5RedG, $s5RedB);
-            $mpdf->Rect($s5RedBlockX, $s5RedBlockY, $s5RedBlockW, $s5RedBlockH, 'F');
-            $s5ImgPadW = 12;
-            $s5ImgPadV = 26;
-            $s5RedBlockWRef = $s5RightZoneW - 28;
-            $s5ImgW = $s5RedBlockWRef - 2 * $s5ImgPadW;
-            $s5ImgH = $s5RedBlockH - 2 * $s5ImgPadV;
-            $s5ImgX = $s5RedBlockX - (2 / 3) * $s5ImgW;
-            $s5ImgY = $s5RedBlockY + $s5ImgPadV;
-            $compImgPath = $imagenesPorEmpresa[$cid] ?? $logosPorEmpresa[$cid] ?? null;
-            if ($compImgPath && file_exists($compImgPath) && function_exists('imagecreatefromstring')) {
-                $srcImg = @imagecreatefromstring(file_get_contents($compImgPath));
-                if ($srcImg) {
-                    $sw = imagesx($srcImg);
-                    $sh = imagesy($srcImg);
-                    $scale = max($s5ImgW / $sw, $s5ImgH / $sh);
-                    $srcCropW = $s5ImgW / $scale;
-                    $srcCropH = $s5ImgH / $scale;
-                    $srcX = (int) round(($sw - $srcCropW) / 2);
-                    $srcY = (int) round(($sh - $srcCropH) / 2);
-                    $srcX = max(0, $srcX);
-                    $srcY = max(0, $srcY);
-                    $srcCropW = min($srcCropW, $sw - $srcX);
-                    $srcCropH = min($srcCropH, $sh - $srcY);
-                    $s5ImgDpi = 150;
-                    $s5PxPerMm = $s5ImgDpi / 25.4;
-                    $outW = max(1, (int) round($s5ImgW * $s5PxPerMm));
-                    $outH = max(1, (int) round($s5ImgH * $s5PxPerMm));
-                    $out = imagecreatetruecolor($outW, $outH);
-                    if ($out && $srcCropW > 0 && $srcCropH > 0) {
-                        imagecopyresampled($out, $srcImg, 0, 0, $srcX, $srcY, $outW, $outH, (int)$srcCropW, (int)$srcCropH);
-                        imagedestroy($srcImg);
-                        $tmp = tempnam(sys_get_temp_dir(), 's5img');
-                        if ($tmp && imagejpeg($out, $tmp, 92)) {
-                            $mpdf->Image($tmp, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
-                            @unlink($tmp);
-                        }
-                        imagedestroy($out);
-                    } else {
-                        if ($out) imagedestroy($out);
-                        imagedestroy($srcImg);
-                        $mpdf->Image($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
-                    }
-                } else {
-                    $mpdf->Image($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
-                }
-            } elseif ($compImgPath && file_exists($compImgPath)) {
-                $mpdf->Image($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
-            } else {
-                $mpdf->SetFillColor(220, 220, 220);
-                $mpdf->Rect($s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH, 'F');
-            }
-            $pageNum++;
-        }
     } elseif ($i === 5) {
-        // Slides Productos: uno por cada 3 productos/servicios; mismo diseño (logo, título, dos imágenes Producto al azar, tres columnas)
-        $productoSlidesChunks = array_chunk($productosParaSlides, 3);
+        // Slides Productos: un producto por slide — header (nombre producto + logo empresa + SDE), dos imágenes (producto con borde rojo + contextual), tres columnas abajo
         $p6CompanyNameById = [];
         foreach ($companies as $c) {
             $p6CompanyNameById[(int) $c['id']] = $c['name'] ?? '';
@@ -1268,11 +1002,11 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $p6LoadCrop = function ($path, $boxW, $boxH) use ($p6Scale) {
             if (!$path || !file_exists($path) || !extension_loaded('gd')) return null;
             $info = @getimagesize($path);
-            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            $ext = $info ? strtolower(pathinfo($path, PATHINFO_EXTENSION)) : '';
             $src = false;
             if ($info && $info[2] === IMAGETYPE_JPEG) $src = @imagecreatefromjpeg($path);
             elseif ($info && $info[2] === IMAGETYPE_PNG) $src = @imagecreatefrompng($path);
-            elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) $src = @imagecreatefromwebp($path);
+            elseif (($ext === 'webp' || ($info && isset($info[2]) && $info[2] === 18)) && function_exists('imagecreatefromwebp')) $src = @imagecreatefromwebp($path);
             if (!$src) return null;
             $sw = imagesx($src);
             $sh = imagesy($src);
@@ -1298,7 +1032,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 return null;
             }
             imagedestroy($src);
-            $tmp = sys_get_temp_dir() . '/corp_p6_' . uniqid() . '.png';
+            $tmp = sys_get_temp_dir() . '/moderno_p6_' . uniqid() . '.png';
             if (!imagepng($dst, $tmp)) {
                 imagedestroy($dst);
                 return null;
@@ -1306,7 +1040,9 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             imagedestroy($dst);
             return $tmp;
         };
-        foreach ($productoSlidesChunks as $p6PageIdx => $p6Chunk) {
+        foreach ($productosParaSlides as $p6PageIdx => $prod) {
+            $p6ProductoPool = array_values($productoImgCandidates);
+            shuffle($p6ProductoPool);
             $mpdf->AddPage();
             $mpdf->SetXY(0, 0);
             $mpdf->SetLeftMargin(0);
@@ -1314,15 +1050,280 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $p6Pad = 20;
             $mpdf->SetFillColor(255, 255, 255);
             $mpdf->Rect(0, 0, $wMm, $hMm, 'F');
-        $p6LogoW = 52;
-        $p6LogoH = 26;
-        $p6LogoX = $wMm - $p6Pad - $p6LogoW;
-        $p6LogoY = $p6Pad;
-        $p6LogoPath = $pdfLogoPath;
-        if (file_exists($p6LogoPath)) {
-            $imgSize = @getimagesize($p6LogoPath);
-            $maxW = $p6LogoW - 4;
-            $maxH = $p6LogoH - 4;
+            $p6LogoW = 52;
+            $p6LogoH = 26;
+            $p6LogoGap = 12;
+            $p6CompanyLogoW = 44;
+            $p6CompanyLogoH = 22;
+            $p6Cid = (int) ($prod['company_id'] ?? 0);
+            $p6LogoCompanyId = !empty($companies[0]['id']) ? (int)$companies[0]['id'] : $p6Cid;
+            $p6CompanyLogoPath = null;
+            if ($p6LogoCompanyId && isset($logosPorEmpresa[$p6LogoCompanyId])) {
+                $p6CompanyLogoPath = $logosPorEmpresa[$p6LogoCompanyId];
+            }
+            $p6HasCompanyLogo = $p6CompanyLogoPath && file_exists($p6CompanyLogoPath);
+            $p6LogosTotalW = $p6CompanyLogoW + $p6LogoGap + $p6LogoW;
+            $p6LogoX = $wMm - $p6Pad - $p6LogosTotalW;
+            $p6LogoY = $p6Pad;
+            if ($p6HasCompanyLogo && $p6LogoCompanyId && isset($logosPorEmpresa[$p6LogoCompanyId]) && $logosPorEmpresa[$p6LogoCompanyId] === $p6CompanyLogoPath) {
+                $p6LogoPathToDraw = $logosPorEmpresa[$p6LogoCompanyId];
+                $imgSize = @getimagesize($p6LogoPathToDraw);
+                $maxW = $p6CompanyLogoW - 4;
+                $maxH = $p6CompanyLogoH - 4;
+                if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                    $r = $imgSize[0] / $imgSize[1];
+                    $lw = ($maxH * $r <= $maxW) ? $maxH * $r : $maxW;
+                    $lh = ($maxH * $r <= $maxW) ? $maxH : $maxW / $r;
+                } else {
+                    $lw = $maxW;
+                    $lh = $maxH;
+                }
+                $mpdf->Image($p6LogoPathToDraw, $p6LogoX, $p6LogoY + ($p6CompanyLogoH - $lh) / 2, $lw, $lh);
+            }
+            $p6SdeLogoX = $p6LogoX + $p6CompanyLogoW + $p6LogoGap;
+            $p6LogoPath = $pdfLogoPath;
+            if (file_exists($p6LogoPath)) {
+                $imgSize = @getimagesize($p6LogoPath);
+                $maxW = $p6LogoW - 4;
+                $maxH = $p6LogoH - 4;
+                if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                    $r = $imgSize[0] / $imgSize[1];
+                    if ($maxH * $r <= $maxW) {
+                        $lw = $maxH * $r;
+                        $lh = $maxH;
+                    } else {
+                        $lw = $maxW;
+                        $lh = $maxW / $r;
+                    }
+                } else {
+                    $lw = $maxW;
+                    $lh = $maxH;
+                }
+                $mpdf->Image($p6LogoPath, $p6SdeLogoX + ($p6LogoW - $lw) / 2, $p6LogoY + ($p6LogoH - $lh) / 2, $lw, $lh);
+            }
+            $p6TitleY = $p6LogoY + $p6LogoH + 6;
+            $p6ProductName = trim($prod['name'] ?? '');
+            $p6IsService = (strtolower($prod['type'] ?? '') === 'service' || strtolower($prod['type'] ?? '') === 'servicio');
+            $p6TipoLabel = $p6IsService ? 'SERVICIO' : 'PRODUCTO';
+            $p6TitleLeft = 'NOMBRE DEL ' . $p6TipoLabel . ':';
+            $p6TitleRight = $p6ProductName !== '' ? (function_exists('mb_strtoupper') ? mb_strtoupper($p6ProductName) : strtoupper($p6ProductName)) : '';
+            $mpdf->SetTextColor($p6RedR, $p6RedG, $p6RedB);
+            $mpdf->SetFont('dejavusans', 'B', 28);
+            $mpdf->SetXY($p6Pad, $p6TitleY);
+            $p6TitleLeftW = $mpdf->GetStringWidth($p6TitleLeft) + 2;
+            $mpdf->Cell($p6TitleLeftW, 11, $p6TitleLeft, 0, 0, 'L');
+            if ($p6TitleRight !== '') {
+                $p6TitleIndent = 6;
+                $mpdf->SetXY($p6Pad + $p6TitleLeftW + $p6TitleIndent, $p6TitleY);
+                $mpdf->Cell(0, 11, $p6TitleRight, 0, 1, 'L');
+            } else {
+                $mpdf->Ln();
+            }
+            $p6ImgGap = 2;
+            $p6ContentW = $wMm - 2 * $p6Pad - $p6ImgGap;
+            $p6ImgLeftW = round($p6ContentW * 0.48);
+            $p6ImgRightW = $p6ContentW - $p6ImgLeftW;
+            $p6ColBlockH = 42;
+            $p6ColTop = $hMm - $p6Pad - $p6ColBlockH - 6;
+            $p6ImgGapToCols = 10;
+            $p6ImgLeftY = $p6TitleY + 32;
+            $p6ImgRightY = $p6TitleY + 48;
+            $p6AvailableLeftH = $p6ColTop - $p6ImgLeftY - $p6ImgGapToCols;
+            $p6AvailableRightH = $p6ColTop - $p6ImgRightY - $p6ImgGapToCols;
+            $p6ImgLeftH = round($p6AvailableLeftH * 0.88);
+            $p6ImgRightH = round($p6AvailableRightH * 0.68);
+            $p6BorderW = 3;
+            $p6WhiteMargin = 2.5;
+            $p6LeftImgPath = isset($p6ProductoPool[0]) ? $p6ProductoPool[0] : null;
+            $p6RightImgPath = isset($p6ProductoPool[1]) ? $p6ProductoPool[1] : (isset($p6ProductoPool[0]) ? $p6ProductoPool[0] : (isset($empresaSlide4Paths[0]) ? $empresaSlide4Paths[0] : null));
+            $p6xLeft = $p6Pad;
+            $mpdf->SetDrawColor($p6RedR, $p6RedG, $p6RedB);
+            $mpdf->SetLineWidth($p6BorderW);
+            $mpdf->Rect($p6xLeft, $p6ImgLeftY, $p6ImgLeftW, $p6ImgLeftH, 'D');
+            $p6innerX = $p6xLeft + $p6BorderW + $p6WhiteMargin;
+            $p6innerY = $p6ImgLeftY + $p6BorderW + $p6WhiteMargin;
+            $p6innerW = $p6ImgLeftW - 2 * $p6BorderW - 2 * $p6WhiteMargin;
+            $p6innerH = $p6ImgLeftH - 2 * $p6BorderW - 2 * $p6WhiteMargin;
+            $tmp = $p6LoadCrop($p6LeftImgPath, $p6innerW, $p6innerH);
+            if ($tmp && file_exists($tmp)) {
+                $mpdf->Image($tmp, $p6innerX, $p6innerY, $p6innerW, $p6innerH);
+                @unlink($tmp);
+            } elseif ($p6LeftImgPath && file_exists($p6LeftImgPath)) {
+                $mpdf->Image($p6LeftImgPath, $p6innerX, $p6innerY, $p6innerW, $p6innerH);
+            } else {
+                $mpdf->SetFillColor(248, 248, 248);
+                $mpdf->Rect($p6innerX, $p6innerY, $p6innerW, $p6innerH, 'F');
+            }
+            $p6xRight = $p6Pad + $p6ImgLeftW + $p6ImgGap;
+            $tmp = $p6LoadCrop($p6RightImgPath, $p6ImgRightW, $p6ImgRightH);
+            if ($tmp && file_exists($tmp)) {
+                $mpdf->Image($tmp, $p6xRight, $p6ImgRightY, $p6ImgRightW, $p6ImgRightH);
+                @unlink($tmp);
+            } elseif ($p6RightImgPath && file_exists($p6RightImgPath)) {
+                $mpdf->Image($p6RightImgPath, $p6xRight, $p6ImgRightY, $p6ImgRightW, $p6ImgRightH);
+            } else {
+                $mpdf->SetFillColor(248, 248, 248);
+                $mpdf->Rect($p6xRight, $p6ImgRightY, $p6ImgRightW, $p6ImgRightH, 'F');
+            }
+            $p6ColGap = 14;
+            $p6N = 3;
+            $p6ColW = ($wMm - 2 * $p6Pad - ($p6N - 1) * $p6ColGap) / $p6N;
+            $p6ColTitles = ['01. EXPORTACIÓN ANUAL (USD):', '02. CERTIFICACIONES', '03. MERCADOS DE INTERÉS'];
+            $p6Annual = trim($prod['annual_export'] ?? '') ?: 'TEXTO';
+            $p6Cert = trim($prod['certifications'] ?? '') ?: 'TEXTO';
+            $p6Mercados = 'TEXTO';
+            if (!empty($prod['target_markets'])) {
+                $dec = is_string($prod['target_markets']) ? json_decode($prod['target_markets'], true) : $prod['target_markets'];
+                if (is_array($dec)) {
+                    $list = [];
+                    foreach ($dec as $m) {
+                        $list[] = is_array($m) ? ($m['nombre'] ?? $m['name'] ?? '') : (string)$m;
+                    }
+                    $p6Mercados = implode("\n", array_filter(array_slice($list, 0, 5)));
+                }
+            }
+            $p6ColContents = [$p6Annual, $p6Cert, $p6Mercados];
+            $p6TitleRowH = 9;
+            for ($col = 0; $col < $p6N; $col++) {
+                $cx = $p6Pad + $col * ($p6ColW + $p6ColGap);
+                $mpdf->SetTextColor(0, 0, 0);
+                $mpdf->SetFont('dejavusans', 'B', 14);
+                $mpdf->SetXY($cx, $p6ColTop);
+                $mpdf->Cell($p6ColW, $p6TitleRowH, $p6ColTitles[$col], 0, 1, 'L');
+                $mpdf->SetFont('dejavusans', '', 14);
+                $mpdf->SetXY($cx, $p6ColTop + $p6TitleRowH + 2);
+                $mpdf->MultiCell($p6ColW, 7, $p6ColContents[$col], 0, 'L');
+            }
+            $mpdf->SetDrawColor(0, 0, 0);
+        }
+        // Slide NUESTRA HISTORIA (antes de Competitividad)
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+        $s2Pad = 20;
+        $s2ImgW = round($wMm * 0.36);
+        $s2ImgH = round($hMm * 0.60);
+        $s2ImgMargin = 18;
+        $s2ImgX = 32;
+        $s2ImgY = ($hMm - $s2ImgH) / 2;
+        $s2LeftW = $s2ImgX + $s2ImgW + $s2ImgMargin;
+        $s2RightW = $wMm - $s2LeftW;
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect(0, 0, $s2LeftW, $hMm, 'F');
+        $s2ImgPath = isset($productivoSlide2Paths[0]) ? $productivoSlide2Paths[0] : $productivoSlide2Path;
+        if ($s2ImgPath && file_exists($s2ImgPath) && extension_loaded('gd')) {
+            $info = @getimagesize($s2ImgPath);
+            $ext = $info ? strtolower(pathinfo($s2ImgPath, PATHINFO_EXTENSION)) : '';
+            $src = false;
+            if ($info && $info[2] === IMAGETYPE_JPEG) $src = @imagecreatefromjpeg($s2ImgPath);
+            elseif ($info && $info[2] === IMAGETYPE_PNG) $src = @imagecreatefrompng($s2ImgPath);
+            elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) $src = @imagecreatefromwebp($s2ImgPath);
+            if ($src && !empty($info[0]) && !empty($info[1])) {
+                $scale = 100 / 25.4;
+                $dw = (int) max(1, round($s2ImgW * $scale));
+                $dh = (int) max(1, round($s2ImgH * $scale));
+                $sw = imagesx($src);
+                $sh = imagesy($src);
+                $boxR = $dw / $dh;
+                $imgR = $sw / $sh;
+                if ($imgR >= $boxR) {
+                    $cropW = (int) round($sh * $boxR);
+                    $cropH = $sh;
+                    $srcX = (int) floor(($sw - $cropW) / 2);
+                    $srcY = 0;
+                } else {
+                    $cropW = $sw;
+                    $cropH = (int) round($sw / $boxR);
+                    $srcX = 0;
+                    $srcY = (int) floor(($sh - $cropH) / 2);
+                }
+                $dst = @imagecreatetruecolor($dw, $dh);
+                if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $dw, $dh, $cropW, $cropH)) {
+                    $tmp = sys_get_temp_dir() . '/moderno_s2_' . uniqid() . '.png';
+                    if (imagepng($dst, $tmp)) {
+                        $mpdf->Image($tmp, $s2ImgX, $s2ImgY, $s2ImgW, $s2ImgH);
+                        @unlink($tmp);
+                    }
+                    imagedestroy($dst);
+                }
+                imagedestroy($src);
+            }
+        } elseif ($s2ImgPath && file_exists($s2ImgPath)) {
+            $mpdf->Image($s2ImgPath, $s2ImgX, $s2ImgY, $s2ImgW, $s2ImgH);
+        }
+        $s2RedBlockW = round($s2ImgW * 0.58);
+        $s2RedGap = 5;
+        $s2RedBlockShift = 32;
+        $s2RedBlockHTop = min(max(19, 2 * ($s2ImgY - $s2RedGap)), 26);
+        $s2RedBlockHBot = min(max(19, 2 * ($hMm - $s2ImgY - $s2ImgH - $s2RedGap)), 26);
+        $s2RedAlpha = 0.65;
+        if (extension_loaded('gd')) {
+            $s2RedR = 196;
+            $s2RedG = 52;
+            $s2RedB = 59;
+            $s2TilePx = 20;
+            $s2TilePy = 20;
+            $s2Overlay = @imagecreatetruecolor($s2TilePx, $s2TilePy);
+            if ($s2Overlay) {
+                imagealphablending($s2Overlay, false);
+                imagesavealpha($s2Overlay, true);
+                $s2Trans = imagecolorallocatealpha($s2Overlay, 0, 0, 0, 127);
+                imagefill($s2Overlay, 0, 0, $s2Trans);
+                $s2RedAlphaVal = (int) round(127 * (1 - $s2RedAlpha));
+                $s2RedColor = imagecolorallocatealpha($s2Overlay, $s2RedR, $s2RedG, $s2RedB, $s2RedAlphaVal);
+                imagefilledrectangle($s2Overlay, 0, 0, $s2TilePx - 1, $s2TilePy - 1, $s2RedColor);
+                $s2RedTmp = sys_get_temp_dir() . '/moderno_s2_red_' . uniqid() . '.png';
+                if (imagepng($s2Overlay, $s2RedTmp)) {
+                    $mpdf->Image($s2RedTmp, 0, $s2RedGap + $s2RedBlockShift, $s2RedBlockW, $s2RedBlockHTop);
+                    $s2RedMidY = $s2RedGap + $s2RedBlockShift + $s2RedBlockHTop;
+                    $s2RedMidH = $hMm - $s2RedGap - $s2RedBlockShift - $s2RedBlockHBot - $s2RedMidY;
+                    $s2RedBlockWMid = round($s2RedBlockW * 0.3);
+                    $s2RedMidX = 66;
+                    if ($s2RedMidH > 2) {
+                        $mpdf->Image($s2RedTmp, $s2RedMidX, $s2RedMidY, $s2RedBlockWMid, $s2RedMidH);
+                    }
+                    $mpdf->Image($s2RedTmp, 0, $hMm - $s2RedGap - $s2RedBlockShift - $s2RedBlockHBot, $s2RedBlockW, $s2RedBlockHBot);
+                    @unlink($s2RedTmp);
+                }
+                imagedestroy($s2Overlay);
+            }
+        }
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect($s2LeftW, 0, $s2RightW, $hMm, 'F');
+        $s2LogoW = 52;
+        $s2LogoH = 26;
+        $s2LogoGap = 12;
+        $s2CompanyLogoW = 44;
+        $s2CompanyLogoH = 22;
+        $s2FirstCompanyId = !empty($companies[0]['id']) ? $companies[0]['id'] : null;
+        $s2CompanyLogoPath = null;
+        if ($s2FirstCompanyId && isset($logosPorEmpresa[$s2FirstCompanyId])) {
+            $s2CompanyLogoPath = $logosPorEmpresa[$s2FirstCompanyId];
+        } elseif ($s2FirstCompanyId && isset($imagenesPorEmpresa[$s2FirstCompanyId])) {
+            $s2CompanyLogoPath = $imagenesPorEmpresa[$s2FirstCompanyId];
+        }
+        $s2LogosTotalW = $s2CompanyLogoPath && file_exists($s2CompanyLogoPath) ? ($s2CompanyLogoW + $s2LogoGap + $s2LogoW) : $s2LogoW;
+        $s2LogoX = $wMm - $s2Pad - $s2LogosTotalW;
+        $s2LogoY = $s2Pad;
+        if ($s2CompanyLogoPath && file_exists($s2CompanyLogoPath)) {
+            $imgSize = @getimagesize($s2CompanyLogoPath);
+            $maxW = $s2CompanyLogoW - 4;
+            $maxH = $s2CompanyLogoH - 4;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $r = $imgSize[0] / $imgSize[1];
+                $lw = ($maxH * $r <= $maxW) ? $maxH * $r : $maxW;
+                $lh = ($maxH * $r <= $maxW) ? $maxH : $maxW / $r;
+            } else {
+                $lw = $maxW;
+                $lh = $maxH;
+            }
+            $mpdf->Image($s2CompanyLogoPath, $s2LogoX, $s2LogoY + ($s2CompanyLogoH - $lh) / 2, $lw, $lh);
+        }
+        $s2LogoPath = $pdfLogoPath;
+        $s2SdeLogoX = $s2LogoX + ($s2CompanyLogoPath && file_exists($s2CompanyLogoPath) ? $s2CompanyLogoW + $s2LogoGap : 0);
+        if (file_exists($s2LogoPath)) {
+            $imgSize = @getimagesize($s2LogoPath);
+            $maxW = $s2LogoW - 4;
+            $maxH = $s2LogoH - 4;
             if (!empty($imgSize[0]) && !empty($imgSize[1])) {
                 $r = $imgSize[0] / $imgSize[1];
                 if ($maxH * $r <= $maxW) {
@@ -1336,118 +1337,210 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $lw = $maxW;
                 $lh = $maxH;
             }
-            $mpdf->Image($p6LogoPath, $p6LogoX + ($p6LogoW - $lw) / 2, $p6LogoY + ($p6LogoH - $lh) / 2, $lw, $lh);
+            $mpdf->Image($s2LogoPath, $s2SdeLogoX + ($s2LogoW - $lw) / 2, $s2LogoY + ($s2LogoH - $lh) / 2, $lw, $lh);
         }
-        $p6TitleY = $p6LogoY + $p6LogoH + 6;
-        $mpdf->SetTextColor($p6RedR, $p6RedG, $p6RedB);
-        $mpdf->SetFont('dejavusans', 'B', 30);
-        $mpdf->SetXY($p6Pad, $p6TitleY);
-        $mpdf->Cell($wMm - 2 * $p6Pad, 12, 'PRODUCTOS Y SERVICIOS DESTACADOS', 0, 1, 'L');
-        $p6ImgGap = 2;
-        $p6ContentW = $wMm - 2 * $p6Pad - $p6ImgGap;
-        $p6ImgLeftW = round($p6ContentW * 0.48);
-        $p6ImgRightW = $p6ContentW - $p6ImgLeftW;
-        $p6ColBlockH = 34;
-        $p6ColTop = $hMm - $p6Pad - $p6ColBlockH;
-        $p6ImgGapToCols = 10;
-        $p6ImgLeftY = $p6TitleY + 32;
-        $p6ImgRightY = $p6TitleY + 48;
-        $p6AvailableLeftH = $p6ColTop - $p6ImgLeftY - $p6ImgGapToCols;
-        $p6AvailableRightH = $p6ColTop - $p6ImgRightY - $p6ImgGapToCols;
-        $p6ImgLeftH = round($p6AvailableLeftH * 0.88);
-        $p6ImgRightH = round($p6AvailableRightH * 0.68);
-        $p6StartX = $p6Pad;
-        $p6ProductoPool = array_values($productoImgCandidates);
-        shuffle($p6ProductoPool);
-        $p6ImgPaths = [
-            isset($p6ProductoPool[0]) ? $p6ProductoPool[0] : null,
-            isset($p6ProductoPool[1]) ? $p6ProductoPool[1] : null,
+        $s2TextPad = 45;
+        $s2TextLeft = $s2LeftW + $s2TextPad;
+        $s2TextW = $s2RightW - $s2TextPad - $s2Pad;
+        $s2TitleShiftLeft = 18;
+        $s2TitleLeft = $s2TextLeft - $s2TitleShiftLeft;
+        $s2TitleW = $s2TextW + $s2TitleShiftLeft;
+        $s2TitleTop = $s2LogoY + $s2LogoH + 20;
+        $mpdf->SetTextColor(160, 35, 35);
+        $mpdf->SetFont('dejavusans', 'B', 34);
+        $mpdf->SetXY($s2TitleLeft, $s2TitleTop);
+        $mpdf->Cell($s2TitleW, 12, 'NUESTRA', 0, 1, 'C');
+        $mpdf->SetFont('dejavusans', 'B', 32);
+        $mpdf->SetXY($s2TitleLeft, $s2TitleTop + 14);
+        $mpdf->Cell($s2TitleW, 12, 'HISTORIA', 0, 1, 'C');
+        $s2ParaTop = $s2TitleTop + 40;
+        $mpdf->SetTextColor(0, 0, 0);
+        $s2FontSize = 15;
+        $s2LineHeight = 7;
+        $mpdf->SetLeftMargin($s2TextLeft);
+        $mpdf->SetRightMargin($wMm - $s2Pad);
+        $s2Para = 'Nisi justo faucibus lectus blandit donec gravida proin natoque, malesuada a facilisis dictumst rhoncus pulvinar aliquet feugiat ultrices, mollis phasellus varius tortor habitasse purus enim. Nunc lacus sociis tortor volutpat egestas vel duis erat, eleifend dapibus praesent vehicula fringilla ac suscipit conubia, nibh pulvinar elementum faucibus urna nullam luctus. Augue senectus rutrum suscipit habitasse felis aptent phasellus, nec hendrerit mattis enim congue tempor auctor magnis, mollis neque libero sagittis urna orci.';
+        $mpdf->SetFont('dejavusans', '', $s2FontSize);
+        $mpdf->SetXY($s2TextLeft, $s2ParaTop);
+        $mpdf->MultiCell($s2TextW, $s2LineHeight, $s2Para, 0, 'L');
+        $mpdf->SetLeftMargin(0);
+        $mpdf->SetRightMargin(0);
+        // Slide COMPETITIVIDAD Y DIFERENCIACIÓN (antes de Contacto): fondo gris; izq = título + 5 ítems con icono; derecha = imagen + overlay rojo + logo SDE
+        $iconRedPath = $assetsDir . '/icon_red.png';
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+        $c8Pad = 22;
+        $c8RedR = 196;
+        $c8RedG = 52;
+        $c8RedB = 59;
+        $c8Gray = 238;
+        $mpdf->SetFillColor($c8Gray, $c8Gray, $c8Gray);
+        $mpdf->Rect(0, 0, $wMm, $hMm, 'F');
+        $c8LeftW = round($wMm * 0.58);
+        $c8RightX = $c8LeftW;
+        $c8RightW = $wMm - $c8LeftW;
+        $c8TitleY = $c8Pad + 28;
+        $mpdf->SetTextColor($c8RedR, $c8RedG, $c8RedB);
+        $mpdf->SetFont('dejavusans', 'B', 40);
+        $mpdf->SetXY($c8Pad, $c8TitleY);
+        $mpdf->Cell($c8LeftW - 2 * $c8Pad, 13, 'COMPETITIVIDAD Y', 0, 1, 'L');
+        $mpdf->SetFont('dejavusans', 'B', 40);
+        $mpdf->SetXY($c8Pad, $c8TitleY + 16);
+        $mpdf->Cell($c8LeftW - 2 * $c8Pad, 14, 'DIFERENCIACIÓN', 0, 1, 'L');
+        $c8ItemY = $c8TitleY + 58;
+        $c8IconSize = 20;
+        $c8ColW = ($c8LeftW - 2 * $c8Pad - 14) / 2;
+        $c8ColGap = 14;
+        $c8ItemH = 38;
+        $c8Items = [
+            ['PREMIOS', 'Información proveniente del input del formulario.'],
+            ['RONDAS', 'Información proveniente del input del formulario.'],
+            ['REFERENCIAS COMERCIALES', 'Información proveniente del input del formulario.'],
+            ['FERIAS', 'Información proveniente del input del formulario.'],
+            ['EXPERIENCIA EXPORTADORA', 'Información proveniente del input del formulario.'],
         ];
-        foreach ([0, 1] as $p6idx) {
-            $path = $p6ImgPaths[$p6idx];
-            if ($p6idx === 0) {
-                $p6x = $p6StartX;
-                $p6BorderW = 3;
-                $p6WhiteMargin = 2.5;
-                $mpdf->SetDrawColor($p6RedR, $p6RedG, $p6RedB);
-                $mpdf->SetLineWidth($p6BorderW);
-                $mpdf->Rect($p6x, $p6ImgLeftY, $p6ImgLeftW, $p6ImgLeftH, 'D');
-                $mpdf->SetFillColor(255, 255, 255);
-                $mpdf->Rect($p6x + $p6BorderW, $p6ImgLeftY + $p6BorderW, $p6ImgLeftW - 2 * $p6BorderW, $p6ImgLeftH - 2 * $p6BorderW, 'F');
-                $p6innerX = $p6x + $p6BorderW + $p6WhiteMargin;
-                $p6innerY = $p6ImgLeftY + $p6BorderW + $p6WhiteMargin;
-                $p6innerW = $p6ImgLeftW - 2 * $p6BorderW - 2 * $p6WhiteMargin;
-                $p6innerH = $p6ImgLeftH - 2 * $p6BorderW - 2 * $p6WhiteMargin;
-                $tmp = $p6LoadCrop($path, $p6innerW, $p6innerH);
-                if ($tmp && file_exists($tmp)) {
-                    $mpdf->Image($tmp, $p6innerX, $p6innerY, $p6innerW, $p6innerH);
-                    @unlink($tmp);
-                } elseif ($path && file_exists($path)) {
-                    $mpdf->Image($path, $p6innerX, $p6innerY, $p6innerW, $p6innerH);
-                } else {
-                    $mpdf->SetFillColor(240, 240, 240);
-                    $mpdf->Rect($p6innerX, $p6innerY, $p6innerW, $p6innerH, 'F');
-                }
+        foreach ($c8Items as $idx => $item) {
+            if ($idx < 3) {
+                $col = 0;
+                $row = $idx;
             } else {
-                $p6x = $p6StartX + $p6ImgLeftW + $p6ImgGap;
-                $tmp = $p6LoadCrop($path, $p6ImgRightW, $p6ImgRightH);
-                if ($tmp && file_exists($tmp)) {
-                    $mpdf->Image($tmp, $p6x, $p6ImgRightY, $p6ImgRightW, $p6ImgRightH);
-                    @unlink($tmp);
-                } elseif ($path && file_exists($path)) {
-                    $mpdf->Image($path, $p6x, $p6ImgRightY, $p6ImgRightW, $p6ImgRightH);
-                } else {
-                    $mpdf->SetFillColor(240, 240, 240);
-                    $mpdf->Rect($p6x, $p6ImgRightY, $p6ImgRightW, $p6ImgRightH, 'F');
-                }
+                $col = 1;
+                $row = $idx - 3;
             }
-        }
-        $p6ColMargin = $p6Pad;
-        $p6ColMarginRight = $p6ColMargin;
-        $p6ColGap = 18;
-        $p6N = 3;
-        $p6ContentColW = $wMm - $p6ColMargin - $p6ColMarginRight - ($p6N - 1) * $p6ColGap;
-        $p6ColW = $p6ContentColW / $p6N;
-        while (count($p6Chunk) < 3) {
-            $p6Chunk[] = null;
-        }
-        foreach ($p6Chunk as $k => $prod) {
-            if ($k === 0) {
-                $p6colX = $p6ColMargin;
-            } elseif ($k === 1) {
-                $p6colX = $wMm / 2 - $p6ColW / 2;
-            } else {
-                $p6colX = $wMm - $p6ColMarginRight - $p6ColW;
+            $bx = $c8Pad + $col * ($c8ColW + $c8ColGap);
+            $by = $c8ItemY + $row * $c8ItemH;
+            if ($iconRedPath && file_exists($iconRedPath)) {
+                $mpdf->Image($iconRedPath, $bx, $by, $c8IconSize, $c8IconSize);
             }
-            $p6numStr = sprintf('%02d', $p6PageIdx * 3 + $k + 1) . '. Producto/Servicio';
-            $mpdf->SetTextColor($p6RedR, $p6RedG, $p6RedB);
-            $mpdf->SetFont('dejavusans', 'B', 14);
-            $mpdf->SetXY($p6colX, $p6ColTop);
-            $mpdf->Cell($p6ColW, 7, $p6numStr, 0, 1, 'L');
-            $p6DataY = $p6ColTop + 9;
             $mpdf->SetTextColor(0, 0, 0);
-            $mpdf->SetFont('dejavusans', '', 12);
-            if ($prod) {
-                $p6EmpresaNombre = $p6CompanyNameById[(int) ($prod['company_id'] ?? 0)] ?? '-';
-                $mpdf->SetXY($p6colX, $p6DataY);
-                $mpdf->Cell($p6ColW, 6, 'EMPRESA: ' . $p6EmpresaNombre, 0, 1, 'L');
-                $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'EXPORTACIÓN ANUAL: ' . (trim($prod['annual_export'] ?? '') ?: '-'), 0, 1, 'L');
-                $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'CERTIFICACIONES: ' . (trim($prod['certifications'] ?? '') ?: '-'), 0, 1, 'L');
-            } else {
-                $mpdf->SetXY($p6colX, $p6DataY);
-                $mpdf->Cell($p6ColW, 6, 'EMPRESA: -', 0, 1, 'L');
-                $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'EXPORTACIÓN ANUAL: -', 0, 1, 'L');
-                $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'CERTIFICACIONES: -', 0, 1, 'L');
+            $mpdf->SetFont('dejavusans', 'B', 15);
+            $mpdf->SetXY($bx + $c8IconSize + 4, $by);
+            $mpdf->Cell($c8ColW - $c8IconSize - 4, 8, $item[0], 0, 1, 'L');
+            $mpdf->SetFont('dejavusans', '', 14);
+            $mpdf->SetXY($bx + $c8IconSize + 4, $by + 9);
+            $mpdf->MultiCell($c8ColW - $c8IconSize - 4, 6, $item[1], 0, 'L');
+        }
+        $c8RedW = round($wMm * 0.20);
+        $c8RedX = $wMm - $c8RedW;
+        $c8ImgPad = 10;
+        $c8ImgW = round($wMm * 0.35);
+        $c8ImgX = $wMm - $c8ImgPad - $c8ImgW;
+        $c8ImgY = $c8ImgPad;
+        $c8ImgH = $hMm - 2 * $c8ImgPad;
+        $c8PortadaPaths = [];
+        foreach (['portada2.webp', 'portada3.jpg'] as $pn) {
+            $p = $assetsDir . '/' . $pn;
+            if (file_exists($p)) {
+                $c8PortadaPaths[] = $p;
             }
         }
-        $mpdf->SetDrawColor(0, 0, 0);
+        $c8ImgPath = !empty($c8PortadaPaths) ? $c8PortadaPaths[array_rand($c8PortadaPaths)] : null;
+        $c8RedAlpha = 0.65;
+        if (method_exists($mpdf, 'SetAlpha')) {
+            $mpdf->SetAlpha($c8RedAlpha);
+        }
+        $mpdf->SetFillColor($c8RedR, $c8RedG, $c8RedB);
+        $mpdf->Rect($c8RedX, 0, $c8RedW, $hMm, 'F');
+        if (method_exists($mpdf, 'SetAlpha')) {
+            $mpdf->SetAlpha(1);
+        }
+        if ($c8ImgPath && file_exists($c8ImgPath) && extension_loaded('gd')) {
+            $info = @getimagesize($c8ImgPath);
+            $ext = $info ? strtolower(pathinfo($c8ImgPath, PATHINFO_EXTENSION)) : '';
+            $src = false;
+            if ($info && $info[2] === IMAGETYPE_JPEG) $src = @imagecreatefromjpeg($c8ImgPath);
+            elseif ($info && $info[2] === IMAGETYPE_PNG) $src = @imagecreatefrompng($c8ImgPath);
+            elseif (($ext === 'webp' || ($info && isset($info[2]) && $info[2] === 18)) && function_exists('imagecreatefromwebp')) $src = @imagecreatefromwebp($c8ImgPath);
+            if ($src && !empty($info[0]) && !empty($info[1])) {
+                $scale = 100 / 25.4;
+                $dw = (int)max(1, round($c8ImgW * $scale));
+                $dh = (int)max(1, round($c8ImgH * $scale));
+                $sw = imagesx($src);
+                $sh = imagesy($src);
+                $boxR = $dw / $dh;
+                $imgR = $sw / $sh;
+                if ($imgR >= $boxR) {
+                    $cropW = (int)round($sh * $boxR);
+                    $cropH = $sh;
+                    $srcX = (int)floor(($sw - $cropW) / 2);
+                    $srcY = 0;
+                } else {
+                    $cropW = $sw;
+                    $cropH = (int)round($sw / $boxR);
+                    $srcX = 0;
+                    $srcY = (int)floor(($sh - $cropH) / 2);
+                }
+                $dst = @imagecreatetruecolor($dw, $dh);
+                if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $dw, $dh, $cropW, $cropH)) {
+                    $tmp = sys_get_temp_dir() . '/moderno_c8_' . uniqid() . '.png';
+                    if (imagepng($dst, $tmp)) {
+                        $mpdf->Image($tmp, $c8ImgX, $c8ImgY, $c8ImgW, $c8ImgH);
+                        @unlink($tmp);
+                    }
+                    imagedestroy($dst);
+                }
+                imagedestroy($src);
+            }
+        } elseif ($c8ImgPath && file_exists($c8ImgPath)) {
+            $mpdf->Image($c8ImgPath, $c8ImgX, $c8ImgY, $c8ImgW, $c8ImgH);
+        } else {
+            $mpdf->SetFillColor(200, 200, 200);
+            $mpdf->Rect($c8ImgX, $c8ImgY, $c8ImgW, $c8ImgH, 'F');
+        }
+        $c8LogoBadgeW = 62;
+        $c8LogoBadgeH = 28;
+        $c8LogoBadgeGap = 10;
+        $c8LogoBadgePad = 14;
+        $c8LogosY = $hMm - $c8LogoBadgeH - $c8LogoBadgePad;
+        $c8FirstCompanyId = !empty($companies[0]['id']) ? $companies[0]['id'] : null;
+        $c8CompanyLogoPath = null;
+        if ($c8FirstCompanyId && isset($logosPorEmpresa[$c8FirstCompanyId])) {
+            $c8CompanyLogoPath = $logosPorEmpresa[$c8FirstCompanyId];
+        } elseif ($c8FirstCompanyId && isset($imagenesPorEmpresa[$c8FirstCompanyId])) {
+            $c8CompanyLogoPath = $imagenesPorEmpresa[$c8FirstCompanyId];
+        }
+        $c8HasCompanyLogo = $c8CompanyLogoPath && file_exists($c8CompanyLogoPath);
+        $c8CompanyBadgeX = $c8HasCompanyLogo
+            ? $wMm - $c8LogoBadgePad - 2 * $c8LogoBadgeW - $c8LogoBadgeGap
+            : 0;
+        $c8SdeBadgeX = $c8HasCompanyLogo
+            ? $c8CompanyBadgeX + $c8LogoBadgeW + $c8LogoBadgeGap
+            : $wMm - $c8LogoBadgePad - $c8LogoBadgeW;
+        if ($c8HasCompanyLogo) {
+            $mpdf->SetFillColor($c8RedR, $c8RedG, $c8RedB);
+            $mpdf->Rect($c8CompanyBadgeX, $c8LogosY, $c8LogoBadgeW, $c8LogoBadgeH, 'F');
+            $imgSize = @getimagesize($c8CompanyLogoPath);
+            $maxW = $c8LogoBadgeW - 8;
+            $maxH = $c8LogoBadgeH - 8;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $r = $imgSize[0] / $imgSize[1];
+                $lw = ($maxH * $r <= $maxW) ? $maxH * $r : $maxW;
+                $lh = ($maxH * $r <= $maxW) ? $maxH : $maxW / $r;
+            } else {
+                $lw = $maxW;
+                $lh = $maxH;
+            }
+            $mpdf->Image($c8CompanyLogoPath, $c8CompanyBadgeX + ($c8LogoBadgeW - $lw) / 2, $c8LogosY + ($c8LogoBadgeH - $lh) / 2, $lw, $lh);
+        }
+        $mpdf->SetFillColor($c8RedR, $c8RedG, $c8RedB);
+        $mpdf->Rect($c8SdeBadgeX, $c8LogosY, $c8LogoBadgeW, $c8LogoBadgeH, 'F');
+        $c8SdeLogoPath = (file_exists($pdfLogoWhitePath)) ? $pdfLogoWhitePath : $pdfLogoPath;
+        if (file_exists($c8SdeLogoPath)) {
+            $imgSize = @getimagesize($c8SdeLogoPath);
+            $maxW = $c8LogoBadgeW - 8;
+            $maxH = $c8LogoBadgeH - 8;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $r = $imgSize[0] / $imgSize[1];
+                $lw = ($maxH * $r <= $maxW) ? $maxH * $r : $maxW;
+                $lh = ($maxH * $r <= $maxW) ? $maxH : $maxW / $r;
+            } else {
+                $lw = $maxW;
+                $lh = $maxH;
+            }
+            $mpdf->Image($c8SdeLogoPath, $c8SdeBadgeX + ($c8LogoBadgeW - $lw) / 2, $c8LogosY + ($c8LogoBadgeH - $lh) / 2, $lw, $lh);
         }
     } elseif ($i === 6) {
-        // Slide Contacto: fondo = imagen portada aleatoria a página completa; encima rojo con borde inferior en V (como slide 4); encima blanco con borde inferior en V; izq = logo + nombre provincia + CONTACTO + 3 cajas
+        // Slide Contacto (GRACIAS): fondo imagen portada; V rojo/blanco; izq = GRACIAS + Contacto (rojo) + Teléfonos/Emails (borde rojo); abajo derecha = bloque logos (empresa + SDE) como slide 1
         $mpdf->AddPage();
         $mpdf->SetXY(0, 0);
         $s7FullW = $wMm;
@@ -1533,79 +1626,113 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->SetFillColor(255, 255, 255);
             $mpdf->Rect(0, 0, $s7FullW, $s7WhiteVSideMm, 'F');
         }
-        $s7LogoPath = $pdfLogoPath;
-        $s7LogoW = 44;
-        $s7LogoH = 22;
-        $s7LogoX = $s7Pad;
-        $s7LogoY = $s7Pad;
-        if (file_exists($s7LogoPath)) {
-            $imgSize = @getimagesize($s7LogoPath);
-            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
-                $r = $imgSize[0] / $imgSize[1];
-                if ($s7LogoH * $r <= $s7LogoW) {
-                    $lw = $s7LogoH * $r;
-                    $lh = $s7LogoH;
-                } else {
-                    $lw = $s7LogoW;
-                    $lh = $s7LogoW / $r;
-                }
-                $mpdf->Image($s7LogoPath, $s7LogoX, $s7LogoY, $lw, $lh);
-            }
-        }
-        $s7TitleY = $s7LogoY + $s7LogoH + 18;
+        $s7TitleY = $s7Pad + 8;
         $mpdf->SetTextColor($s7RedR, $s7RedG, $s7RedB);
         $mpdf->SetFont('dejavusans', 'B', 54);
         $mpdf->SetXY($s7Pad, $s7TitleY);
-        $mpdf->Cell($s7LeftW - 2 * $s7Pad, 16, 'CONTACTO', 0, 1, 'L');
+        $mpdf->Cell($s7LeftW - 2 * $s7Pad, 20, 'GRACIAS', 0, 1, 'L');
         $contacto = $configInstitucional;
-        $s7TelRaw = trim($contacto['telefono'] ?? '') ?: '-';
-        $s7WebRaw = trim($contacto['sitio_web'] ?? '') ?: '-';
-        if (preg_match('#^https?://#i', $s7WebRaw)) {
-            $s7WebRaw = preg_replace('#^https?://#i', '', $s7WebRaw);
+        $s7ContactoPersona = trim($contacto['area_responsable'] ?? '') ?: 'Persona de contacto';
+        $s7TelRaw = trim($contacto['telefono'] ?? '') ?: '+12345678';
+        $s7MailRaw = trim($contacto['mail'] ?? '') ?: 'mail@contacto.com';
+        if (strpos($s7MailRaw, ',') !== false) {
+            $s7Mails = array_map('trim', explode(',', $s7MailRaw));
+        } else {
+            $s7Mails = [$s7MailRaw];
         }
-        $s7MailRaw = trim($contacto['mail'] ?? '') ?: '-';
-        $s7BoxTop = $s7TitleY + 46;
+        $s7BoxTop = $s7TitleY + 38;
         $s7BoxW = ($s7LeftW - 2 * $s7Pad - 12) / 2;
-        $s7BoxH = 36;
+        $s7BoxH = 34;
         $s7BoxPad = 6;
         $s7InnerW = $s7BoxW - 2 * $s7BoxPad;
         $mpdf->SetFillColor($s7RedR, $s7RedG, $s7RedB);
-        $mpdf->SetDrawColor(255, 255, 255);
-        $mpdf->SetLineWidth(0.8);
-        $mpdf->Rect($s7Pad, $s7BoxTop, $s7BoxW, $s7BoxH, 'FD');
+        $mpdf->Rect($s7Pad, $s7BoxTop, $s7BoxW, $s7BoxH, 'F');
         $mpdf->SetTextColor(255, 255, 255);
         $mpdf->SetFont('dejavusans', 'B', 11);
         $mpdf->SetXY($s7Pad + $s7BoxPad, $s7BoxTop + $s7BoxPad);
-        $mpdf->Cell($s7InnerW, 5, 'Teléfonos', 0, 1, 'L');
+        $mpdf->Cell($s7InnerW, 5, 'Contacto', 0, 1, 'L');
         $mpdf->SetFont('dejavusans', '', 9);
         $mpdf->SetX($s7Pad + $s7BoxPad);
-        $mpdf->MultiCell($s7InnerW, 4, $s7TelRaw, 0, 'L');
+        $mpdf->Cell($s7InnerW, 4, $s7ContactoPersona, 0, 1, 'L');
         $mpdf->SetFillColor(255, 255, 255);
         $mpdf->SetDrawColor($s7RedR, $s7RedG, $s7RedB);
         $mpdf->SetLineWidth(0.5);
         $mpdf->Rect($s7Pad + $s7BoxW + 12, $s7BoxTop, $s7BoxW, $s7BoxH, 'FD');
-        $mpdf->SetTextColor(0, 0, 0);
+        $mpdf->SetTextColor($s7RedR, $s7RedG, $s7RedB);
         $mpdf->SetFont('dejavusans', 'B', 11);
         $mpdf->SetXY($s7Pad + $s7BoxW + 12 + $s7BoxPad, $s7BoxTop + $s7BoxPad);
-        $mpdf->Cell($s7InnerW, 5, 'Sitios Web', 0, 1, 'L');
+        $mpdf->Cell($s7InnerW, 5, 'Teléfonos', 0, 1, 'L');
+        $mpdf->SetTextColor(0, 0, 0);
         $mpdf->SetFont('dejavusans', '', 9);
         $mpdf->SetX($s7Pad + $s7BoxW + 12 + $s7BoxPad);
-        $mpdf->MultiCell($s7InnerW, 4, $s7WebRaw, 0, 'L');
+        $mpdf->MultiCell($s7InnerW, 4, $s7TelRaw, 0, 'L');
         $s7EmailBoxY = $s7BoxTop + $s7BoxH + 10;
         $s7EmailBoxW = $s7LeftW - 2 * $s7Pad;
-        $s7EmailBoxH = 38;
+        $s7EmailBoxH = 40;
         $mpdf->SetFillColor(255, 255, 255);
-        $mpdf->SetDrawColor($s7RedR, $s7RedG, $s7RedB);
-        $mpdf->SetLineWidth(0.5);
         $mpdf->Rect($s7Pad, $s7EmailBoxY, $s7EmailBoxW, $s7EmailBoxH, 'FD');
-        $mpdf->SetTextColor(0, 0, 0);
+        $mpdf->SetTextColor($s7RedR, $s7RedG, $s7RedB);
         $mpdf->SetFont('dejavusans', 'B', 11);
         $mpdf->SetXY($s7Pad + $s7BoxPad, $s7EmailBoxY + $s7BoxPad);
         $mpdf->Cell($s7EmailBoxW - 2 * $s7BoxPad, 5, 'Emails', 0, 1, 'L');
+        $mpdf->SetTextColor(0, 0, 0);
         $mpdf->SetFont('dejavusans', '', 9);
         $mpdf->SetX($s7Pad + $s7BoxPad);
-        $mpdf->MultiCell($s7EmailBoxW - 2 * $s7BoxPad, 4, $s7MailRaw, 0, 'L');
+        $mpdf->MultiCell($s7EmailBoxW - 2 * $s7BoxPad, 4, implode("\n", array_slice($s7Mails, 0, 3)), 0, 'L');
         $mpdf->SetDrawColor(0, 0, 0);
+
+        $s7LogoBadgeW = 62;
+        $s7LogoBadgeH = 28;
+        $s7LogoBadgeGap = 10;
+        $s7LogoBadgePad = 14;
+        $s7LogosY = $s7FullH - $s7LogoBadgeH - $s7LogoBadgePad;
+        $s7FirstCompanyId = !empty($companies[0]['id']) ? $companies[0]['id'] : null;
+        $s7CompanyLogoPath = null;
+        if ($s7FirstCompanyId && isset($logosPorEmpresa[$s7FirstCompanyId])) {
+            $s7CompanyLogoPath = $logosPorEmpresa[$s7FirstCompanyId];
+        } elseif ($s7FirstCompanyId && isset($imagenesPorEmpresa[$s7FirstCompanyId])) {
+            $s7CompanyLogoPath = $imagenesPorEmpresa[$s7FirstCompanyId];
+        }
+        $s7HasCompanyLogo = $s7CompanyLogoPath && file_exists($s7CompanyLogoPath);
+        $s7CompanyBadgeX = $s7HasCompanyLogo
+            ? $s7FullW - $s7LogoBadgePad - 2 * $s7LogoBadgeW - $s7LogoBadgeGap
+            : 0;
+        $s7SdeBadgeX = $s7HasCompanyLogo
+            ? $s7CompanyBadgeX + $s7LogoBadgeW + $s7LogoBadgeGap
+            : $s7FullW - $s7LogoBadgePad - $s7LogoBadgeW;
+        if ($s7HasCompanyLogo) {
+            $mpdf->SetFillColor($s7RedR, $s7RedG, $s7RedB);
+            $mpdf->Rect($s7CompanyBadgeX, $s7LogosY, $s7LogoBadgeW, $s7LogoBadgeH, 'F');
+            $imgSize = @getimagesize($s7CompanyLogoPath);
+            $maxW = $s7LogoBadgeW - 8;
+            $maxH = $s7LogoBadgeH - 8;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $r = $imgSize[0] / $imgSize[1];
+                $lw = ($maxH * $r <= $maxW) ? $maxH * $r : $maxW;
+                $lh = ($maxH * $r <= $maxW) ? $maxH : $maxW / $r;
+            } else {
+                $lw = $maxW;
+                $lh = $maxH;
+            }
+            $mpdf->Image($s7CompanyLogoPath, $s7CompanyBadgeX + ($s7LogoBadgeW - $lw) / 2, $s7LogosY + ($s7LogoBadgeH - $lh) / 2, $lw, $lh);
+        }
+        $mpdf->SetFillColor($s7RedR, $s7RedG, $s7RedB);
+        $mpdf->Rect($s7SdeBadgeX, $s7LogosY, $s7LogoBadgeW, $s7LogoBadgeH, 'F');
+        $s7LogoPath = (file_exists($pdfLogoWhitePath)) ? $pdfLogoWhitePath : $pdfLogoPath;
+        if (file_exists($s7LogoPath)) {
+            $imgSize = @getimagesize($s7LogoPath);
+            $maxW = $s7LogoBadgeW - 8;
+            $maxH = $s7LogoBadgeH - 8;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $r = $imgSize[0] / $imgSize[1];
+                $lw = ($maxH * $r <= $maxW) ? $maxH * $r : $maxW;
+                $lh = ($maxH * $r <= $maxW) ? $maxH : $maxW / $r;
+            } else {
+                $lw = $maxW;
+                $lh = $maxH;
+            }
+            $mpdf->Image($s7LogoPath, $s7SdeBadgeX + ($s7LogoBadgeW - $lw) / 2, $s7LogosY + ($s7LogoBadgeH - $lh) / 2, $lw, $lh);
+        }
     } else {
         if ($i === 2) {
             $mpdf->WriteHTML($htmlChunks[0] . $htmlChunks[$i]);
