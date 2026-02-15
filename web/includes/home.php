@@ -356,19 +356,12 @@ $visibleProducts = min(4, $totalProducts);
       <section class="home-section">
         <div class="home-section-header">
           <h2 data-i18n="home_presentations_title" class="home-section-title">Presentaciones generadas de productos y servicios <span class="home-section-count">3/3</span></h2>
-          <div class="home-search-box">
-            <input type="search" class="home-search-input" data-i18n-placeholder="home_search_placeholder_presentations">
-            <svg class="home-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.35-4.35"></path>
-            </svg>
-          </div>
         </div>
-        
+
         <div class="home-presentations-grid">
           <div class="home-presentation-card">
             <div class="home-presentation-image">
-              <img src="img/ClásicoCuadrado.png" alt="Clásico">
+              <img src="img/ClasicoCuadrado.png" alt="Clásico">
             </div>
             <div class="home-presentation-content">
               <a href="pdf/home/clasico_company.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
@@ -392,11 +385,6 @@ $visibleProducts = min(4, $totalProducts);
               <a href="pdf/home/moderno_company.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
             </div>
           </div>
-        </div>
-        
-        <div class="home-presentations-actions">
-          <button data-i18n="btn_show_more" class="btn btn-show-more-outline">Mostrar más</button>
-          <button data-i18n="btn_generate_ai" class="btn btn-generate-ai">Generar IA-presentación</button>
         </div>
       </section>
     </div>
