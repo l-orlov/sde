@@ -61,3 +61,17 @@ function get_serve_file_url($file_id) {
     }
     return $web_base . '/serve_file.php?id=' . (int) $file_id;
 }
+
+/**
+ * URL для публичного доступа к изображениям товаров (лендинг, карусель).
+ * Только файлы из одобренных компаний.
+ */
+function get_serve_file_public_url($file_id) {
+    static $web_base = null;
+    if ($web_base === null) {
+        $configPath = __DIR__ . '/config/config.php';
+        $config = file_exists($configPath) ? (require $configPath) : [];
+        $web_base = rtrim($config['web_base'] ?? '', '/');
+    }
+    return $web_base . '/serve_file_public.php?id=' . (int) $file_id;
+}

@@ -6,10 +6,61 @@ $__pdf_oferta_urls = [
     'corporativo' => $__web_base . '/index.php?page=corporativo_pdf',
     'moderno'    => $__web_base . '/index.php?page=moderno_pdf',
 ];
+
+// Товары/услуги из одобренных компаний для карусели
+$__carousel_products = [];
+global $link;
+if ($link) {
+    $q = "SELECT p.id, p.name, p.description, p.type, p.company_id, c.name AS company_name
+          FROM products p
+          INNER JOIN companies c ON c.id = p.company_id AND c.user_id = p.user_id
+          WHERE c.moderation_status = 'approved'
+          ORDER BY p.id DESC";
+    $res = @mysqli_query($link, $q);
+    if ($res) {
+        while ($row = mysqli_fetch_assoc($res)) {
+            $desc = trim($row['description'] ?? '');
+            $__carousel_products[] = [
+                'id' => (int) $row['id'],
+                'name' => htmlspecialchars($row['name'] ?? ''),
+                'description' => htmlspecialchars($desc),
+                'type' => ($row['type'] ?? 'product') === 'service' ? 'service' : 'product',
+                'company_name' => htmlspecialchars($row['company_name'] ?? ''),
+            ];
+        }
+    }
+    // Изображения для товаров
+    $__carousel_photos = [];
+    if (!empty($__carousel_products)) {
+        $productIds = array_column($__carousel_products, 'id');
+        $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+        $q = "SELECT f.id, f.product_id FROM files f
+              INNER JOIN products p ON p.id = f.product_id
+              INNER JOIN companies c ON c.id = p.company_id AND c.user_id = p.user_id
+              WHERE f.product_id IN ($placeholders)
+                AND f.file_type IN ('product_photo', 'product_photo_sec', 'service_photo')
+                AND (f.is_temporary = 0 OR f.is_temporary IS NULL)
+                AND c.moderation_status = 'approved'
+              ORDER BY f.product_id, f.id ASC";
+        $stmt = mysqli_prepare($link, $q);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, str_repeat('i', count($productIds)), ...$productIds);
+            mysqli_stmt_execute($stmt);
+            $r = mysqli_stmt_get_result($stmt);
+            while ($row = mysqli_fetch_assoc($r)) {
+                $pid = (int) $row['product_id'];
+                if (!isset($__carousel_photos[$pid])) {
+                    $__carousel_photos[$pid] = get_serve_file_public_url($row['id']);
+                }
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
+}
 ?>
 <!-- HEADER -->
 <div class="hero-section">
-    <header class="hero-header">
+    <div class="hero-header">
         <div class="logo">
             <img src="img/logo.svg" alt="Santiago del Estero" class="logo-image">
         </div>
@@ -29,8 +80,11 @@ $__pdf_oferta_urls = [
                         </li>
                     </ul>
                 </div>
+                <span class="hero-nav-sep" aria-hidden="true">|</span>
                 <a data-i18n="nav_turismo" href="#turismo" class="nav-link">Turismo</a>
+                <span class="hero-nav-sep" aria-hidden="true">|</span>
                 <a data-i18n="nav_news" href="#noticias" class="nav-link">Noticias</a>
+                <span class="hero-nav-sep" aria-hidden="true">|</span>
                 <a data-i18n="nav_contact" href="#contactos" class="nav-link">Contactos</a>
                 <a href="https://wa.me/" class="nav-whatsapp" target="_blank">
                     <img src="img/icono_whatsapp.png" alt="WhatsApp" class="whatsapp-icon">
@@ -41,18 +95,21 @@ $__pdf_oferta_urls = [
             <a data-i18n="btn_register" onclick="location.href='?page=regnew';" class="btn btn-register">Registrarse</a>
             <a data-i18n="btn_login" onclick="location.href='?page=login';" class="btn btn-login">Entrar</a>
         </div>
-    </header>
-    <div class="landing_header_lang" onclick="toggleLangMenu()">
-        <img src="img/icons/lang.png" />
-        <span id="current-lang">Es</span>
+        <div class="landing_header_lang" onclick="toggleLangMenu()">
+            <img src="img/icons/lang.png" />
+            <span id="current-lang">Es</span>
 
-        <ul id="landing_header_lang_menu" class="landing_header_lang_menu hidden">
-            <li onclick="setLang('landing', 'es')">Español</li>
-            <li onclick="setLang('landing', 'en')">English</li>
-        </ul>
+            <ul id="landing_header_lang_menu" class="landing_header_lang_menu hidden">
+                <li onclick="setLang('landing', 'es')">Español</li>
+                <li onclick="setLang('landing', 'en')">English</li>
+            </ul>
+        </div>
     </div>
     <div class="hero-content">
-        <h1 data-i18n="hero_title" class="hero-title">Conectamos el trabajo local<br>con el mercado global</h1>
+        <h1 data-i18n-html="hero_title" class="hero-title">Conectamos el trabajo local con el<br>mercado global</h1>
+    </div>
+    <div class="hero-products" aria-hidden="true">
+        <img src="img/landing/hero_products.png" alt="" class="hero-products-img" onerror="this.parentElement.style.display='none'">
     </div>
     <div class="hero-footer">
         <div class="hero-tagline">
@@ -65,6 +122,42 @@ $__pdf_oferta_urls = [
     </div>
 </div>
 <!-- HEADER -->
+
+<?php if (!empty($__carousel_products)): ?>
+<!-- PRODUCTS CAROUSEL -->
+<section class="products-carousel-section" id="productos">
+    <div class="products-carousel-container">
+        <h2 class="products-carousel-title" data-i18n="carousel_title">Productos y servicios</h2>
+        <div class="products-carousel-wrapper">
+            <button type="button" class="products-carousel-btn products-carousel-btn-prev" aria-label="Anterior">&lsaquo;</button>
+            <div class="products-carousel-track-container">
+                <div class="products-carousel-track">
+                    <?php for ($dup = 0; $dup < 2; $dup++): foreach ($__carousel_products as $p): 
+                        $imgUrl = $__carousel_photos[$p['id']] ?? null;
+                        $typeLabel = $p['type'] === 'service' ? 'Servicio' : 'Producto';
+                    ?>
+                    <div class="products-carousel-slide">
+                        <div class="products-carousel-card">
+                            <?php if ($imgUrl): ?>
+                            <img src="<?= htmlspecialchars($imgUrl) ?>" alt="<?= $p['name'] ?>" class="products-carousel-image" loading="lazy">
+                            <?php else: ?>
+                            <div class="products-carousel-image products-carousel-image-placeholder" aria-hidden="true"></div>
+                            <?php endif; ?>
+                            <span class="products-carousel-type"><?= $typeLabel ?></span>
+                            <?php if (!empty($p['company_name'])): ?>
+                            <span class="products-carousel-company"><?= $p['company_name'] ?></span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endforeach; endfor; ?>
+                </div>
+            </div>
+            <button type="button" class="products-carousel-btn products-carousel-btn-next" aria-label="Siguiente">&rsaquo;</button>
+        </div>
+    </div>
+</section>
+<!-- PRODUCTS CAROUSEL -->
+<?php endif; ?>
 
 <!-- ESTADIO SECTION -->
 <div class="estadio-section" id="turismo">
@@ -398,6 +491,64 @@ document.addEventListener('DOMContentLoaded', () => {
       closeModal();
     }
   });
+
+  // Products carousel (infinite loop)
+  const carouselSection = document.querySelector('.products-carousel-section');
+  if (carouselSection) {
+    const track = carouselSection.querySelector('.products-carousel-track');
+    const slides = carouselSection.querySelectorAll('.products-carousel-slide');
+    const prevBtn = carouselSection.querySelector('.products-carousel-btn-prev');
+    const nextBtn = carouselSection.querySelector('.products-carousel-btn-next');
+    const totalSlides = slides.length;
+    const uniqueCount = totalSlides / 2;
+    let currentIndex = 0;
+    let slidesToShow = 4;
+    let isTransitioning = false;
+    const gap = 20;
+    const updateSlidesToShow = () => {
+      slidesToShow = window.innerWidth >= 1200 ? 4 : window.innerWidth >= 768 ? 3 : window.innerWidth >= 480 ? 2 : 1;
+      carouselSection.classList.remove('slides-1','slides-2','slides-3','slides-4');
+      carouselSection.classList.add('slides-' + slidesToShow);
+    };
+    updateSlidesToShow();
+    window.addEventListener('resize', () => { updateSlidesToShow(); applyTransform(false); });
+    const getSlideWidth = () => {
+      const container = track && track.parentElement;
+      if (!container) return 0;
+      return (container.offsetWidth + gap) / slidesToShow - gap;
+    };
+    function applyTransform(withTransition = true) {
+      if (!track) return;
+      const w = getSlideWidth();
+      if (w <= 0) return;
+      track.style.transition = withTransition ? 'transform 0.3s ease' : 'none';
+      track.style.transform = `translateX(-${currentIndex * (w + gap)}px)`;
+    }
+    function onTransitionEnd() {
+      isTransitioning = false;
+      if (currentIndex >= uniqueCount) {
+        currentIndex = currentIndex - uniqueCount;
+        applyTransform(false);
+      } else if (currentIndex < 0) {
+        currentIndex = currentIndex + uniqueCount;
+        applyTransform(false);
+      }
+    }
+    function goToSlide(idx) {
+      if (isTransitioning) return;
+      isTransitioning = true;
+      currentIndex = idx;
+      applyTransform(true);
+      const te = () => { track.removeEventListener('transitionend', te); onTransitionEnd(); };
+      track.addEventListener('transitionend', te);
+      setTimeout(() => { if (isTransitioning) { track.removeEventListener('transitionend', te); onTransitionEnd(); } }, 350);
+    }
+    if (prevBtn) prevBtn.addEventListener('click', () => goToSlide(currentIndex - 1));
+    if (nextBtn) nextBtn.addEventListener('click', () => goToSlide(currentIndex + 1));
+    currentIndex = 0;
+    applyTransform(false);
+    onTransitionEnd();
+  }
 });
 document.addEventListener('click', function (e) {
   const langBox = document.querySelector('.landing_header_lang');
