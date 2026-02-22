@@ -143,7 +143,9 @@ if ($link) {
                             <?php else: ?>
                             <div class="products-carousel-image products-carousel-image-placeholder" aria-hidden="true"></div>
                             <?php endif; ?>
-                            <span class="products-carousel-type"><?= $typeLabel ?></span>
+                            <?php if (!empty($p['name'])): ?>
+                            <span class="products-carousel-type"><?= $p['name'] ?></span>
+                            <?php endif; ?>
                             <?php if (!empty($p['company_name'])): ?>
                             <span class="products-carousel-company"><?= $p['company_name'] ?></span>
                             <?php endif; ?>
