@@ -109,12 +109,12 @@ try {
         $mainActivity = '';
     }
     
-    $startDateTimestamp = null;
-    if ($startDate) {
+    // Приводим дату к формату YYYY-MM-DD для поля DATE в БД.
+    $startDateDb = null;
+    if (!empty($startDate)) {
         $dateObj = DateTime::createFromFormat('d/m/Y', $startDate);
-        if ($dateObj) {
-            $dateObj->setTime(0, 0, 0);
-            $startDateTimestamp = $dateObj->getTimestamp();
+        if ($dateObj instanceof DateTime) {
+            $startDateDb = $dateObj->format('Y-m-d');
         }
     }
     
@@ -125,7 +125,7 @@ try {
                   updated_at = UNIX_TIMESTAMP() 
                   WHERE id = ?";
         $stmt = mysqli_prepare($link, $query);
-        mysqli_stmt_bind_param($stmt, 'sssissis', $name, $taxId, $legalName, $startDateTimestamp, $website, $organizationType, $mainActivity, $companyId);
+        mysqli_stmt_bind_param($stmt, 'sssssssi', $name, $taxId, $legalName, $startDateDb, $website, $organizationType, $mainActivity, $companyId);
     } else {
         // Для INSERT используем пустую строку, если значение не передано
         $mainActivityForInsert = ($mainActivity !== null && $mainActivity !== '') ? $mainActivity : '';
@@ -133,7 +133,7 @@ try {
                   organization_type, main_activity, moderation_status) 
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')";
         $stmt = mysqli_prepare($link, $query);
-        mysqli_stmt_bind_param($stmt, 'isssisss', $userId, $name, $taxId, $legalName, $startDateTimestamp, $website, $organizationType, $mainActivityForInsert);
+        mysqli_stmt_bind_param($stmt, 'isssssss', $userId, $name, $taxId, $legalName, $startDateDb, $website, $organizationType, $mainActivityForInsert);
     }
     
     if (!mysqli_stmt_execute($stmt)) {

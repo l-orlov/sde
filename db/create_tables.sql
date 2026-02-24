@@ -21,7 +21,7 @@ CREATE TABLE companies (
     name                VARCHAR(255)    NOT NULL,
     tax_id              VARCHAR(50),
     legal_name          VARCHAR(255),
-    start_date          INT UNSIGNED,
+    start_date          DATE,
     website             VARCHAR(255),
     organization_type   VARCHAR(100),
     main_activity       VARCHAR(100),

@@ -36,12 +36,23 @@ if (isset($_SESSION['uid'])) {
         if ($companyData) {
             $companyId = intval($companyData['id']);
             
-            // Конвертация start_date из timestamp в формат d/m/Y
-            if ($companyData['start_date']) {
-                $timestamp = intval($companyData['start_date']);
-                if ($timestamp > 0) {
-                    $dateObj = new DateTime();
-                    $dateObj->setTimestamp($timestamp);
+            // Приводим start_date из БД к формату d/m/Y.
+            // Поддерживаем как INT‑timestamp, так и DATE (YYYY-MM-DD).
+            if (!empty($companyData['start_date'])) {
+                $rawDate = $companyData['start_date'];
+                $dateObj = null;
+
+                if (ctype_digit((string) $rawDate)) {
+                    $timestamp = (int) $rawDate;
+                    if ($timestamp > 0) {
+                        $dateObj = (new DateTime())->setTimestamp($timestamp);
+                    }
+                } else {
+                    $dateObj = DateTime::createFromFormat('Y-m-d', $rawDate)
+                        ?: DateTime::createFromFormat('d/m/Y', $rawDate);
+                }
+
+                if ($dateObj instanceof DateTime) {
                     $companyData['start_date'] = $dateObj->format('d/m/Y');
                 } else {
                     $companyData['start_date'] = '';
@@ -255,15 +266,14 @@ function esc_attr($value) {
         placeholder=""
         inputmode="numeric"
         maxlength="11"
-        required
       >
     </div>
     <!-- Razón social -->
-    <div class="label"><label for="legal_name" data-i18n="regfull_razon_social">Razón social <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="legal_name" name="legal_name" value="<?= esc_attr($companyData['legal_name'] ?? '') ?>" required></div>
+    <div class="label"><label for="legal_name" data-i18n="regfull_razon_social">Razón social</label></div>
+    <div class="field"><input type="search" id="legal_name" name="legal_name" value="<?= esc_attr($companyData['legal_name'] ?? '') ?>"></div>
     <!-- Fecha de inicio -->
-    <div class="label"><label for="start_date" data-i18n="regfull_start_date">Fecha de Inicio de Actividad <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="start_date" name="start_date" value="<?= esc_attr($companyData['start_date'] ?? '') ?>" data-i18n-placeholder="regfull_date_placeholder" placeholder="dd/mm/aaaa" inputmode="numeric" required></div>
+    <div class="label"><label for="start_date" data-i18n="regfull_start_date">Fecha de Inicio de Actividad</label></div>
+    <div class="field"><input type="search" id="start_date" name="start_date" value="<?= esc_attr($companyData['start_date'] ?? '') ?>" data-i18n-placeholder="regfull_date_placeholder" placeholder="dd/mm/aaaa" inputmode="numeric"></div>
     <!-- Página web -->
     <div class="label"><label for="website" data-i18n="regfull_website">Página web (si aplica)</label></div>
     <div class="field"><input type="search" id="website" name="website" value="<?= esc_attr($companyData['website'] ?? '') ?>" type="url" data-i18n-placeholder="regfull_website_placeholder" placeholder="http://…"></div>
@@ -301,19 +311,19 @@ function esc_attr($value) {
     </div>
     <!-- Domicilio Legal -->
     <div class="address">
-      <div class="label"><span data-i18n="regfull_legal_address">Domicilio Legal <span class="req">*</span></span></div>
+      <div class="label"><span data-i18n="regfull_legal_address">Domicilio Legal</span></div>
       <div class="address_grid">
-        <label class="label_span" data-i18n="regfull_street">Calle <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_street">Calle</label>
         <input type="search" name="street_legal" class="span_right" value="<?= esc_attr($companyAddresses['legal']['street'] ?? '') ?>">
-        <label class="label_span" data-i18n="regfull_number">Altura <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_number">Altura</label>
         <input type="search" name="street_number_legal" class="" value="<?= esc_attr($companyAddresses['legal']['street_number'] ?? '') ?>">
-        <label class="label_span" data-i18n="regfull_postal_code">Código Postal <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_postal_code">Código Postal</label>
         <input type="search" name="postal_code_legal" class="" value="<?= esc_attr($companyAddresses['legal']['postal_code'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_floor">Piso</label>
         <input type="search" name="floor_legal" class="" value="<?= esc_attr($companyAddresses['legal']['floor'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_apartment">Departamento</label>
         <input type="search" name="apartment_legal" class="" value="<?= esc_attr($companyAddresses['legal']['apartment'] ?? '') ?>">
-        <label class="label_span" data-i18n="regfull_locality">Localidad <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_locality">Localidad</label>
         <div class="span_right">
           <div class="custom-dropdown">
             <div class="dropdown-selected">
@@ -341,7 +351,7 @@ function esc_attr($value) {
             <input type="hidden" name="locality_legal" value="<?= esc_attr($companyAddresses['legal']['locality'] ?? '') ?>">
           </div>
         </div>
-        <label class="label_span" data-i18n="regfull_department">Departamento <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_department">Departamento</label>
         <div class="span_right">
           <div class="custom-dropdown">
             <div class="dropdown-selected">
@@ -385,19 +395,19 @@ function esc_attr($value) {
     </div>
     <!-- Dirección administrativa -->
     <div class="address">
-      <div class="label"><span data-i18n="regfull_admin_address">Dirección administrativa <span class="req">*</span></span></div>
+      <div class="label"><span data-i18n="regfull_admin_address">Dirección administrativa</span></div>
       <div class="address_grid">
-        <label class="label_span" data-i18n="regfull_street">Calle <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_street">Calle</label>
         <input type="search" name="street_admin" class="span_right" value="<?= esc_attr($companyAddresses['admin']['street'] ?? '') ?>">
-        <label class="label_span" data-i18n="regfull_number">Altura <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_number">Altura</label>
         <input type="search" name="street_number_admin" class="" value="<?= esc_attr($companyAddresses['admin']['street_number'] ?? '') ?>">
-        <label class="label_span" data-i18n="regfull_postal_code">Código Postal <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_postal_code">Código Postal</label>
         <input type="search" name="postal_code_admin" class="" value="<?= esc_attr($companyAddresses['admin']['postal_code'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_floor">Piso</label>
         <input type="search" name="floor_admin" class="" value="<?= esc_attr($companyAddresses['admin']['floor'] ?? '') ?>">
         <label class="label_span" data-i18n="regfull_apartment">Departamento</label>
         <input type="search" name="apartment_admin" class="" value="<?= esc_attr($companyAddresses['admin']['apartment'] ?? '') ?>">
-        <label class="label_span" data-i18n="regfull_locality">Localidad <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_locality">Localidad</label>
         <div class="span_right">
           <div class="custom-dropdown">
             <div class="dropdown-selected">
@@ -425,7 +435,7 @@ function esc_attr($value) {
             <input type="hidden" name="locality_admin" value="<?= esc_attr($companyAddresses['admin']['locality'] ?? '') ?>">
           </div>
         </div>
-        <label class="label_span" data-i18n="regfull_department">Departamento <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_department">Departamento</label>
         <div class="span_right">
           <div class="custom-dropdown">
             <div class="dropdown-selected">
@@ -469,14 +479,14 @@ function esc_attr($value) {
     </div>
     <!-- Contacto -->
     <div class="contacto_datos">
-      <div class="label"><span data-i18n="regfull_contact_person">Persona de Contacto <span class="req">*</span></span></div>
+      <div class="label"><span data-i18n="regfull_contact_person">Persona de Contacto</span></div>
       <div class="contacto_grid">
         <input type="search" name="contact_person" class="span_all" value="<?= esc_attr($companyContacts['contact_person'] ?? '') ?>">
-        <label class="label_span" data-i18n="regfull_contact_position">Cargo de Persona de contacto <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_contact_position">Cargo de Persona de contacto</label>
         <input type="search" name="contact_position" value="<?= esc_attr($companyContacts['position'] ?? '') ?>">
-        <label class="label_span" data-i18n="regfull_email">E-mail <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_email">E-mail</label>
         <input type="email" name="contact_email" value="<?= esc_attr($companyContacts['email'] ?? '') ?>">
-        <label class="label_span" data-i18n="regfull_phone">Teléfono <span class="req">*</span></label>
+        <label class="label_span" data-i18n="regfull_phone">Teléfono</label>
         <div class="phone_inline">
           <input type="search" name="contact_area_code" class="area" value="<?= esc_attr($companyContacts['area_code'] ?? '') ?>" data-i18n-placeholder="regfull_area_code" placeholder="Código de área">
           <input type="search" name="contact_phone" value="<?= esc_attr($companyContacts['phone'] ?? '') ?>" placeholder="">
@@ -491,7 +501,7 @@ function esc_attr($value) {
     <img src="img/icons/regfull_clasificacion.svg">
   </div>
   <div class="form" novalidate>
-    <div class="label"><label data-i18n="regfull_org_type">Tipo de Organización <span class="req">*</span></label></div>
+    <div class="label"><label data-i18n="regfull_org_type">Tipo de Organización</label></div>
     <div class="field">
       <div class="custom-dropdown">
         <div class="dropdown-selected">
@@ -512,7 +522,7 @@ function esc_attr($value) {
         <input type="hidden" name="organization_type" value="">
       </div>
     </div>
-    <div class="label"><label data-i18n="regfull_main_activity">Actividad Principal <span class="req">*</span></label></div>
+    <div class="label"><label data-i18n="regfull_main_activity">Actividad Principal</label></div>
     <div class="field">
       <div class="custom-dropdown">
         <div class="dropdown-selected">
@@ -716,9 +726,9 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="product-item">
         <div class="item-badge item-badge-product">Producto</div>
         <div class="producto_grid">
-          <label class="label_span" data-i18n="regfull_main_product">Producto <span class="req">*</span></label>
+          <label class="label_span" data-i18n="regfull_main_product">Producto</label>
           <input type="search" name="product_name[]" class="span_right">
-          <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
+          <label class="label_span" data-i18n="regfull_description">Descripción</label>
           <input type="search" name="product_description[]">
           <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD)</label>
           <input type="search" name="annual_export[]">
@@ -735,7 +745,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="label_span" data-i18n="regfull_certifications">Certificaciones</label>
           <input type="search" name="product_certifications[]" data-i18n-placeholder="regfull_certifications_placeholder" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
           <!-- Mercados Actuales (внутри продукта) -->
-          <label class="label_span" data-i18n="regfull_current_markets">Mercados Actuales (Continente) <span class="req">*</span></label>
+          <label class="label_span" data-i18n="regfull_current_markets">Mercados Actuales (Continente)</label>
           <div class="span_right">
             <div class="custom-dropdown">
               <div class="dropdown-selected">
@@ -798,8 +808,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="item-badge item-badge-service">Servicio</div>
         <!-- Остальные поля в servicio_grid (как producto_grid для продуктов) -->
         <div class="servicio_grid">
-          <!-- Actividad * - в одной строке с label -->
-          <label class="label_span" data-i18n="regfull_activity">Actividad <span class="req">*</span></label>
+          <!-- Actividad -->
+          <label class="label_span" data-i18n="regfull_activity">Actividad</label>
           <div class="span_right">
             <div class="custom-dropdown">
               <div class="dropdown-selected">
@@ -833,10 +843,10 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
 
-          <!-- Servicio * - в одной строке с label -->
-          <label class="label_span" data-i18n="regfull_service">Servicio <span class="req">*</span></label>
+          <!-- Servicio -->
+          <label class="label_span" data-i18n="regfull_service">Servicio</label>
           <input type="search" name="service_name[]" class="span_right">
-          <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
+          <label class="label_span" data-i18n="regfull_description">Descripción</label>
           <input type="search" name="service_description[]">
           <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD)</label>
           <input type="search" name="annual_export[]">
@@ -853,7 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="label_span" data-i18n="regfull_certifications">Certificaciones</label>
           <input type="search" name="service_certifications[]" data-i18n-placeholder="regfull_certifications_placeholder" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
           <!-- Mercados Actuales (внутри услуги) -->
-          <label class="label_span" data-i18n="regfull_current_markets">Mercados Actuales (Continente) <span class="req">*</span></label>
+          <label class="label_span" data-i18n="regfull_current_markets">Mercados Actuales (Continente)</label>
           <div class="span_right">
             <div class="custom-dropdown">
               <div class="dropdown-selected">
@@ -1374,10 +1384,10 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
       <!-- 2) Historia -->
-      <div class="label"><label data-i18n="regfull_company_history">Historia de la Empresa y del Producto <span class="req">*</span></label></div>
+      <div class="label"><label data-i18n="regfull_company_history">Historia de la Empresa y del Producto</label></div>
       <div class="field"><textarea name="company_history" class="ta" rows="4"><?= esc_attr($companyDataJson['competitiveness']['company_history'] ?? '') ?></textarea></div>
       <!-- 3) Premios -->
-      <div class="label"><label data-i18n="regfull_awards">Premios <span class="req">*</span></label></div>
+      <div class="label"><label data-i18n="regfull_awards">Premios</label></div>
       <div class="field">
         <div class="yesno_line with_input">
           <?php $awards = $companyDataJson['competitiveness']['awards'] ?? ''; ?>
@@ -1387,7 +1397,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
       <!-- 4) Ferias -->
-      <div class="label"><label data-i18n="regfull_fairs">Ferias <span class="req">*</span></label></div>
+      <div class="label"><label data-i18n="regfull_fairs">Ferias</label></div>
       <div class="field">
         <div class="yesno_line with_input">
           <?php $fairs = $companyDataJson['competitiveness']['fairs'] ?? ''; $fairsDetail = $companyDataJson['competitiveness']['fairs_detail'] ?? ''; ?>
@@ -1397,7 +1407,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
       <!-- 5) Rondas -->
-      <div class="label"><label data-i18n="regfull_rounds">Rondas <span class="req">*</span></label></div>
+      <div class="label"><label data-i18n="regfull_rounds">Rondas</label></div>
       <div class="field">
         <div class="yesno_line with_input">
           <?php $rounds = $companyDataJson['competitiveness']['rounds'] ?? ''; $roundsDetail = $companyDataJson['competitiveness']['rounds_detail'] ?? ''; ?>
@@ -1407,7 +1417,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
       <!-- 6) Experiencia Exportadora previa -->
-      <div class="label"><label data-i18n="regfull_export_experience">Experiencia Exportadora previa <span class="req">*</span></label></div>
+      <div class="label"><label data-i18n="regfull_export_experience">Experiencia Exportadora previa</label></div>
       <div class="field">
         <div class="custom-dropdown">
           <div class="dropdown-selected">
@@ -1424,7 +1434,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
       <!-- 7) Referencias comerciales -->
-      <div class="label"><label data-i18n="regfull_commercial_references">Referencias comerciales <span class="req">*</span></label></div>
+      <div class="label"><label data-i18n="regfull_commercial_references">Referencias comerciales</label></div>
       <div class="field"><textarea name="commercial_references" class="ta" rows="4"><?= esc_attr($companyDataJson['competitiveness']['commercial_references'] ?? '') ?></textarea></div>
     </div>
   </div>
@@ -1449,7 +1459,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <img src="img/icons/regfull_visual.svg">
   </div>
   <div class="form" novalidate>
-    <div class="label"><span data-i18n="regfull_company_logo">Adjuntar Logo de la Empresa <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_company_logo">Adjuntar Logo de la Empresa</span></div>
     <div class="field visual-row">
       <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)" data-accept="image/jpeg,image/png,application/pdf" data-name="company_logo[]">
         <div class="file-item">
@@ -1466,7 +1476,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <button type="button" class="add_more" data-i18n="regfull_add_more">agregar más</button>
     </div>
-    <div class="label"><span data-i18n="regfull_process_photos">Adjuntar Fotos de los Procesos/Servicios <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_process_photos">Adjuntar Fotos de los Procesos/Servicios</span></div>
     <div class="field visual-row">
       <div class="files-list" data-ph="subir archivo (JPG, PNG, PDF)" data-accept="image/jpeg,image/png,application/pdf" data-name="process_photos[]">
         <div class="file-item">
@@ -1711,7 +1721,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <img src="img/icons/regfull_logistica.svg">
   </div>
   <div class="form" novalidate>
-    <div class="label"><span data-i18n="regfull_export_capacity">Capacidad de Exportación Inmediata <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_export_capacity">Capacidad de Exportación Inmediata</span></div>
     <div class="field logi-right">
       <div class="cap-row">
         <div class="yn-line">
@@ -1724,7 +1734,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="yn"><input type="radio" name="export_capacity" value="si" <?= $exportCapacity === 'si' ? 'checked' : '' ?>><span data-i18n="regfull_yes">Si</span></label>
           <label class="yn"><input type="radio" name="export_capacity" value="no" <?= $exportCapacity === 'no' ? 'checked' : '' ?>><span data-i18n="regfull_no">No</span></label>
         </div>
-        <label class="lbl plazo-lbl" data-i18n="regfull_estimated_term">Plazo estimado <span class="req">*</span></label>
+        <label class="lbl plazo-lbl" data-i18n="regfull_estimated_term">Plazo estimado</label>
         <?php 
         $estimatedTerm = '';
         if (isset($companyDataJson['logistics']) && is_array($companyDataJson['logistics']) && isset($companyDataJson['logistics']['estimated_term'])) {
@@ -1734,11 +1744,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <input type="text" name="estimated_term" class="fld plazo" data-i18n-placeholder="regfull_months" placeholder="meses" value="<?= esc_attr($estimatedTerm) ?>">
       </div>
     </div>
-    <div class="label"><span data-i18n="regfull_logistics_infrastructure">Infraestructura Logística Disponible <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_logistics_infrastructure">Infraestructura Logística Disponible</span></div>
     <div class="field">
       <input type="search" name="logistics_infrastructure" data-i18n-placeholder="regfull_logistics_placeholder" placeholder="ejemplo: frigoríficos, transporte propio, alianzas logísticas, etc." value="<?= esc_attr($companyDataJson['logistics']['logistics_infrastructure'] ?? '') ?>">
     </div>
-    <div class="label"><span data-i18n="regfull_ports_airports">Puertos/Aeropuertos de Salida habituales o posibles <span class="req">*</span></span></div>
+    <div class="label"><span data-i18n="regfull_ports_airports">Puertos/Aeropuertos de Salida habituales o posibles</span></div>
     <div class="field"><textarea name="ports_airports" class="ta" rows="4"><?= esc_attr($companyDataJson['logistics']['ports_airports'] ?? '') ?></textarea></div>
   </div>
 </div>
@@ -1756,7 +1766,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="form" novalidate>
     <div class="needs-blk">
       <div class="label">
-        <span data-i18n="regfull_export_needs">Principales Necesidades para mejorar capacidad exportadora <span class="req">*</span></span>
+        <span data-i18n="regfull_export_needs">Principales Necesidades para mejorar capacidad exportadora</span>
       </div>
       <div class="field">
         <div class="needs-grid">
@@ -1776,7 +1786,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
       <div class="label">
-        <label data-i18n="regfull_interest_participate">Interés en Participar de Misiones Comerciales/Ferias Internacionales <span class="req">*</span></label>
+        <label data-i18n="regfull_interest_participate">Interés en Participar de Misiones Comerciales/Ferias Internacionales</label>
       </div>
       <div class="field">
         <div class="yn-line">
@@ -1786,7 +1796,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
       <div class="label">
-        <label data-i18n="regfull_training_availability">Disponibilidad para Capacitaciones y Asistencia Técnica <span class="req">*</span></label>
+        <label data-i18n="regfull_training_availability">Disponibilidad para Capacitaciones y Asistencia Técnica</label>
       </div>
       <div class="field">
         <div class="yn-line">
@@ -1821,7 +1831,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="consent-blk">
       <div class="consent-row">
         <div class="consent-text" data-i18n="regfull_authorization_platform">
-          Autorización para Difundir la Información Cargada en la Plataforma Provincial <span class="req">*</span>
+          Autorización para Difundir la Información Cargada en la Plataforma Provincial
         </div>
         <div class="yn-line">
           <?php $authorizationPublish = $companyDataJson['consents']['authorization_publish'] ?? ''; ?>
@@ -1831,7 +1841,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="consent-row">
         <div class="consent-text" data-i18n="regfull_authorization_publication">
-          Autorizo la Publicación de mi Información para Promoción Exportadora <span class="req">*</span>
+          Autorizo la Publicación de mi Información para Promoción Exportadora
         </div>
         <div class="yn-line">
           <?php $authorizationPublication = $companyDataJson['consents']['authorization_publication'] ?? ''; ?>
@@ -1841,7 +1851,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="consent-row">
         <div class="consent-text" data-i18n="regfull_accept_contact">
-          Acepto ser Contactado por Organismos de Promoción y Compradores Internacionales <span class="req">*</span>
+          Acepto ser Contactado por Organismos de Promoción y Compradores Internacionales
         </div>
         <div class="yn-line">
           <?php $acceptContact = $companyDataJson['consents']['accept_contact'] ?? ''; ?>
@@ -2163,6 +2173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
       };
       
+      // Обязательные поля формы: только Nombre de la Empresa и CUIT
       checkRequired('name', 'Nombre de la Empresa');
       checkRequired('tax_id', 'CUIT / Identificación Fiscal');
       const taxIdDigits = (document.getElementById('tax_id').value || '').replace(/\D/g, '');
@@ -2174,16 +2185,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const taxIdEl = document.getElementById('tax_id');
         if (taxIdEl) taxIdEl.style.borderColor = '';
       }
-      checkRequired('legal_name', 'Razón social');
-      
+
+      // Fecha de inicio: поле опциональное, но если заполнено — проверяем формат.
       const startDateField = document.querySelector('[name="start_date"]');
-      if (!startDateField || !startDateField.value || !startDateField.value.trim()) {
-        errors.push('Fecha de Inicio de Actividad');
-        if (startDateField) {
-          startDateField.style.borderColor = '#f44336';
-          startDateField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      } else {
+      if (startDateField && startDateField.value && startDateField.value.trim()) {
         const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
         if (!datePattern.test(startDateField.value.trim())) {
           errors.push('Fecha de Inicio de Actividad (formato: dd/mm/yyyy)');
@@ -2192,31 +2197,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           startDateField.style.borderColor = '';
         }
+      } else if (startDateField) {
+        startDateField.style.borderColor = '';
       }
       
-      checkRequired('street_legal', 'Calle (Domicilio Legal)');
-      checkRequired('street_number_legal', 'Altura (Domicilio Legal)');
-      checkRequired('postal_code_legal', 'Código Postal (Domicilio Legal)');
-      checkDropdown('locality_legal', 'Localidad (Domicilio Legal)');
-      checkDropdown('department_legal', 'Departamento (Domicilio Legal)');
-      
-      checkRequired('street_admin', 'Calle (Dirección administrativa)');
-      checkRequired('street_number_admin', 'Altura (Dirección administrativa)');
-      checkRequired('postal_code_admin', 'Código Postal (Dirección administrativa)');
-      checkDropdown('locality_admin', 'Localidad (Dirección administrativa)');
-      checkDropdown('department_admin', 'Departamento (Dirección administrativa)');
-      
-      checkRequired('contact_person', 'Persona de Contacto');
-      checkRequired('contact_position', 'Cargo de Persona de contacto');
-      
+      // Блоки с адресами и контактами делаем необязательными.
       const contactEmail = document.querySelector('[name="contact_email"]');
-      if (!contactEmail || !contactEmail.value || !contactEmail.value.trim()) {
-        errors.push('E-mail');
-        if (contactEmail) {
-          contactEmail.style.borderColor = '#f44336';
-          contactEmail.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      } else {
+      if (contactEmail && contactEmail.value && contactEmail.value.trim()) {
         const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailPattern.test(contactEmail.value.trim())) {
           errors.push('E-mail (formato inválido)');
@@ -2225,13 +2212,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           contactEmail.style.borderColor = '';
         }
+      } else if (contactEmail) {
+        contactEmail.style.borderColor = '';
       }
       
       const contactAreaCode = document.querySelector('[name="contact_area_code"]');
       const contactPhone = document.querySelector('[name="contact_phone"]');
-      if (!contactAreaCode || !contactAreaCode.value || !contactAreaCode.value.trim() ||
-          !contactPhone || !contactPhone.value || !contactPhone.value.trim()) {
-        errors.push('Teléfono (código de área y número)');
+      const hasArea = contactAreaCode && contactAreaCode.value && contactAreaCode.value.trim();
+      const hasPhone = contactPhone && contactPhone.value && contactPhone.value.trim();
+      if ((hasArea && !hasPhone) || (!hasArea && hasPhone)) {
+        errors.push('Teléfono: complete código de área y número, o deje ambos campos vacíos');
         if (contactAreaCode) {
           contactAreaCode.style.borderColor = '#f44336';
         }
@@ -2244,8 +2234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (contactPhone) contactPhone.style.borderColor = '';
       }
       
-      checkDropdown('organization_type', 'Tipo de Organización');
-      checkDropdown('main_activity', 'Actividad Principal');
+      // organization_type и main_activity — опциональные, поэтому не вызываем checkDropdown.
       
       // Валидация продуктов и услуг (только если они добавлены)
       const allItems = document.querySelectorAll('.product-item, .service-item');
@@ -2540,11 +2529,10 @@ document.addEventListener('DOMContentLoaded', () => {
         otherDiffInput.style.borderColor = '';
       }
       
-      checkRequired('company_history', 'Historia de la Empresa');
+      // Блок Competitividad: все поля опциональные, но если выбрали "Si",
+      // то детальные поля остаются обязательными.
       const awards = document.querySelector('input[name="awards"]:checked');
-      if (!awards) {
-        errors.push('Premios');
-      } else if (awards.value === 'si') {
+      if (awards && awards.value === 'si') {
         const awardsDetail = document.querySelector('input[name="awards_detail"]');
         if (!awardsDetail || !awardsDetail.value.trim()) {
           errors.push('Premios: si elige "Si", debe especificar');
@@ -2552,9 +2540,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (awardsDetail) awardsDetail.style.borderColor = '';
       }
       const fairs = document.querySelector('input[name="fairs"]:checked');
-      if (!fairs) {
-        errors.push('Ferias');
-      } else if (fairs.value === 'si') {
+      if (fairs && fairs.value === 'si') {
         const fairsDetail = document.querySelector('input[name="fairs_detail"]');
         if (!fairsDetail || !fairsDetail.value.trim()) {
           errors.push('Ferias: si elige "Si", debe especificar');
@@ -2562,52 +2548,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (fairsDetail) fairsDetail.style.borderColor = '';
       }
       const rounds = document.querySelector('input[name="rounds"]:checked');
-      if (!rounds) {
-        errors.push('Rondas');
-      } else if (rounds.value === 'si') {
+      if (rounds && rounds.value === 'si') {
         const roundsDetail = document.querySelector('input[name="rounds_detail"]');
         if (!roundsDetail || !roundsDetail.value.trim()) {
           errors.push('Rondas: si elige "Si", debe especificar');
           if (roundsDetail) { roundsDetail.style.borderColor = '#f44336'; roundsDetail.focus(); }
         } else if (roundsDetail) roundsDetail.style.borderColor = '';
       }
-      checkDropdown('export_experience', 'Experiencia Exportadora');
-      checkRequired('commercial_references', 'Referencias comerciales');
+      // export_experience и commercial_references теперь опциональны.
       
-      checkFile('company_logo[]', 'logo', 'Logo de la Empresa');
-      
-      checkFile('process_photos[]', 'process_photo', 'Fotos de los Procesos/Servicios');
-      
-      const exportCapacity = document.querySelector('input[name="export_capacity"]:checked');
-      if (!exportCapacity) {
-        errors.push('Capacidad de Exportación Inmediata');
-      } else if (exportCapacity.value === 'si') {
-        checkRequired('estimated_term', 'Plazo estimado');
-      }
-      checkRequired('logistics_infrastructure', 'Infraestructura Logística');
-      checkRequired('ports_airports', 'Puertos/Aeropuertos');
-      
-      const interestParticipate = document.querySelector('input[name="interest_participate"]:checked');
-      if (!interestParticipate) {
-        errors.push('Interés en Participar de Misiones Comerciales');
-      }
-      const trainingAvailability = document.querySelector('input[name="training_availability"]:checked');
-      if (!trainingAvailability) {
-        errors.push('Disponibilidad para Capacitaciones');
-      }
-      
-      const authorizationPublish = document.querySelector('input[name="authorization_publish"]:checked');
-      if (!authorizationPublish) {
-        errors.push('Autorización para Difundir la Información');
-      }
-      const authorizationPublication = document.querySelector('input[name="authorization_publication"]:checked');
-      if (!authorizationPublication) {
-        errors.push('Autorización de Publicación');
-      }
-      const acceptContact = document.querySelector('input[name="accept_contact"]:checked');
-      if (!acceptContact) {
-        errors.push('Acepto ser Contactado');
-      }
+      // Логотип, фото процессов, логистика и согласия тоже считаем опциональными.
       
       if (errors.length > 0) {
         msgEl.className = 'err';
