@@ -1,8 +1,9 @@
 {
     "name": "cadipel/sde",
+    "version": "1.1.0",
     "description": "SDE Oferta Exportable PDF generator",
     "require": {
-        "php": ">=7.4",
+        "php": ">=8.0",
         "mpdf/mpdf": "^8.2"
     },
     "config": {

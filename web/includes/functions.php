@@ -1,12 +1,19 @@
 <?
 /**
- * Версия ассета по времени изменения файла (для cache busting).
+ * Версия ассета по времени изменения файла и версии приложения (для cache busting).
  * $path — путь относительно корня web/ (например 'css/style.css', 'js/i18n.js', 'admin/css/style.css').
  */
 function asset_version($path) {
     $webRoot = dirname(__DIR__);
     $full = $webRoot . '/' . ltrim($path, '/');
-    return file_exists($full) ? (string) filemtime($full) : (string) time();
+    $mtime = file_exists($full) ? (string) filemtime($full) : (string) time();
+    static $appVersion = null;
+    if ($appVersion === null) {
+        $configPath = dirname(__DIR__) . '/includes/config/config.php';
+        $config = file_exists($configPath) ? (require $configPath) : [];
+        $appVersion = $config['app_version'] ?? '1';
+    }
+    return $appVersion . '.' . $mtime;
 }
 
 function DBconnect() {

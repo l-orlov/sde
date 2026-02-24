@@ -127,7 +127,7 @@ if ($link) {
 <!-- PRODUCTS CAROUSEL -->
 <section class="products-carousel-section" id="productos">
     <div class="products-carousel-container">
-        <h2 class="products-carousel-title" data-i18n="carousel_title">Productos y servicios</h2>
+        <h2 class="products-carousel-title" data-i18n="carousel_title">PRODUCTOS Y SERVICIOS</h2>
         <div class="products-carousel-wrapper">
             <button type="button" class="products-carousel-btn products-carousel-btn-prev" aria-label="Anterior">&lsaquo;</button>
             <div class="products-carousel-track-container">
