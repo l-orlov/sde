@@ -75,6 +75,14 @@ if (empty($input) && empty($_FILES)) {
     exit;
 }
 
+// Нормализация: Código Arancelario всегда как массив по индексу продукта/услуги
+if (isset($input['product_tariff_code']) && !is_array($input['product_tariff_code'])) {
+    $input['product_tariff_code'] = [$input['product_tariff_code']];
+}
+if (isset($input['service_tariff_code']) && !is_array($input['service_tariff_code'])) {
+    $input['service_tariff_code'] = [$input['service_tariff_code']];
+}
+
 mysqli_begin_transaction($link);
 
 try {
@@ -301,6 +309,29 @@ try {
             $productName = htmlspecialchars($productName);
             $description = isset($input['product_description'][$index]) && is_array($input['product_description'])
                 ? htmlspecialchars(trim($input['product_description'][$index])) : '';
+            $tariffCodeRaw = isset($input['product_tariff_code'][$index]) && is_array($input['product_tariff_code'])
+                ? trim((string) $input['product_tariff_code'][$index]) : '';
+            // Validación Código Arancelario (NCM/HS): formato NNNN.NN.NN.NNNL
+            if ($tariffCodeRaw !== '') {
+                if (!preg_match('/^[0-9.]+[A-Za-z]$/', $tariffCodeRaw)) {
+                    $return['err'] = 'Carácter no válido: El código arancelario solo puede contener dígitos, puntos (.) y una letra al final.';
+                    header('Content-Type: application/json');
+                    echo json_encode($return);
+                    exit;
+                }
+                if (!preg_match('/^\d{4}\.\d{2}\.\d{2}\.\d{3}[A-Za-z]$/', $tariffCodeRaw)) {
+                    $return['err'] = 'Formato incorrecto: Use el formato NNNN.NN.NN.NNNL (por ejemplo: 0602.90.90.100X).';
+                    header('Content-Type: application/json');
+                    echo json_encode($return);
+                    exit;
+                }
+            }
+            if ($tariffCodeRaw !== '') {
+                $tariffCode = htmlspecialchars($tariffCodeRaw);
+            } else {
+                $tariffCode = null;
+            }
+            $tariffCodeBind = ($tariffCode !== null && $tariffCode !== '') ? $tariffCode : '';
             $annualExport = isset($input['annual_export'][$index]) && is_array($input['annual_export'])
                 ? htmlspecialchars(trim($input['annual_export'][$index])) : '';
             $certifications = isset($input['product_certifications'][$index]) && is_array($input['product_certifications'])
@@ -347,9 +378,12 @@ try {
             $checkFieldsQuery = "SHOW COLUMNS FROM products LIKE 'current_markets'";
             $checkResult = mysqli_query($link, $checkFieldsQuery);
             $hasMarketsFields = ($checkResult && mysqli_num_rows($checkResult) > 0);
+            $checkTariffQuery = "SHOW COLUMNS FROM products LIKE 'tariff_code'";
+            $checkTariffResult = mysqli_query($link, $checkTariffQuery);
+            $hasTariffCodeField = ($checkTariffResult && mysqli_num_rows($checkTariffResult) > 0);
             
             if ($existingProduct && isset($existingProduct['id']) && !in_array($existingProduct['id'], $processedProductIds)) {
-                // Обновить существующий продукт
+                // Обновить существующий продукт (tariff_code выставляется отдельным запросом ниже)
                 if ($hasMarketsFields) {
                     $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?, current_markets = ?, target_markets = ?
                               WHERE id = ? AND company_id = ?";
@@ -358,8 +392,9 @@ try {
                         error_log("Failed to prepare UPDATE statement: " . mysqli_error($link));
                         continue;
                     }
-                    mysqli_stmt_bind_param($stmt, 'ssssssisssi', $type, $activity, $productName, $description, $annualExport, $certifications, $isMain, $currentMarkets, $targetMarketsJson,
-                                          $existingProduct['id'], $companyId);
+                    $productIdForUpdate = (int) $existingProduct['id'];
+                    $companyIdForUpdate = (int) $companyId;
+                    mysqli_stmt_bind_param($stmt, 'ssssssissii', $type, $activity, $productName, $description, $annualExport, $certifications, $isMain, $currentMarkets, $targetMarketsJson, $productIdForUpdate, $companyIdForUpdate);
                 } else {
                     $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?
                               WHERE id = ? AND company_id = ?";
@@ -368,8 +403,9 @@ try {
                         error_log("Failed to prepare UPDATE statement: " . mysqli_error($link));
                         continue;
                     }
-                    mysqli_stmt_bind_param($stmt, 'ssssssiii', $type, $activity, $productName, $description, $annualExport, $certifications, $isMain,
-                                          $existingProduct['id'], $companyId);
+                    $productIdForUpdate = (int) $existingProduct['id'];
+                    $companyIdForUpdate = (int) $companyId;
+                    mysqli_stmt_bind_param($stmt, 'ssssssiii', $type, $activity, $productName, $description, $annualExport, $certifications, $isMain, $productIdForUpdate, $companyIdForUpdate);
                 }
                 if (!mysqli_stmt_execute($stmt)) {
                     error_log("Failed to execute UPDATE: " . mysqli_stmt_error($stmt));
@@ -378,9 +414,18 @@ try {
                 }
                 $productId = $existingProduct['id'];
                 mysqli_stmt_close($stmt);
+                if ($hasTariffCodeField) {
+                    $st = mysqli_prepare($link, "UPDATE products SET tariff_code = ? WHERE id = ?");
+                    if ($st) {
+                        $pid = (int) $productId;
+                        mysqli_stmt_bind_param($st, 'si', $tariffCodeBind, $pid);
+                        mysqli_stmt_execute($st);
+                        mysqli_stmt_close($st);
+                    }
+                }
                 $processedProductIds[] = $productId;
             } else {
-                // Создать новый продукт
+                // Создать новый продукт (tariff_code выставляется отдельным запросом ниже)
                 if ($hasMarketsFields) {
                     $query = "INSERT INTO products (company_id, user_id, is_main, type, activity, name, description, annual_export, certifications, current_markets, target_markets) 
                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -407,6 +452,15 @@ try {
                 }
                 $productId = mysqli_insert_id($link);
                 mysqli_stmt_close($stmt);
+                if ($hasTariffCodeField && $productId) {
+                    $st = mysqli_prepare($link, "UPDATE products SET tariff_code = ? WHERE id = ?");
+                    if ($st) {
+                        $pid = (int) $productId;
+                        mysqli_stmt_bind_param($st, 'si', $tariffCodeBind, $pid);
+                        mysqli_stmt_execute($st);
+                        mysqli_stmt_close($st);
+                    }
+                }
                 $processedProductIds[] = $productId;
             }
             
@@ -512,6 +566,28 @@ try {
             $serviceName = htmlspecialchars($serviceName);
             $description = isset($input['service_description'][$index]) && is_array($input['service_description'])
                 ? htmlspecialchars(trim($input['service_description'][$index])) : '';
+            $tariffCodeRaw = isset($input['service_tariff_code'][$index]) && is_array($input['service_tariff_code'])
+                ? trim((string) $input['service_tariff_code'][$index]) : '';
+            if ($tariffCodeRaw !== '') {
+                if (!preg_match('/^[0-9.]+[A-Za-z]$/', $tariffCodeRaw)) {
+                    $return['err'] = 'Carácter no válido: El código arancelario solo puede contener dígitos, puntos (.) y una letra al final.';
+                    header('Content-Type: application/json');
+                    echo json_encode($return);
+                    exit;
+                }
+                if (!preg_match('/^\d{4}\.\d{2}\.\d{2}\.\d{3}[A-Za-z]$/', $tariffCodeRaw)) {
+                    $return['err'] = 'Formato incorrecto: Use el formato NNNN.NN.NN.NNNL (por ejemplo: 0602.90.90.100X).';
+                    header('Content-Type: application/json');
+                    echo json_encode($return);
+                    exit;
+                }
+            }
+            if ($tariffCodeRaw !== '') {
+                $tariffCode = htmlspecialchars($tariffCodeRaw);
+            } else {
+                $tariffCode = null;
+            }
+            $tariffCodeBind = ($tariffCode !== null && $tariffCode !== '') ? $tariffCode : '';
             $annualExport = isset($input['annual_export'][$index]) && is_array($input['annual_export'])
                 ? htmlspecialchars(trim($input['annual_export'][$index])) : '';
             $certifications = isset($input['service_certifications'][$index]) && is_array($input['service_certifications'])
@@ -554,13 +630,16 @@ try {
                 $existingServiceIndex++;
             }
             
-            // Проверяем, есть ли поля current_markets и target_markets в таблице
+            // Проверяем, есть ли поля current_markets, target_markets y tariff_code en la tabla
             $checkFieldsQuery = "SHOW COLUMNS FROM products LIKE 'current_markets'";
             $checkResult = mysqli_query($link, $checkFieldsQuery);
             $hasMarketsFields = ($checkResult && mysqli_num_rows($checkResult) > 0);
+            $checkTariffQuery = "SHOW COLUMNS FROM products LIKE 'tariff_code'";
+            $checkTariffResult = mysqli_query($link, $checkTariffQuery);
+            $hasTariffCodeField = ($checkTariffResult && mysqli_num_rows($checkTariffResult) > 0);
             
             if ($existingService && isset($existingService['id']) && !in_array($existingService['id'], $processedServiceIds)) {
-                // Обновить существующую услугу
+                // Обновить существующую услугу (tariff_code выставляется отдельным запросом ниже)
                 if ($hasMarketsFields) {
                     $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?, current_markets = ?, target_markets = ?
                               WHERE id = ? AND company_id = ?";
@@ -569,8 +648,9 @@ try {
                         error_log("Failed to prepare UPDATE statement for service: " . mysqli_error($link));
                         continue;
                     }
-                    mysqli_stmt_bind_param($stmt, 'ssssssisssi', $type, $activity, $serviceName, $description, $annualExport, $certifications, $isMain, $currentMarkets, $targetMarketsJson,
-                                          $existingService['id'], $companyId);
+                    $serviceIdForUpdate = (int) $existingService['id'];
+                    $companyIdForUpdate = (int) $companyId;
+                    mysqli_stmt_bind_param($stmt, 'ssssssissii', $type, $activity, $serviceName, $description, $annualExport, $certifications, $isMain, $currentMarkets, $targetMarketsJson, $serviceIdForUpdate, $companyIdForUpdate);
                 } else {
                     $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?
                               WHERE id = ? AND company_id = ?";
@@ -579,8 +659,9 @@ try {
                         error_log("Failed to prepare UPDATE statement for service: " . mysqli_error($link));
                         continue;
                     }
-                    mysqli_stmt_bind_param($stmt, 'ssssssiii', $type, $activity, $serviceName, $description, $annualExport, $certifications, $isMain,
-                                          $existingService['id'], $companyId);
+                    $serviceIdForUpdate = (int) $existingService['id'];
+                    $companyIdForUpdate = (int) $companyId;
+                    mysqli_stmt_bind_param($stmt, 'ssssssiii', $type, $activity, $serviceName, $description, $annualExport, $certifications, $isMain, $serviceIdForUpdate, $companyIdForUpdate);
                 }
                 if (!mysqli_stmt_execute($stmt)) {
                     error_log("Failed to execute UPDATE for service: " . mysqli_stmt_error($stmt));
@@ -589,9 +670,18 @@ try {
                 }
                 $serviceId = $existingService['id'];
                 mysqli_stmt_close($stmt);
+                if ($hasTariffCodeField) {
+                    $st = mysqli_prepare($link, "UPDATE products SET tariff_code = ? WHERE id = ?");
+                    if ($st) {
+                        $sid = (int) $serviceId;
+                        mysqli_stmt_bind_param($st, 'si', $tariffCodeBind, $sid);
+                        mysqli_stmt_execute($st);
+                        mysqli_stmt_close($st);
+                    }
+                }
                 $processedServiceIds[] = $serviceId;
             } else {
-                // Создать новую услугу
+                // Создать новую услугу (tariff_code выставляется отдельным запросом ниже)
                 if ($hasMarketsFields) {
                     $query = "INSERT INTO products (company_id, user_id, is_main, type, activity, name, description, annual_export, certifications, current_markets, target_markets) 
                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -618,6 +708,15 @@ try {
                 }
                 $serviceId = mysqli_insert_id($link);
                 mysqli_stmt_close($stmt);
+                if ($hasTariffCodeField && $serviceId) {
+                    $st = mysqli_prepare($link, "UPDATE products SET tariff_code = ? WHERE id = ?");
+                    if ($st) {
+                        $sid = (int) $serviceId;
+                        mysqli_stmt_bind_param($st, 'si', $tariffCodeBind, $sid);
+                        mysqli_stmt_execute($st);
+                        mysqli_stmt_close($st);
+                    }
+                }
                 $processedServiceIds[] = $serviceId;
             }
             

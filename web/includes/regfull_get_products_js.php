@@ -25,14 +25,26 @@ $userId = intval($_SESSION['uid']);
 try {
     global $link;
     
-    // Загружаем все продукты и услуги с учетом type
-    // Проверяем, есть ли поля current_markets и target_markets в таблице products
+    // Проверяем, есть ли поля current_markets, target_markets y tariff_code en la tabla
     $checkFieldsQuery = "SHOW COLUMNS FROM products LIKE 'current_markets'";
     $checkResult = $link->query($checkFieldsQuery);
     $hasCurrentMarketsField = ($checkResult && $checkResult->num_rows > 0);
+    $checkTariffQuery = "SHOW COLUMNS FROM products LIKE 'tariff_code'";
+    $checkTariffResult = $link->query($checkTariffQuery);
+    $hasTariffCodeField = ($checkTariffResult && $checkTariffResult->num_rows > 0);
     
-    if ($hasCurrentMarketsField) {
+    if ($hasCurrentMarketsField && $hasTariffCodeField) {
+        $query = "SELECT id, is_main, type, activity, name, description, tariff_code, annual_export, certifications, current_markets, target_markets
+                  FROM products
+                  WHERE user_id = ?
+                  ORDER BY type ASC, id ASC";
+    } elseif ($hasCurrentMarketsField) {
         $query = "SELECT id, is_main, type, activity, name, description, annual_export, certifications, current_markets, target_markets
+                  FROM products
+                  WHERE user_id = ?
+                  ORDER BY type ASC, id ASC";
+    } elseif ($hasTariffCodeField) {
+        $query = "SELECT id, is_main, type, activity, name, description, tariff_code, annual_export, certifications
                   FROM products
                   WHERE user_id = ?
                   ORDER BY type ASC, id ASC";
@@ -68,6 +80,7 @@ try {
             'activity' => $row['activity'] ?? null,
             'name' => $row['name'],
             'description' => $row['description'] ?? '',
+            'tariff_code' => isset($row['tariff_code']) ? ($row['tariff_code'] ?? '') : '',
             'annual_export' => $row['annual_export'] ?? '',
             'certifications' => $row['certifications'] ?? ''
         ];

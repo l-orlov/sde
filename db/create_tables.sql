@@ -98,7 +98,6 @@ CREATE TABLE company_data (
     PRIMARY KEY (`id`),
     UNIQUE KEY `company_data_company_uidx` (`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 -- Таблица товаров
 CREATE TABLE products (
     id                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
@@ -109,6 +108,7 @@ CREATE TABLE products (
     activity            VARCHAR(255)    NULL,
     name                VARCHAR(255)    NOT NULL,
     description         TEXT,
+    tariff_code         VARCHAR(20)     NULL COMMENT 'NCM/HS ej: 0602.90.90.100X',
     annual_export       VARCHAR(100),
     certifications      TEXT,
     created_at          INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),

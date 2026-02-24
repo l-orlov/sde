@@ -726,13 +726,18 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="product-item">
         <div class="item-badge item-badge-product">Producto</div>
         <div class="producto_grid">
-          <label class="label_span" data-i18n="regfull_main_product">Producto</label>
+          <label class="label_span" data-i18n="regfull_main_product">Producto <span class="req">*</span></label>
           <input type="search" name="product_name[]" class="span_right">
-          <label class="label_span" data-i18n="regfull_description">Descripción</label>
+          <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
           <input type="search" name="product_description[]">
+          <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario (NCM/HS)</label>
+          <div class="span_right">
+            <input type="text" name="product_tariff_code[]" class="tariff-code-input" data-i18n-placeholder="regfull_tariff_code_placeholder" placeholder="ej: 0602.90.90.100X" maxlength="20">
+            <a href="https://www.vuce.gob.ar/posicionesArancelarias" target="_blank" rel="noopener noreferrer" class="tariff-code-hint" data-i18n="regfull_tariff_code_hint">¿Conocés tu código arancelario?</a>
+          </div>
           <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD)</label>
           <input type="search" name="annual_export[]">
-          <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto</label>
+          <label class="label_span" data-i18n="regfull_product_photo">Foto del Producto <span class="req">*</span></label>
           <div class="file-ph-wrapper">
             <input type="file" class="file-ph" name="product_photo[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
             <div class="file-ph-display">
@@ -745,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="label_span" data-i18n="regfull_certifications">Certificaciones</label>
           <input type="search" name="product_certifications[]" data-i18n-placeholder="regfull_certifications_placeholder" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
           <!-- Mercados Actuales (внутри продукта) -->
-          <label class="label_span" data-i18n="regfull_current_markets">Mercados Actuales (Continente)</label>
+          <label class="label_span" data-i18n="regfull_current_markets">Mercados Actuales (Continente) <span class="req">*</span></label>
           <div class="span_right">
             <div class="custom-dropdown">
               <div class="dropdown-selected">
@@ -809,7 +814,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- Остальные поля в servicio_grid (как producto_grid для продуктов) -->
         <div class="servicio_grid">
           <!-- Actividad -->
-          <label class="label_span" data-i18n="regfull_activity">Actividad</label>
+          <label class="label_span" data-i18n="regfull_activity">Actividad <span class="req">*</span></label>
           <div class="span_right">
             <div class="custom-dropdown">
               <div class="dropdown-selected">
@@ -844,13 +849,18 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
 
           <!-- Servicio -->
-          <label class="label_span" data-i18n="regfull_service">Servicio</label>
+          <label class="label_span" data-i18n="regfull_service">Servicio <span class="req">*</span></label>
           <input type="search" name="service_name[]" class="span_right">
-          <label class="label_span" data-i18n="regfull_description">Descripción</label>
+          <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
           <input type="search" name="service_description[]">
+          <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario (NCM/HS)</label>
+          <div class="span_right">
+            <input type="text" name="service_tariff_code[]" class="tariff-code-input" data-i18n-placeholder="regfull_tariff_code_placeholder" placeholder="ej: 0602.90.90.100X" maxlength="20">
+            <a href="https://www.vuce.gob.ar/posicionesArancelarias" target="_blank" rel="noopener noreferrer" class="tariff-code-hint" data-i18n="regfull_tariff_code_hint">¿Conocés tu código arancelario?</a>
+          </div>
           <label class="label_span" data-i18n="regfull_annual_export">Exportación Anual (USD)</label>
           <input type="search" name="annual_export[]">
-          <label class="label_span" data-i18n="regfull_service_photo">Foto del Servicio</label>
+          <label class="label_span" data-i18n="regfull_service_photo">Foto del Servicio <span class="req">*</span></label>
           <div class="file-ph-wrapper">
             <input type="file" class="file-ph" name="service_photo[]" accept="image/jpeg,image/png,application/pdf" data-i18n-placeholder="regfull_upload_file" placeholder="subir archivo (JPG, PNG, PDF)">
             <div class="file-ph-display">
@@ -863,7 +873,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="label_span" data-i18n="regfull_certifications">Certificaciones</label>
           <input type="search" name="service_certifications[]" data-i18n-placeholder="regfull_certifications_placeholder" placeholder="ejemplo: orgánico, comercio justo, ISO, halal, kosher, etc.">
           <!-- Mercados Actuales (внутри услуги) -->
-          <label class="label_span" data-i18n="regfull_current_markets">Mercados Actuales (Continente)</label>
+          <label class="label_span" data-i18n="regfull_current_markets">Mercados Actuales (Continente) <span class="req">*</span></label>
           <div class="span_right">
             <div class="custom-dropdown">
               <div class="dropdown-selected">
@@ -1167,9 +1177,66 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
+  // Máscara Código Arancelario: NNNN.NN.NN.NNNL (solo dígitos y una letra al final)
+  function applyTariffCodeMask(inputEl) {
+    if (!inputEl || inputEl._tariffMaskBound) return;
+    inputEl._tariffMaskBound = true;
+    inputEl.addEventListener('input', function() {
+      let raw = this.value.replace(/\s/g, '');
+      let digits = '';
+      let letter = '';
+      const onlyDigitsAndLetter = raw.replace(/[^0-9A-Za-z]/g, '');
+      if (onlyDigitsAndLetter.length > 0 && /[A-Za-z]/.test(onlyDigitsAndLetter.slice(-1))) {
+        letter = onlyDigitsAndLetter.slice(-1);
+        digits = onlyDigitsAndLetter.slice(0, -1).replace(/[^0-9]/g, '').slice(0, 11);
+      } else {
+        digits = onlyDigitsAndLetter.replace(/[^0-9]/g, '').slice(0, 11);
+      }
+      let formatted = digits.slice(0, 4);
+      if (digits.length > 4) {
+        formatted += '.' + digits.slice(4, 6);
+        if (digits.length > 6) {
+          formatted += '.' + digits.slice(6, 8);
+          if (digits.length > 8) {
+            formatted += '.' + digits.slice(8, 11);
+          }
+        }
+      }
+      formatted += letter;
+      if (this.value !== formatted) {
+        this.value = formatted;
+      }
+    });
+    inputEl.addEventListener('blur', function() {
+      let raw = this.value.replace(/\s/g, '');
+      let digits = '';
+      let letter = '';
+      const onlyDigitsAndLetter = raw.replace(/[^0-9A-Za-z]/g, '');
+      if (onlyDigitsAndLetter.length > 0 && /[A-Za-z]/.test(onlyDigitsAndLetter.slice(-1))) {
+        letter = onlyDigitsAndLetter.slice(-1);
+        digits = onlyDigitsAndLetter.slice(0, -1).replace(/[^0-9]/g, '').slice(0, 11);
+      } else {
+        digits = onlyDigitsAndLetter.replace(/[^0-9]/g, '').slice(0, 11);
+      }
+      let formatted = digits.slice(0, 4);
+      if (digits.length > 4) {
+        formatted += '.' + digits.slice(4, 6);
+        if (digits.length > 6) {
+          formatted += '.' + digits.slice(6, 8);
+          if (digits.length > 8) formatted += '.' + digits.slice(8, 11);
+        }
+      }
+      formatted += letter;
+      if (formatted !== this.value) this.value = formatted;
+    });
+  }
+  
   // Привязка обработчиков для продукта
   function bindProductItemEvents(item) {
     bindFileInputEvents(item);
+    
+    const tariffInput = item.querySelector('input[name="product_tariff_code[]"]');
+    if (tariffInput) applyTariffCodeMask(tariffInput);
     
     // Инициализация dropdown для Mercados Actuales
     const currentMarketsDropdown = item.querySelector('input[name="product_current_markets[]"]');
@@ -1195,6 +1262,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Привязка обработчиков для услуги
   function bindServiceItemEvents(item) {
     bindFileInputEvents(item);
+    
+    const tariffInput = item.querySelector('input[name="service_tariff_code[]"]');
+    if (tariffInput) applyTariffCodeMask(tariffInput);
     
     // Инициализация dropdown для Actividad
     const activityDropdown = item.querySelector('input[name="service_activity[]"]');
@@ -1971,9 +2041,11 @@ function quickSave() {
     productItems.forEach((item, index) => {
       const nameInput = item.querySelector('input[name="product_name[]"]');
       const descInput = item.querySelector('input[name="product_description[]"]');
+      const tariffInput = item.querySelector('input[name="product_tariff_code[]"]');
       const exportInput = item.querySelector('input[name="annual_export[]"]');
       if (nameInput) formData[`_product_${index}_name`] = nameInput.value.trim();
       if (descInput) formData[`_product_${index}_description`] = descInput.value.trim();
+      if (tariffInput) formData[`_product_${index}_tariff_code`] = tariffInput.value.trim();
       if (exportInput) formData[`_product_${index}_export`] = exportInput.value.trim();
     });
   }
@@ -2267,6 +2339,25 @@ document.addEventListener('DOMContentLoaded', () => {
           if (productDesc) productDesc.style.borderColor = '';
         }
         
+        // Código Arancelario (NCM/HS): si está lleno, validar formato NNNN.NN.NN.NNNL
+        const productTariffInput = item.querySelector('input[name="product_tariff_code[]"]');
+        if (productTariffInput && productTariffInput.value && productTariffInput.value.trim()) {
+          const v = productTariffInput.value.trim();
+          if (!/^[0-9.]+[A-Za-z]$/.test(v)) {
+            errors.push('Producto ' + (index + 1) + ': Carácter no válido. El código arancelario solo puede contener dígitos, puntos (.) y una letra al final.');
+            productTariffInput.style.borderColor = '#f44336';
+            productTariffInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else if (!/^\d{4}\.\d{2}\.\d{2}\.\d{3}[A-Za-z]$/.test(v)) {
+            errors.push('Producto ' + (index + 1) + ': Formato incorrecto. Use el formato NNNN.NN.NN.NNNL (por ejemplo: 0602.90.90.100X).');
+            productTariffInput.style.borderColor = '#f44336';
+            productTariffInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            productTariffInput.style.borderColor = '';
+          }
+        } else if (productTariffInput) {
+          productTariffInput.style.borderColor = '';
+        }
+        
         // Проверка файла продукта
         const fileState = window.getFileState ? window.getFileState() : { existingFiles: {}, newFiles: {} };
         let hasFile = false;
@@ -2418,6 +2509,25 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         } else {
           if (serviceDesc) serviceDesc.style.borderColor = '';
+        }
+        
+        // Código Arancelario (NCM/HS): si está lleno, validar formato NNNN.NN.NN.NNNL
+        const serviceTariffInput = item.querySelector('input[name="service_tariff_code[]"]');
+        if (serviceTariffInput && serviceTariffInput.value && serviceTariffInput.value.trim()) {
+          const v = serviceTariffInput.value.trim();
+          if (!/^[0-9.]+[A-Za-z]$/.test(v)) {
+            errors.push('Servicio ' + (index + 1) + ': Carácter no válido. El código arancelario solo puede contener dígitos, puntos (.) y una letra al final.');
+            serviceTariffInput.style.borderColor = '#f44336';
+            serviceTariffInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else if (!/^\d{4}\.\d{2}\.\d{2}\.\d{3}[A-Za-z]$/.test(v)) {
+            errors.push('Servicio ' + (index + 1) + ': Formato incorrecto. Use el formato NNNN.NN.NN.NNNL (por ejemplo: 0602.90.90.100X).');
+            serviceTariffInput.style.borderColor = '#f44336';
+            serviceTariffInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            serviceTariffInput.style.borderColor = '';
+          }
+        } else if (serviceTariffInput) {
+          serviceTariffInput.style.borderColor = '';
         }
         
         // Проверка файла услуги (аналогично продукту)
@@ -3446,8 +3556,9 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
               container.querySelectorAll('.product-item').forEach((item, idx) => {
                 const nameKey = `_product_${idx}_name`;
                 const descKey = `_product_${idx}_description`;
+                const tariffKey = `_product_${idx}_tariff_code`;
                 const exportKey = `_product_${idx}_export`;
-                
+
                 // Заполняем только если поле пустое
                 if (formData[nameKey]) {
                   const nameInput = item.querySelector('input[name="product_name[]"]');
@@ -3459,6 +3570,12 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
                   const descInput = item.querySelector('input[name="product_description[]"]');
                   if (descInput && !descInput.value.trim()) {
                     descInput.value = formData[descKey];
+                  }
+                }
+                if (formData[tariffKey]) {
+                  const tariffInput = item.querySelector('input[name="product_tariff_code[]"]');
+                  if (tariffInput && !tariffInput.value.trim()) {
+                    tariffInput.value = formData[tariffKey];
                   }
                 }
                 if (formData[exportKey]) {
@@ -3684,6 +3801,7 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
               container.querySelectorAll('.product-item').forEach((item, idx) => {
                 const nameKey = `_product_${idx}_name`;
                 const descKey = `_product_${idx}_description`;
+                const tariffKey = `_product_${idx}_tariff_code`;
                 const exportKey = `_product_${idx}_export`;
                 
                 if (formData[nameKey]) {
@@ -3693,6 +3811,10 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
                 if (formData[descKey]) {
                   const descInput = item.querySelector('input[name="product_description[]"]');
                   if (descInput) descInput.value = formData[descKey];
+                }
+                if (formData[tariffKey]) {
+                  const tariffInput = item.querySelector('input[name="product_tariff_code[]"]');
+                  if (tariffInput) tariffInput.value = formData[tariffKey];
                 }
                 if (formData[exportKey]) {
                   const exportInput = item.querySelector('input[name="annual_export[]"]');
@@ -4698,12 +4820,17 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
               
               const nameInput = productItem.querySelector('input[name="product_name[]"]');
               const descInput = productItem.querySelector('input[name="product_description[]"]');
+              const tariffInput = productItem.querySelector('input[name="product_tariff_code[]"]');
               const exportInput = productItem.querySelector('input[name="annual_export[]"]');
               const certInput = productItem.querySelector('input[name="product_certifications[]"]');
               const currentMarketsInput = productItem.querySelector('input[name="product_current_markets[]"]');
               
               if (nameInput) nameInput.value = product.name || '';
               if (descInput) descInput.value = product.description || '';
+              if (tariffInput) {
+                tariffInput.value = product.tariff_code || '';
+                tariffInput.dispatchEvent(new Event('input', { bubbles: true }));
+              }
               if (exportInput) exportInput.value = product.annual_export || '';
               if (certInput) certInput.value = product.certifications || '';
               
@@ -4857,12 +4984,17 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
               
               const nameInput = serviceItem.querySelector('input[name="service_name[]"]');
               const descInput = serviceItem.querySelector('input[name="service_description[]"]');
+              const tariffInput = serviceItem.querySelector('input[name="service_tariff_code[]"]');
               const exportInput = serviceItem.querySelector('input[name="annual_export[]"]');
               const certInput = serviceItem.querySelector('input[name="service_certifications[]"]');
               const currentMarketsInput = serviceItem.querySelector('input[name="service_current_markets[]"]');
               
               if (nameInput) nameInput.value = service.name || '';
               if (descInput) descInput.value = service.description || '';
+              if (tariffInput) {
+                tariffInput.value = service.tariff_code || '';
+                tariffInput.dispatchEvent(new Event('input', { bubbles: true }));
+              }
               if (exportInput) exportInput.value = service.annual_export || '';
               if (certInput) certInput.value = service.certifications || '';
               

@@ -603,6 +603,15 @@ div.label span .req,
   align-items:center;
 }
 .span_right{ grid-column: 2 / -1; }
+.tariff-code-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  color: #2563eb;
+}
+.tariff-code-hint:hover {
+  text-decoration: underline;
+}
 /* RESPONSIVE */
 @media (max-width: 750px){
 .address {
