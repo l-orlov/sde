@@ -53,8 +53,12 @@ $basePath = getAdminBasePath();
                                     </div>
                                     <form class="user">
                                         <div class="form-group">
-                                            <input type="text" class="form-control form-control-user"
-                                                id="inputLogin" placeholder="Email o CUIL/CUIT">
+                                            <input
+                                                type="text"
+                                                class="form-control form-control-user"
+                                                id="inputLogin"
+                                                placeholder="Email o CUIL/CUIT"
+                                            >
                                         </div>
 
                                         <div class="form-group">
@@ -92,13 +96,13 @@ $basePath = getAdminBasePath();
 
 <script>
 function loginAdm() {
-    const login = document.getElementById('inputLogin').value.trim();
+    const loginRaw = document.getElementById('inputLogin').value.trim();
     const pass = document.getElementById('inputPassword').value.trim();
     const mensajeDiv = document.getElementById('mensaje');
 
     mensajeDiv.innerHTML = '';
 
-    if (login === "" || pass === "") {
+    if (loginRaw === "" || pass === "") {
         mensajeDiv.innerHTML = '<p style="color:red;">Por favor, complete ambos campos.</p>';
         return;
     }
@@ -118,7 +122,7 @@ function loginAdm() {
     fetch(basePath + 'includes/login_js.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login, pass })
+        body: JSON.stringify({ login: loginRaw, pass })
     })
     .then(response => response.json()) // - poluchaem v vide JSON
     //.then(response => response.text()) // - text poluchaet splashnoy tekst

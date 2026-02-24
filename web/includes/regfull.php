@@ -53,11 +53,9 @@ if (isset($_SESSION['uid'])) {
     // Используем COALESCE: сначала companies, потом users
     $displayName = $companyData['name'] ?? $userData['company_name'] ?? '';
     $displayTaxId = $companyData['tax_id'] ?? $userData['tax_id'] ?? '';
-    // Формат CUIT при выводе: 20-18858351-3
+    // Для полей формы используем только цифры без маски
     $taxIdDigits = preg_replace('/\D/', '', (string) $displayTaxId);
-    if (strlen($taxIdDigits) === 11) {
-        $displayTaxId = substr($taxIdDigits, 0, 2) . '-' . substr($taxIdDigits, 2, 8) . '-' . substr($taxIdDigits, 10, 1);
-    }
+    $displayTaxId = $taxIdDigits;
     
     // Загрузка адресов
     if ($companyId) {
@@ -245,9 +243,21 @@ function esc_attr($value) {
     <!-- Nombre -->
     <div class="label"><label for="name" data-i18n="regfull_company_name">Nombre de la Empresa/Emprendimiento <span class="req">*</span></label></div>
     <div class="field"><input type="search" id="name" name="name" value="<?= esc_attr($displayName) ?>" required></div>
-    <!-- CUIT: 11 dígitos, máscara XX-XXXXXXXX-X -->
+    <!-- CUIT: 11 dígitos, solo números (sin máscara visual) -->
     <div class="label"><label for="tax_id" data-i18n="regfull_cuit">CUIT / Identificación Fiscal <span class="req">*</span></label></div>
-    <div class="field"><input type="search" id="tax_id" name="tax_id" value="<?= esc_attr($displayTaxId) ?>" data-i18n-placeholder="regfull_cuit_placeholder" placeholder="XX-XXXXXXXX-X" inputmode="numeric" maxlength="13" required></div>
+    <div class="field">
+      <input
+        type="search"
+        id="tax_id"
+        name="tax_id"
+        value="<?= esc_attr($displayTaxId) ?>"
+        data-i18n-placeholder="regfull_cuit_placeholder"
+        placeholder=""
+        inputmode="numeric"
+        maxlength="11"
+        required
+      >
+    </div>
     <!-- Razón social -->
     <div class="label"><label for="legal_name" data-i18n="regfull_razon_social">Razón social <span class="req">*</span></label></div>
     <div class="field"><input type="search" id="legal_name" name="legal_name" value="<?= esc_attr($companyData['legal_name'] ?? '') ?>" required></div>
@@ -635,18 +645,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
-  // Маска CUIT: 11 dígitos, formato 20-18858351-3 (guión como / en fecha)
+  // Поле CUIT: оставляем только цифры, без формата с guiones
   const taxIdInput = document.getElementById('tax_id');
   if (taxIdInput) {
-    const formatCuit = (v) => {
-      v = v.replace(/\D/g, '').slice(0, 11);
-      if (v.length <= 2) return v;
-      if (v.length <= 9) return v.slice(0, 2) + '-' + v.slice(2);
-      if (v.length === 10) return v.slice(0, 2) + '-' + v.slice(2, 10) + '-';
-      return v.slice(0, 2) + '-' + v.slice(2, 10) + '-' + v.slice(10, 11);
-    };
     taxIdInput.addEventListener('input', function() {
-      this.value = formatCuit(this.value);
+      this.value = this.value.replace(/\D/g, '').slice(0, 11);
     });
   }
   

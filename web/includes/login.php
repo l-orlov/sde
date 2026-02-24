@@ -61,18 +61,11 @@ function toggleLangMenu() {
 }
 document.addEventListener('DOMContentLoaded', () => {
   initLang('login');
-  // Маска CUIT: 11 dígitos, formato 20-18858351-3 (guión como / en fecha)
+  // Поле CUIT: только цифры, без формата с guiones
   const taxIdInput = document.getElementById('tax_id');
   if (taxIdInput) {
-    const formatCuit = (v) => {
-      v = v.replace(/\D/g, '').slice(0, 11);
-      if (v.length <= 2) return v;
-      if (v.length <= 9) return v.slice(0, 2) + '-' + v.slice(2);
-      if (v.length === 10) return v.slice(0, 2) + '-' + v.slice(2, 10) + '-';
-      return v.slice(0, 2) + '-' + v.slice(2, 10) + '-' + v.slice(10, 11);
-    };
     taxIdInput.addEventListener('input', function() {
-      this.value = formatCuit(this.value);
+      this.value = this.value.replace(/\D/g, '').slice(0, 11);
     });
   }
 });

@@ -39,10 +39,8 @@ if ($stmt) {
         $companyName = htmlspecialchars($data['company_name'] ?? '');
         $taxId = $data['tax_id'] ?? '';
         $taxIdDigits = preg_replace('/\D/', '', (string) $taxId);
-        if (strlen($taxIdDigits) === 11) {
-            $taxId = substr($taxIdDigits, 0, 2) . '-' . substr($taxIdDigits, 2, 8) . '-' . substr($taxIdDigits, 10, 1);
-        }
-        $taxId = htmlspecialchars($taxId);
+        // Для полей ввода используем только цифры без маски
+        $taxId = htmlspecialchars($taxIdDigits);
     } else {
         $companyName = '';
         $taxId = '';
@@ -243,7 +241,16 @@ $visibleProducts = min(4, $totalProducts);
           
           <div class="home-form-field">
             <label data-i18n="home_form_tax_id" class="home-form-label">CUIL/CUIT:</label>
-            <input type="text" class="home-form-input" id="profile-tax-id" name="tax_id" value="<?= $taxId ?>" placeholder="XX-XXXXXXXX-X" inputmode="numeric" maxlength="13">
+            <input
+              type="text"
+              class="home-form-input"
+              id="profile-tax-id"
+              name="tax_id"
+              value="<?= $taxId ?>"
+              placeholder=""
+              inputmode="numeric"
+              maxlength="11"
+            >
           </div>
           
           <div class="home-form-field">
@@ -554,18 +561,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // Máscara CUIT: 11 dígitos, formato 20-18858351-3
+  // Поле CUIT в профиле: только цифры, без формата с guiones
   const profileTaxIdInput = document.getElementById('profile-tax-id');
   if (profileTaxIdInput) {
-    const formatCuit = (v) => {
-      v = (v || '').replace(/\D/g, '').slice(0, 11);
-      if (v.length <= 2) return v;
-      if (v.length <= 9) return v.slice(0, 2) + '-' + v.slice(2);
-      if (v.length === 10) return v.slice(0, 2) + '-' + v.slice(2, 10) + '-';
-      return v.slice(0, 2) + '-' + v.slice(2, 10) + '-' + v.slice(10, 11);
-    };
     profileTaxIdInput.addEventListener('input', function() {
-      this.value = formatCuit(this.value);
+      this.value = (this.value || '').replace(/\D/g, '').slice(0, 11);
     });
   }
 

@@ -44,14 +44,22 @@ if (!isset($input['login'], $input['pass']) || empty($input['login']) || empty($
     exit;
 }
 
-$login = $input['login'];
-$pass = $input['pass'];
+$loginRaw = isset($input['login']) ? trim((string)$input['login']) : '';
+$pass = (string)$input['pass'];
 
-// Проверяем пользователя в таблице users с is_admin = 1
-// login может быть email или tax_id
-$query = "SELECT id, email, tax_id FROM users WHERE (email = ? OR tax_id = ?) AND password = ? AND is_admin = 1";
+// Логин админа: допускаем как CUIL/CUIT, так и email.
+// Если есть '@' — считаем, что это email и ищем по нему.
+// Иначе — очищаем до цифр и ищем по tax_id без жёсткой проверки длины.
+if (strpos($loginRaw, '@') !== false) {
+    $loginValue = $loginRaw;
+    $query = "SELECT id, email, tax_id FROM users WHERE email = ? AND password = ? AND is_admin = 1";
+} else {
+    $loginValue = preg_replace('/\D/', '', $loginRaw);
+    $query = "SELECT id, email, tax_id FROM users WHERE tax_id = ? AND password = ? AND is_admin = 1";
+}
+
 $stmt = mysqli_prepare($link, $query);
-mysqli_stmt_bind_param($stmt, 'sss', $login, $login, $pass);
+mysqli_stmt_bind_param($stmt, 'ss', $loginValue, $pass);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 
