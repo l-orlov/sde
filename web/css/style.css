@@ -2627,13 +2627,35 @@ div.label span .req,
   max-width: 1200px;
   margin: 0 auto;
 }
+.products-carousel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1000px;
+  margin: 0 auto 30px;
+}
 .products-carousel-title {
   font-size: 26px;
   font-weight: 700;
   color: #003399;
   font-family: sans-serif;
-  text-align: center;
-  margin: 0 0 30px 0;
+  text-align: left;
+  margin: 0;
+}
+.products-carousel-buscar-btn {
+  display: inline-block;
+  padding: 10px 24px;
+  background: #003399;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background 0.2s, transform 0.2s;
+}
+.products-carousel-buscar-btn:hover {
+  background: #002266;
+  color: white;
 }
 .products-carousel-wrapper {
   display: flex;
@@ -2728,9 +2750,15 @@ div.label span .req,
   .products-carousel-section {
     padding: 40px 15px 50px;
   }
+  .products-carousel-header {
+    margin-bottom: 24px;
+  }
   .products-carousel-title {
     font-size: 24px;
-    margin-bottom: 24px;
+  }
+  .products-carousel-buscar-btn {
+    padding: 8px 18px;
+    font-size: 13px;
   }
   .products-carousel-btn {
     width: 40px;
