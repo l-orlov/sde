@@ -234,7 +234,7 @@ if (!empty($companyIds)) {
 $productosParaSlides = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type
+    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code
           FROM products p
           INNER JOIN (SELECT company_id, MIN(id) AS mid FROM products WHERE company_id IN ($ids) GROUP BY company_id) first
           ON p.company_id = first.company_id AND p.id = first.mid
@@ -685,7 +685,9 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $s2Pad = 24;
         $s2TextLeft = $s2BlockX + $s2Pad;
         $s2TextRight = $s2Pad;
-        $s2TextTop = 22;
+        // Высота всего блока текста: заголовки (12+10) + Ln(8) + 3 абзаца с отступами (~26 + 6 + 19.5 + 6 + 32.5)
+        $s2TextBlockHeight = 12 + 10 + 8 + (4 * 6.5) + 6 + (3 * 6.5) + 6 + (5 * 6.5);
+        $s2TextTop = max($s2Pad, ($s2BlockH - $s2TextBlockHeight) / 2);
         $mpdf->SetLeftMargin($s2TextLeft);
         $mpdf->SetRightMargin($s2TextRight);
         $s2TextW = $s2BlockW - 2 * $s2Pad;
@@ -1099,9 +1101,9 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->Image($s5ProvLogoPath, $lx, $ly, $logoW, $logoH);
             }
             // Logo de la empresa centrado en el bloque negro (debajo del logo provincial, algo más bajo)
-            $s5CompLogoSize = min(90, $s5BlackW - 30, $s5BlackH - 80);
+            $s5CompLogoSize = min(115, $s5BlackW - 20, $s5BlackH - 65);
             $s5CompLogoX = $s5BlackX + ($s5BlackW - $s5CompLogoSize) / 2;
-            $s5CompLogoY = $s5BlackY + 62;
+            $s5CompLogoY = $s5BlackY + 52;
             $compLogoPath = $logosPorEmpresa[$cid] ?? $imagenesPorEmpresa[$cid] ?? null;
             if ($compLogoPath && file_exists($compLogoPath)) {
                 $mpdf->Image($compLogoPath, $s5CompLogoX, $s5CompLogoY, $s5CompLogoSize, $s5CompLogoSize);
@@ -1120,8 +1122,25 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->SetX($s5Pad);
             $mpdf->SetTextColor(141, 188, 220);
             $mpdf->SetFont('dejavusans', 'B', 34);
-            $nombreEmpresa = $emp['name'] ?? '';
-            $mpdf->Cell($s5TextW, 13, function_exists('mb_strtoupper') ? mb_strtoupper($nombreEmpresa) : strtoupper($nombreEmpresa), 0, 1, 'L');
+            $nombreEmpresa = function_exists('mb_strtoupper') ? mb_strtoupper($emp['name'] ?? '') : strtoupper($emp['name'] ?? '');
+            $s5Ellipsis = '…';
+            $s5MaxW = $s5TextW - $mpdf->GetStringWidth($s5Ellipsis);
+            if ($mpdf->GetStringWidth($nombreEmpresa) <= $s5TextW) {
+                $s5NombreDisplay = $nombreEmpresa;
+            } else {
+                $s5Len = function_exists('mb_strlen') ? mb_strlen($nombreEmpresa) : strlen($nombreEmpresa);
+                $s5Fit = 0;
+                for ($s5k = 1; $s5k <= $s5Len; $s5k++) {
+                    $s5Sub = function_exists('mb_substr') ? mb_substr($nombreEmpresa, 0, $s5k) : substr($nombreEmpresa, 0, $s5k);
+                    if ($mpdf->GetStringWidth($s5Sub) <= $s5MaxW) {
+                        $s5Fit = $s5k;
+                    } else {
+                        break;
+                    }
+                }
+                $s5NombreDisplay = ($s5Fit > 0 ? (function_exists('mb_substr') ? mb_substr($nombreEmpresa, 0, $s5Fit) : substr($nombreEmpresa, 0, $s5Fit)) : '') . $s5Ellipsis;
+            }
+            $mpdf->Cell($s5TextW, 13, $s5NombreDisplay, 0, 1, 'L');
             $mpdf->Ln(28);
             $s5LineH = 10;
             $s5LabelH = 7;
@@ -1280,22 +1299,25 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $prodTextW = $prodLeftW - 2 * $prodPad - 48;
             $mpdf->SetLeftMargin($prodPad);
             $mpdf->SetRightMargin($wMm - $prodLeftW + $prodPad);
-            $prodTitleY = 34;
+            $prodTitleY = 22;
             $mpdf->SetXY($prodPad, $prodTitleY);
             $mpdf->SetTextColor(0, 0, 0);
             $mpdf->SetFont('dejavusans', 'B', 42);
             $mpdf->Cell($prodTextW, 15, 'Productos y servicios', 0, 1, 'L');
-            $mpdf->Ln(6);
+            $mpdf->Ln(2);
             $mpdf->SetTextColor(141, 188, 220);
             $mpdf->SetFont('dejavusans', 'B', 36);
             $mpdf->Cell($prodTextW, 15, 'Destacados', 0, 1, 'L');
-            $mpdf->Ln(18);
+            $mpdf->Ln(10);
             $prodThumbW = 52;
             $prodThumbH = 38;
+            $prodBlockH = 55;
+            $prodImgYOffset = ($prodBlockH - $prodThumbH) / 2;
             $prodLineColor = [221, 153, 153];
-            $prodY = $prodTitleY + 15 + 6 + 15 + 10;
+            $prodY = $prodTitleY + 15 + 2 + 15 + 4 + 8;
             foreach ($chunk as $k => $prod) {
                 $pid = (int) $prod['id'];
+                $prodImgY = $prodY + $prodImgYOffset;
                 $mpdf->SetXY($prodPad, $prodY);
                 $imgPath = $imagenesPorProducto[$pid] ?? null;
                 if ($imgPath && file_exists($imgPath)) {
@@ -1307,9 +1329,9 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                         $scale = min($prodThumbW / $imgWmm, $prodThumbH / $imgHmm);
                         $iw = $imgWmm * $scale;
                         $ih = $imgHmm * $scale;
-                        $mpdf->Image($imgPath, $prodPad, $prodY, $iw, $ih);
+                        $mpdf->Image($imgPath, $prodPad, $prodImgY + ($prodThumbH - $ih) / 2, $iw, $ih);
                     } else {
-                        $mpdf->Image($imgPath, $prodPad, $prodY, $prodThumbW, $prodThumbH);
+                        $mpdf->Image($imgPath, $prodPad, $prodImgY, $prodThumbW, $prodThumbH);
                     }
                 }
                 $prodContentX = $prodPad + $prodThumbW + 10;
@@ -1318,15 +1340,41 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->SetTextColor(0, 0, 0);
                 $mpdf->SetFont('dejavusans', 'B', 16);
                 $mpdf->Cell($prodContentW * 0.55, 9, $prod['name'] ?? '', 0, 1, 'L');
-                $mpdf->Ln(2);
+                $mpdf->Ln(1);
                 $mpdf->SetX($prodContentX);
                 $mpdf->SetFont('dejavusans', 'B', 11);
                 $mpdf->SetTextColor(80, 80, 80);
                 $mpdf->Cell($prodContentW * 0.55, 7, 'EMPRESA:', 0, 0, 'L');
                 $mpdf->SetFont('dejavusans', '', 10);
                 $mpdf->SetTextColor(0, 0, 0);
-                $mpdf->Cell($prodContentW * 0.45, 7, $prodCompanyNameById[(int)($prod['company_id'] ?? 0)] ?? '-', 0, 1, 'L');
-                $mpdf->Ln(1);
+                $prodEmpresaName = $prodCompanyNameById[(int)($prod['company_id'] ?? 0)] ?? '-';
+                $prodEmpresaCellW = $prodContentW * 0.45;
+                $prodEllipsis = '…';
+                $prodMaxW = $prodEmpresaCellW - $mpdf->GetStringWidth($prodEllipsis);
+                if ($mpdf->GetStringWidth($prodEmpresaName) <= $prodEmpresaCellW) {
+                    $prodEmpresaDisplay = $prodEmpresaName;
+                } else {
+                    $prodNameLen = function_exists('mb_strlen') ? mb_strlen($prodEmpresaName) : strlen($prodEmpresaName);
+                    $prodNameFit = 0;
+                    for ($prodk = 1; $prodk <= $prodNameLen; $prodk++) {
+                        $prodNameSub = function_exists('mb_substr') ? mb_substr($prodEmpresaName, 0, $prodk) : substr($prodEmpresaName, 0, $prodk);
+                        if ($mpdf->GetStringWidth($prodNameSub) <= $prodMaxW) {
+                            $prodNameFit = $prodk;
+                        } else {
+                            break;
+                        }
+                    }
+                    $prodEmpresaDisplay = ($prodNameFit > 0 ? (function_exists('mb_substr') ? mb_substr($prodEmpresaName, 0, $prodNameFit) : substr($prodEmpresaName, 0, $prodNameFit)) : '') . $prodEllipsis;
+                }
+                $mpdf->Cell($prodEmpresaCellW, 7, $prodEmpresaDisplay, 0, 1, 'L');
+                $mpdf->SetX($prodContentX);
+                $mpdf->SetFont('dejavusans', 'B', 13);
+                $mpdf->SetTextColor(80, 80, 80);
+                $mpdf->Cell($prodContentW * 0.55, 7, 'Código Arancelario (NCM/HS):', 0, 0, 'L');
+                $mpdf->SetFont('dejavusans', '', 10);
+                $mpdf->SetTextColor(0, 0, 0);
+                $tariffStr = trim($prod['tariff_code'] ?? '') ?: '-';
+                $mpdf->Cell($prodContentW * 0.45, 7, (mb_strlen($tariffStr) > 22 ? mb_substr($tariffStr, 0, 21) . '…' : $tariffStr), 0, 1, 'L');
                 $mpdf->SetX($prodContentX);
                 $mpdf->SetFont('dejavusans', 'B', 11);
                 $mpdf->SetTextColor(80, 80, 80);
@@ -1334,7 +1382,6 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->SetFont('dejavusans', '', 10);
                 $mpdf->SetTextColor(0, 0, 0);
                 $mpdf->Cell($prodContentW * 0.45, 7, trim($prod['annual_export'] ?? '-') ?: '-', 0, 1, 'L');
-                $mpdf->Ln(1);
                 $mpdf->SetX($prodContentX);
                 $mpdf->SetFont('dejavusans', 'B', 11);
                 $mpdf->SetTextColor(80, 80, 80);
@@ -1343,7 +1390,6 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->SetTextColor(0, 0, 0);
                 $certStr = trim($prod['certifications'] ?? '-') ?: '-';
                 $mpdf->Cell($prodContentW * 0.45, 7, (mb_strlen($certStr) > 28 ? mb_substr($certStr, 0, 27) . '…' : $certStr), 0, 1, 'L');
-                $mpdf->Ln(1);
                 $mpdf->SetX($prodContentX);
                 $mpdf->SetFont('dejavusans', 'B', 11);
                 $mpdf->SetTextColor(80, 80, 80);
@@ -1353,11 +1399,11 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $descStr = trim($prod['description'] ?? '') ?: '-';
                 $descStr = mb_strlen($descStr) > 80 ? mb_substr($descStr, 0, 79) . '…' : $descStr;
                 $mpdf->MultiCell($prodContentW * 0.45, 4.5, $descStr, 0, 'L');
-                $prodY += 50;
+                $prodY += 55;
                 $mpdf->SetDrawColor($prodLineColor[0], $prodLineColor[1], $prodLineColor[2]);
                 $mpdf->SetLineWidth(0.3);
                 $mpdf->Line($prodPad, $prodY, $prodPad + $prodTextW, $prodY);
-                $prodY += 6;
+                $prodY += 4;
             }
             $mpdf->SetLeftMargin(0);
             $mpdf->SetRightMargin(0);

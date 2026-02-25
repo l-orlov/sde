@@ -175,17 +175,24 @@ $productosMuestra = [];
 $mercadosPorRegion = [];
 $contactoInstitucional = $configInstitucional;
 
-// Companies aprobadas (con start_date para año de inicio en slide empresa)
-$q = "SELECT c.id, c.name, c.main_activity, c.website, c.start_date
+// Solo la empresa del usuario logueado (desde el cabinet)
+$currentUserId = isset($_SESSION['uid']) ? (int) $_SESSION['uid'] : 0;
+if ($currentUserId <= 0) {
+    header('Location: ' . (isset($_SERVER['REQUEST_SCHEME']) && isset($_SERVER['HTTP_HOST']) ? $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] : '') . dirname($_SERVER['PHP_SELF'], 3) . '/index.php');
+    exit;
+}
+$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.main_activity, c.website, c.start_date
       FROM companies c
-      INNER JOIN users u ON u.id = c.user_id
-      WHERE c.moderation_status = 'approved'
-      ORDER BY c.id ASC";
-$res = mysqli_query($link, $q);
-if ($res) {
-    while ($r = mysqli_fetch_assoc($res)) {
+      WHERE c.user_id = ? AND c.moderation_status = 'approved'
+      LIMIT 1");
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'i', $currentUserId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    if ($res && ($r = mysqli_fetch_assoc($res))) {
         $companies[] = $r;
     }
+    mysqli_stmt_close($stmt);
 }
 $metrics['empresas'] = count($companies);
 
@@ -252,7 +259,7 @@ if ($targetMarketsCheck && mysqli_num_rows($targetMarketsCheck) > 0) {
 }
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type" . ($hasTargetMarkets ? ", p.target_markets" : "") . "
+    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code" . ($hasTargetMarkets ? ", p.target_markets" : "") . "
           FROM products p
           INNER JOIN (SELECT company_id, MIN(id) AS mid FROM products WHERE company_id IN ($ids) GROUP BY company_id) first
           ON p.company_id = first.company_id AND p.id = first.mid
@@ -719,8 +726,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetXY($pfPad, $pfTitleY);
         $mpdf->Cell($pfLeftW - 2 * $pfPad, 12, 'PERFIL DE', 0, 1, 'L');
         $mpdf->SetFont('dejavusans', 'B', 48);
+        $pfCompanyName = trim($companies[0]['name'] ?? '') ?: 'EMPRESA';
+        $pfCompanyName = (function_exists('mb_strlen') && function_exists('mb_substr') && mb_strlen($pfCompanyName) > 14) ? mb_substr($pfCompanyName, 0, 14) . '…' : $pfCompanyName;
         $mpdf->SetXY($pfPad, $pfTitleY + 14);
-        $mpdf->Cell($pfLeftW - 2 * $pfPad, 18, 'EMPRESA', 0, 1, 'L');
+        $mpdf->Cell($pfLeftW - 2 * $pfPad, 18, $pfCompanyName, 0, 1, 'L');
         $pfPerfil1 = 'Tipo de Organización';
         $pfPerfil2 = trim($pfEmp['main_activity'] ?? '') ?: '-';
         $pfLoc = $pfCid && isset($localidadPorEmpresa[$pfCid]) ? $localidadPorEmpresa[$pfCid] : '-';
@@ -1168,9 +1177,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $p6ColGap = 14;
             $p6N = 3;
             $p6ColW = ($wMm - 2 * $p6Pad - ($p6N - 1) * $p6ColGap) / $p6N;
-            $p6ColTitles = ['01. EXPORTACIÓN ANUAL (USD):', '02. CERTIFICACIONES', '03. MERCADOS DE INTERÉS'];
+            $p6ColTitles = ['01. EXPORTACIÓN ANUAL (USD):', '02. CERTIFICACIONES', '03. CÓDIGO ARANCELARIO (NCM/HS):', '04. MERCADOS DE INTERÉS'];
             $p6Annual = trim($prod['annual_export'] ?? '') ?: 'TEXTO';
             $p6Cert = trim($prod['certifications'] ?? '') ?: 'TEXTO';
+            $p6Tariff = trim($prod['tariff_code'] ?? '') ?: '-';
             $p6Mercados = 'TEXTO';
             if (!empty($prod['target_markets'])) {
                 $dec = is_string($prod['target_markets']) ? json_decode($prod['target_markets'], true) : $prod['target_markets'];
@@ -1182,17 +1192,24 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                     $p6Mercados = implode("\n", array_filter(array_slice($list, 0, 5)));
                 }
             }
-            $p6ColContents = [$p6Annual, $p6Cert, $p6Mercados];
+            $p6ColContents = [$p6Annual, $p6Cert, $p6Tariff, $p6Mercados];
+            $p6ColsPerRow = 2;
+            $p6ColW = ($wMm - 2 * $p6Pad - ($p6ColsPerRow - 1) * $p6ColGap) / $p6ColsPerRow;
             $p6TitleRowH = 9;
-            for ($col = 0; $col < $p6N; $col++) {
-                $cx = $p6Pad + $col * ($p6ColW + $p6ColGap);
-                $mpdf->SetTextColor(0, 0, 0);
-                $mpdf->SetFont('dejavusans', 'B', 14);
-                $mpdf->SetXY($cx, $p6ColTop);
-                $mpdf->Cell($p6ColW, $p6TitleRowH, $p6ColTitles[$col], 0, 1, 'L');
-                $mpdf->SetFont('dejavusans', '', 14);
-                $mpdf->SetXY($cx, $p6ColTop + $p6TitleRowH + 2);
-                $mpdf->MultiCell($p6ColW, 7, $p6ColContents[$col], 0, 'L');
+            $p6RowH = 28;
+            for ($row = 0; $row < 2; $row++) {
+                $rowY = $p6ColTop + $row * $p6RowH;
+                for ($col = 0; $col < $p6ColsPerRow; $col++) {
+                    $idx = $row * $p6ColsPerRow + $col;
+                    $cx = $p6Pad + $col * ($p6ColW + $p6ColGap);
+                    $mpdf->SetTextColor(0, 0, 0);
+                    $mpdf->SetFont('dejavusans', 'B', 14);
+                    $mpdf->SetXY($cx, $rowY);
+                    $mpdf->Cell($p6ColW, $p6TitleRowH, $p6ColTitles[$idx], 0, 1, 'L');
+                    $mpdf->SetFont('dejavusans', '', 14);
+                    $mpdf->SetXY($cx, $rowY + $p6TitleRowH + 2);
+                    $mpdf->MultiCell($p6ColW, 7, $p6ColContents[$idx], 0, 'L');
+                }
             }
             $mpdf->SetDrawColor(0, 0, 0);
         }

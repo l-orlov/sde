@@ -175,17 +175,24 @@ $productosMuestra = [];
 $mercadosPorRegion = [];
 $contactoInstitucional = $configInstitucional;
 
-// Companies aprobadas (con start_date para año de inicio en slide empresa)
-$q = "SELECT c.id, c.name, c.main_activity, c.website, c.start_date, c.organization_type
+// Solo la empresa del usuario logueado (desde el cabinet)
+$currentUserId = isset($_SESSION['uid']) ? (int) $_SESSION['uid'] : 0;
+if ($currentUserId <= 0) {
+    header('Location: ' . (isset($_SERVER['REQUEST_SCHEME']) && isset($_SERVER['HTTP_HOST']) ? $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] : '') . dirname($_SERVER['PHP_SELF'], 3) . '/index.php');
+    exit;
+}
+$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.main_activity, c.website, c.start_date, c.organization_type
       FROM companies c
-      INNER JOIN users u ON u.id = c.user_id
-      WHERE c.moderation_status = 'approved'
-      ORDER BY c.id ASC";
-$res = mysqli_query($link, $q);
-if ($res) {
-    while ($r = mysqli_fetch_assoc($res)) {
+      WHERE c.user_id = ? AND c.moderation_status = 'approved'
+      LIMIT 1");
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'i', $currentUserId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    if ($res && ($r = mysqli_fetch_assoc($res))) {
         $companies[] = $r;
     }
+    mysqli_stmt_close($stmt);
 }
 $metrics['empresas'] = count($companies);
 
@@ -247,7 +254,7 @@ if (!empty($companyIds)) {
 $productosParaSlides = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type
+    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code
           FROM products p
           INNER JOIN (SELECT company_id, MIN(id) AS mid FROM products WHERE company_id IN ($ids) GROUP BY company_id) first
           ON p.company_id = first.company_id AND p.id = first.mid
@@ -830,8 +837,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->Cell($pfTitleW, 14, 'PERFIL DE LA', 0, 1, 'L');
         $mpdf->SetTextColor(255, 255, 255);
         $mpdf->SetFont('dejavusans', 'B', 38);
+        $pfCompanyName = trim($companies[0]['name'] ?? '') ?: 'EMPRESA';
+        $pfCompanyName = (function_exists('mb_strlen') && function_exists('mb_substr') && mb_strlen($pfCompanyName) > 14) ? mb_substr($pfCompanyName, 0, 14) . '…' : $pfCompanyName;
         $mpdf->SetXY($pfTitleX, $pfTitleY + 20);
-        $mpdf->Cell($pfTitleW, 14, 'EMPRESA', 0, 1, 'L');
+        $mpdf->Cell($pfTitleW, 14, $pfCompanyName, 0, 1, 'L');
 
         $pfImgPath = $pfCompanyLogoPath;
         if (!$pfImgPath || !file_exists($pfImgPath)) {
@@ -1216,6 +1225,8 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->Cell($p7DescW, $p7LabelH, 'Exportación anual (USD): ' . (trim($prod['annual_export'] ?? '') ?: '-'), 0, 1, 'L');
             $mpdf->SetX($p7DescX);
             $mpdf->Cell($p7DescW, $p7LabelH, 'Certificaciones: ' . (trim($prod['certifications'] ?? '') ?: '-'), 0, 1, 'L');
+            $mpdf->SetX($p7DescX);
+            $mpdf->Cell($p7DescW, $p7LabelH, 'Código Arancelario (NCM/HS): ' . (trim($prod['tariff_code'] ?? '') ?: '-'), 0, 1, 'L');
             $mpdf->SetX($p7DescX);
             $mpdf->Cell($p7DescW, $p7LabelH, 'Mercados actuales: -', 0, 1, 'L');
             $mpdf->SetX($p7DescX);

@@ -166,17 +166,24 @@ $productosMuestra = [];
 $mercadosPorRegion = [];
 $contactoInstitucional = $configInstitucional;
 
-// Companies aprobadas (con start_date para año de inicio en slide empresa)
-$q = "SELECT c.id, c.name, c.main_activity, c.website, c.start_date
+// Solo la empresa del usuario logueado (desde el cabinet)
+$currentUserId = isset($_SESSION['uid']) ? (int) $_SESSION['uid'] : 0;
+if ($currentUserId <= 0) {
+    header('Location: ' . (isset($_SERVER['REQUEST_SCHEME']) && isset($_SERVER['HTTP_HOST']) ? $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] : '') . dirname($_SERVER['PHP_SELF'], 3) . '/index.php');
+    exit;
+}
+$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.main_activity, c.website, c.start_date
       FROM companies c
-      INNER JOIN users u ON u.id = c.user_id
-      WHERE c.moderation_status = 'approved'
-      ORDER BY c.id ASC";
-$res = mysqli_query($link, $q);
-if ($res) {
-    while ($r = mysqli_fetch_assoc($res)) {
+      WHERE c.user_id = ? AND c.moderation_status = 'approved'
+      LIMIT 1");
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, 'i', $currentUserId);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    if ($res && ($r = mysqli_fetch_assoc($res))) {
         $companies[] = $r;
     }
+    mysqli_stmt_close($stmt);
 }
 $metrics['empresas'] = count($companies);
 
@@ -238,7 +245,7 @@ if (!empty($companyIds)) {
 $productosParaSlides = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type
+    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code
           FROM products p
           INNER JOIN (SELECT company_id, MIN(id) AS mid FROM products WHERE company_id IN ($ids) GROUP BY company_id) first
           ON p.company_id = first.company_id AND p.id = first.mid
@@ -717,7 +724,9 @@ for ($i = 0; $i < 5; $i++) {
         $mpdf->SetXY($pfTitleX - 140, 34);
         $mpdf->SetTextColor(0, 0, 0);
         $mpdf->SetFont('dejavusans', 'B', 48);
-        $mpdf->Cell(140, 18, 'EMPRESA', 0, 1, 'R');
+        $pfCompanyName = trim($companies[0]['name'] ?? '') ?: 'EMPRESA';
+        $pfCompanyName = (function_exists('mb_strlen') && function_exists('mb_substr') && mb_strlen($pfCompanyName) > 9) ? mb_substr($pfCompanyName, 0, 9) . '…' : $pfCompanyName;
+        $mpdf->Cell(140, 18, $pfCompanyName, 0, 1, 'R');
         $pfSecLeft = 24;
         $pfSecW = $pfLeftW - 2 * $pfSecLeft;
         $pfLineColor = [141, 188, 220];
@@ -1115,7 +1124,7 @@ for ($i = 0; $i < 5; $i++) {
             $prodTextW = $prodLeftW - 2 * $prodPad - 48;
             $mpdf->SetLeftMargin($prodPad);
             $mpdf->SetRightMargin($wMm - $prodLeftW + $prodPad);
-            $prodTitleY = $prodLogoY + $prodBadgeH + 18;
+            $prodTitleY = $prodLogoY + $prodBadgeH + 16;
             $prod = $chunk[0];
             $pid = (int) $prod['id'];
             $mpdf->SetXY($prodPad, $prodTitleY);
@@ -1125,10 +1134,10 @@ for ($i = 0; $i < 5; $i++) {
             $mpdf->SetTextColor(0, 0, 0);
             $mpdf->SetFont('dejavusans', 'B', 52);
             $mpdf->Cell($prodTextW, 18, mb_strlen($prod['name'] ?? '') > 28 ? (mb_substr($prod['name'], 0, 27) . '…') : ($prod['name'] ?? 'PRODUCTO/SERVICIO'), 0, 1, 'L');
-            $mpdf->Ln(12);
+            $mpdf->Ln(10);
             $prodContentX = $prodPad;
             $prodContentW = $prodTextW;
-            $prodY = $prodTitleY + 18 + 18 + 12 + 6;
+            $prodY = $prodTitleY + 18 + 18 + 10 + 6;
             $mpdf->SetXY($prodContentX, $prodY);
             $mpdf->SetFont('dejavusans', 'B', 16);
             $mpdf->SetTextColor(0, 0, 0);
@@ -1137,12 +1146,12 @@ for ($i = 0; $i < 5; $i++) {
             $descStr = trim($prod['description'] ?? '') ?: 'Nisi justo faucibus lectus blandit donec gravida proin natoque, malesuada a facilisis dictumst rhoncus pulvinar aliquet feugiat ultrices, mollis phasellus varius tortor habitasse purus enim.';
             $descStr = mb_strlen($descStr) > 200 ? mb_substr($descStr, 0, 199) . '…' : $descStr;
             $mpdf->MultiCell($prodContentW, 7, $descStr, 0, 'L');
-            $mpdf->Ln(8);
+            $mpdf->Ln(7);
             $prodIconSize = 18;
             $prodIconW = $prodIconSize;
             $prodIconH = $prodIconSize;
-            $prodRowH = 20;
-            $prodRowY0 = $prodY + 8 + 28 + 10;
+            $prodRowH = 15;
+            $prodRowY0 = $prodY + 7 + 28 + 8;
             $prodIconOffsetY = ($prodRowH - $prodIconH) / 2;
             $prodRowLineH = 9;
             $prodTextOffsetY = ($prodRowH - $prodRowLineH) / 2;
@@ -1169,6 +1178,15 @@ for ($i = 0; $i < 5; $i++) {
                 $mpdf->SetFont('dejavusans', '', 15);
                 $certStr = trim($prod['certifications'] ?? '-') ?: '-';
                 $mpdf->Cell(0, $prodRowLineH, (mb_strlen($certStr) > 30 ? mb_substr($certStr, 0, 29) . '…' : $certStr), 0, 1, 'L');
+                $prodRowY += $prodRowH;
+                $mpdf->Image($iconYesPath, $prodContentX, $prodRowY + $prodIconOffsetY, $prodIconW, $prodIconH);
+                $mpdf->SetXY($prodContentX + $prodIconW + $prodLabelGap, $prodRowY + $prodTextOffsetY);
+                $mpdf->SetFont('dejavusans', 'B', 17);
+                $lbl = 'Código Arancelario (NCM/HS):';
+                $mpdf->Cell($mpdf->GetStringWidth($lbl) + 2, $prodRowLineH, $lbl, 0, 0, 'L');
+                $mpdf->Cell($prodDataGap, $prodRowLineH, '', 0, 0, 'L');
+                $mpdf->SetFont('dejavusans', '', 15);
+                $mpdf->Cell(0, $prodRowLineH, trim($prod['tariff_code'] ?? '') ?: '-', 0, 1, 'L');
                 $prodRowY += $prodRowH;
                 $mpdf->Image($iconYesPath, $prodContentX, $prodRowY + $prodIconOffsetY, $prodIconW, $prodIconH);
                 $mpdf->SetXY($prodContentX + $prodIconW + $prodLabelGap, $prodRowY + $prodTextOffsetY);
@@ -1211,6 +1229,17 @@ for ($i = 0; $i < 5; $i++) {
                 $mpdf->SetFont('dejavusans', '', 15);
                 $certStr = trim($prod['certifications'] ?? '-') ?: '-';
                 $mpdf->Cell(0, $prodRowLineH, (mb_strlen($certStr) > 30 ? mb_substr($certStr, 0, 29) . '…' : $certStr), 0, 1, 'L');
+                $prodRowY += $prodRowH;
+                $mpdf->SetXY($prodContentX + $prodIconW + $prodLabelGap, $prodRowY + $prodTextOffsetY);
+                $mpdf->SetFont('dejavusans', 'B', 17);
+                $mpdf->SetTextColor(0, 51, 153);
+                $mpdf->Cell(6, $prodRowLineH, "\xE2\x9C\x94", 0, 0, 'L');
+                $mpdf->SetTextColor(0, 0, 0);
+                $lbl = 'Código Arancelario (NCM/HS):';
+                $mpdf->Cell($mpdf->GetStringWidth($lbl) + 2, $prodRowLineH, $lbl, 0, 0, 'L');
+                $mpdf->Cell($prodDataGap, $prodRowLineH, '', 0, 0, 'L');
+                $mpdf->SetFont('dejavusans', '', 15);
+                $mpdf->Cell(0, $prodRowLineH, trim($prod['tariff_code'] ?? '') ?: '-', 0, 1, 'L');
                 $prodRowY += $prodRowH;
                 $mpdf->SetXY($prodContentX + $prodIconW + $prodLabelGap, $prodRowY + $prodTextOffsetY);
                 $mpdf->SetFont('dejavusans', 'B', 17);

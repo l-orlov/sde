@@ -239,7 +239,7 @@ if (!empty($companyIds)) {
 $productosParaSlides = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type
+    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code
           FROM products p
           INNER JOIN (SELECT company_id, MIN(id) AS mid FROM products WHERE company_id IN ($ids) GROUP BY company_id) first
           ON p.company_id = first.company_id AND p.id = first.mid
@@ -731,20 +731,17 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             }
             $mpdf->Image($s2LogoPath, $s2LogoX + ($s2LogoW - $lw) / 2, $s2LogoY + ($s2LogoH - $lh) / 2, $lw, $lh);
         }
-        $s2TextPad = 45;
+        $s2TextPad = 36;
         $s2TextLeft = $s2LeftW + $s2TextPad;
         $s2TextW = $s2RightW - $s2TextPad - $s2Pad;
-        $s2TitleShiftLeft = 18;
-        $s2TitleLeft = $s2TextLeft - $s2TitleShiftLeft;
-        $s2TitleW = $s2TextW + $s2TitleShiftLeft;
         $s2TitleTop = $s2LogoY + $s2LogoH + 20;
         $mpdf->SetTextColor(160, 35, 35);
         $mpdf->SetFont('dejavusans', 'B', 34);
-        $mpdf->SetXY($s2TitleLeft, $s2TitleTop);
-        $mpdf->Cell($s2TitleW, 12, 'CONTEXTO', 0, 1, 'C');
+        $mpdf->SetXY($s2TextLeft, $s2TitleTop);
+        $mpdf->Cell($s2TextW, 12, 'CONTEXTO', 0, 1, 'L');
         $mpdf->SetFont('dejavusans', 'B', 32);
-        $mpdf->SetXY($s2TitleLeft, $s2TitleTop + 14);
-        $mpdf->Cell($s2TitleW, 12, 'PROVINCIAL', 0, 1, 'C');
+        $mpdf->SetXY($s2TextLeft, $s2TitleTop + 14);
+        $mpdf->Cell($s2TextW, 12, 'PROVINCIAL', 0, 1, 'L');
         $s2ParaTop = $s2TitleTop + 40;
         $mpdf->SetTextColor(0, 0, 0);
         $s2FontSize = 15;
@@ -1156,17 +1153,35 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $s5TitleY = 90;
             $nombreEmpresa = $emp['name'] ?? '';
             $nombreUpper = function_exists('mb_strtoupper') ? mb_strtoupper($nombreEmpresa) : strtoupper($nombreEmpresa);
+            $s5NameW = $s5LeftZoneW - 2 * $s5Pad;
+            $s5Ellipsis = '…';
+            $s5MaxNameW = $s5NameW - $mpdf->GetStringWidth($s5Ellipsis);
             $mpdf->SetTextColor($s5RedR, $s5RedG, $s5RedB);
             $mpdf->SetFont('dejavusans', 'B', 40);
             $mpdf->SetXY($s5RedBarW + $s5Pad, $s5TitleY);
-            $mpdf->Cell($s5LeftZoneW - 2 * $s5Pad, 11, 'NOMBRE DE', 0, 1, 'L');
+            $mpdf->Cell($s5NameW, 11, 'NOMBRE DE', 0, 1, 'L');
             $mpdf->SetFont('dejavusans', 'B', 40);
+            if ($mpdf->GetStringWidth($nombreUpper) <= $s5NameW) {
+                $s5NombreDisplay = $nombreUpper;
+            } else {
+                $s5Len = function_exists('mb_strlen') ? mb_strlen($nombreUpper) : strlen($nombreUpper);
+                $s5Fit = 0;
+                for ($s5k = 1; $s5k <= $s5Len; $s5k++) {
+                    $s5Sub = function_exists('mb_substr') ? mb_substr($nombreUpper, 0, $s5k) : substr($nombreUpper, 0, $s5k);
+                    if ($mpdf->GetStringWidth($s5Sub) <= $s5MaxNameW) {
+                        $s5Fit = $s5k;
+                    } else {
+                        break;
+                    }
+                }
+                $s5NombreDisplay = ($s5Fit > 0 ? (function_exists('mb_substr') ? mb_substr($nombreUpper, 0, $s5Fit) : substr($nombreUpper, 0, $s5Fit)) : '') . $s5Ellipsis;
+            }
             $mpdf->SetXY($s5RedBarW + $s5Pad, $s5TitleY + 13);
-            $mpdf->Cell($s5LeftZoneW - 2 * $s5Pad, 14, $nombreUpper, 0, 1, 'L');
+            $mpdf->Cell($s5NameW, 14, $s5NombreDisplay, 0, 1, 'L');
             $s5BlockY = 140;
             $s5BlockH = 42;
             $s5ColW = ($s5LeftZoneW - 2 * $s5Pad - 24) / 3;
-            $s5NumOffset = -7;
+            $s5NumW = 12;
             $s5LabelLineH = 7;
             $s5Rows = [
                 ['01', "ACTIVIDAD\nPRINCIPAL", $emp['main_activity'] ?? '-'],
@@ -1182,12 +1197,12 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $by = $s5BlockY + $rowIdx * $s5BlockH;
                 $mpdf->SetTextColor($s5RedR, $s5RedG, $s5RedB);
                 $mpdf->SetFont('dejavusans', 'B', 15);
-                $mpdf->SetXY($bx + $s5NumOffset, $by);
-                $mpdf->Cell(16, 7, $row[0], 0, 1, 'L');
+                $mpdf->SetXY($bx, $by);
+                $mpdf->Cell($s5NumW, 7, $row[0], 0, 0, 'L');
                 $mpdf->SetTextColor(0, 0, 0);
                 $mpdf->SetFont('dejavusans', 'B', 18);
-                $mpdf->SetXY($bx, $by + 7);
-                $mpdf->MultiCell($s5ColW, $s5LabelLineH, $row[1], 0, 'L');
+                $mpdf->SetXY($bx + $s5NumW, $by);
+                $mpdf->MultiCell($s5ColW - $s5NumW, $s5LabelLineH, $row[1], 0, 'L');
                 $mpdf->SetFont('dejavusans', '', 12);
                 $valStr = is_string($row[2]) ? $row[2] : (string)$row[2];
                 $mpdf->SetXY($bx, $by + 26);
@@ -1429,12 +1444,32 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->SetFont('dejavusans', '', 12);
             if ($prod) {
                 $p6EmpresaNombre = $p6CompanyNameById[(int) ($prod['company_id'] ?? 0)] ?? '-';
+                $p6Prefix = 'EMPRESA: ';
+                $p6Ellipsis = '…';
+                $p6MaxNameW = $p6ColW - $mpdf->GetStringWidth($p6Prefix) - $mpdf->GetStringWidth($p6Ellipsis);
+                if ($mpdf->GetStringWidth($p6EmpresaNombre) <= $p6MaxNameW) {
+                    $p6EmpresaDisplay = $p6EmpresaNombre;
+                } else {
+                    $p6NameLen = function_exists('mb_strlen') ? mb_strlen($p6EmpresaNombre) : strlen($p6EmpresaNombre);
+                    $p6NameFit = 0;
+                    for ($p6nk = 1; $p6nk <= $p6NameLen; $p6nk++) {
+                        $p6Sub = function_exists('mb_substr') ? mb_substr($p6EmpresaNombre, 0, $p6nk) : substr($p6EmpresaNombre, 0, $p6nk);
+                        if ($mpdf->GetStringWidth($p6Sub) <= $p6MaxNameW) {
+                            $p6NameFit = $p6nk;
+                        } else {
+                            break;
+                        }
+                    }
+                    $p6EmpresaDisplay = ($p6NameFit > 0 ? (function_exists('mb_substr') ? mb_substr($p6EmpresaNombre, 0, $p6NameFit) : substr($p6EmpresaNombre, 0, $p6NameFit)) : '') . $p6Ellipsis;
+                }
                 $mpdf->SetXY($p6colX, $p6DataY);
-                $mpdf->Cell($p6ColW, 6, 'EMPRESA: ' . $p6EmpresaNombre, 0, 1, 'L');
+                $mpdf->Cell($p6ColW, 6, $p6Prefix . $p6EmpresaDisplay, 0, 1, 'L');
                 $mpdf->SetX($p6colX);
                 $mpdf->Cell($p6ColW, 6, 'EXPORTACIÓN ANUAL: ' . (trim($prod['annual_export'] ?? '') ?: '-'), 0, 1, 'L');
                 $mpdf->SetX($p6colX);
                 $mpdf->Cell($p6ColW, 6, 'CERTIFICACIONES: ' . (trim($prod['certifications'] ?? '') ?: '-'), 0, 1, 'L');
+                $mpdf->SetX($p6colX);
+                $mpdf->Cell($p6ColW, 6, 'CÓDIGO ARANCELARIO (NCM/HS): ' . (trim($prod['tariff_code'] ?? '') ?: '-'), 0, 1, 'L');
             } else {
                 $mpdf->SetXY($p6colX, $p6DataY);
                 $mpdf->Cell($p6ColW, 6, 'EMPRESA: -', 0, 1, 'L');
@@ -1442,6 +1477,8 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->Cell($p6ColW, 6, 'EXPORTACIÓN ANUAL: -', 0, 1, 'L');
                 $mpdf->SetX($p6colX);
                 $mpdf->Cell($p6ColW, 6, 'CERTIFICACIONES: -', 0, 1, 'L');
+                $mpdf->SetX($p6colX);
+                $mpdf->Cell($p6ColW, 6, 'CÓDIGO ARANCELARIO (NCM/HS): -', 0, 1, 'L');
             }
         }
         $mpdf->SetDrawColor(0, 0, 0);
