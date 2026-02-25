@@ -8,6 +8,10 @@ include "includes/functions.php";
 DBconnect();
 
 $page = isset($_REQUEST['page']) ? $_REQUEST['page'] : '';
+if ($page === 'search_api') {
+    require __DIR__ . '/includes/search_api.php';
+    exit;
+}
 if ($page === 'clasico_pdf') {
     require __DIR__ . '/pdf/oferta/clasico_pdf.php';
     exit;
@@ -42,6 +46,7 @@ if ($page === 'logout') include 'includes/logout.php';
 
 if ( !isset($_SESSION['uid']) ) {
     SWITCH ( $page ) {
+        case 'search':           include "includes/search.php";             break;
         case 'landing':         include "includes/landing.php";             break;
         case 'regfull':			include "includes/regfull.php";             break;
         case 'regnew':			include "includes/regnew.php";              break;

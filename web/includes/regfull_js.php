@@ -314,13 +314,13 @@ try {
             // Validación Código Arancelario (NCM/HS): formato NNNN.NN.NN.NNNL
             if ($tariffCodeRaw !== '') {
                 if (!preg_match('/^[0-9.]+[A-Za-z]$/', $tariffCodeRaw)) {
-                    $return['err'] = 'Carácter no válido: El código arancelario solo puede contener dígitos, puntos (.) y una letra al final.';
+                    $return['err'] = 'Producto ' . ($index + 1) . ': Carácter no válido. El código arancelario (NCM/HS) solo puede contener dígitos, puntos (.) y una letra al final.';
                     header('Content-Type: application/json');
                     echo json_encode($return);
                     exit;
                 }
                 if (!preg_match('/^\d{4}\.\d{2}\.\d{2}\.\d{3}[A-Za-z]$/', $tariffCodeRaw)) {
-                    $return['err'] = 'Formato incorrecto: Use el formato NNNN.NN.NN.NNNL (por ejemplo: 0602.90.90.100X).';
+                    $return['err'] = 'Producto ' . ($index + 1) . ': Formato incorrecto en Código Arancelario (NCM/HS). Use el formato NNNN.NN.NN.NNNL (por ejemplo: 0602.90.90.100X).';
                     header('Content-Type: application/json');
                     echo json_encode($return);
                     exit;
@@ -570,13 +570,13 @@ try {
                 ? trim((string) $input['service_tariff_code'][$index]) : '';
             if ($tariffCodeRaw !== '') {
                 if (!preg_match('/^[0-9.]+[A-Za-z]$/', $tariffCodeRaw)) {
-                    $return['err'] = 'Carácter no válido: El código arancelario solo puede contener dígitos, puntos (.) y una letra al final.';
+                    $return['err'] = 'Servicio ' . ($index + 1) . ': Carácter no válido. El código arancelario (NCM/HS) solo puede contener dígitos, puntos (.) y una letra al final.';
                     header('Content-Type: application/json');
                     echo json_encode($return);
                     exit;
                 }
                 if (!preg_match('/^\d{4}\.\d{2}\.\d{2}\.\d{3}[A-Za-z]$/', $tariffCodeRaw)) {
-                    $return['err'] = 'Formato incorrecto: Use el formato NNNN.NN.NN.NNNL (por ejemplo: 0602.90.90.100X).';
+                    $return['err'] = 'Servicio ' . ($index + 1) . ': Formato incorrecto en Código Arancelario (NCM/HS). Use el formato NNNN.NN.NN.NNNL (por ejemplo: 0602.90.90.100X).';
                     header('Content-Type: application/json');
                     echo json_encode($return);
                     exit;

@@ -521,6 +521,9 @@ function esc_attr($value) {
         </div>
         <input type="hidden" name="organization_type" value="">
       </div>
+      <div class="organization-type-other-wrap" style="display: none; margin-top: 8px;">
+        <input type="text" class="organization-type-other" maxlength="100" placeholder="Especifique el tipo de organización" data-i18n-placeholder="regfull_org_type_other_placeholder">
+      </div>
     </div>
     <div class="label"><label data-i18n="regfull_main_activity">Actividad Principal</label></div>
     <div class="field">
@@ -539,6 +542,9 @@ function esc_attr($value) {
           <div class="dropdown-option" data-value="Otros (especificar)">Otros (especificar)</div>
         </div>
         <input type="hidden" name="main_activity" value="">
+      </div>
+      <div class="main-activity-other-wrap" style="display: none; margin-top: 8px;">
+        <input type="text" class="main-activity-other" maxlength="100" placeholder="Especifique la actividad principal" data-i18n-placeholder="regfull_main_activity_other_placeholder">
       </div>
     </div>
   </div>
@@ -654,6 +660,34 @@ document.addEventListener('DOMContentLoaded', () => {
       initCustomDropdown(dropdown, hiddenInput);
     }
   });
+
+  // Tipo de Organización / Actividad Principal: mostrar campo "Otros (especificar)" y sincronizar valor
+  const OTROS_ESPECIFICAR = 'Otros (especificar)';
+  function bindOtrosField(hiddenName, otherWrapClass, otherInputClass) {
+    const hiddenInput = document.querySelector(`input[name="${hiddenName}"]`);
+    if (!hiddenInput) return;
+    const fieldCont = hiddenInput.closest('.field');
+    if (!fieldCont) return;
+    const wrap = fieldCont.querySelector(`.${otherWrapClass}`);
+    const otherInput = fieldCont.querySelector(`.${otherInputClass}`);
+    if (!wrap || !otherInput) return;
+    function toggle() {
+      const v = (hiddenInput.value || '').trim();
+      if (v === OTROS_ESPECIFICAR) {
+        wrap.style.display = 'block';
+        otherInput.value = otherInput.value || '';
+        otherInput.disabled = false;
+      } else {
+        wrap.style.display = 'none';
+        otherInput.value = '';
+        otherInput.disabled = true;
+      }
+    }
+    hiddenInput.addEventListener('change', toggle);
+    toggle();
+  }
+  bindOtrosField('organization_type', 'organization-type-other-wrap', 'organization-type-other');
+  bindOtrosField('main_activity', 'main-activity-other-wrap', 'main-activity-other');
   
   // Поле CUIT: оставляем только цифры, без формата с guiones
   const taxIdInput = document.getElementById('tax_id');
@@ -731,7 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
           <input type="search" name="product_description[]">
           <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario (NCM/HS)</label>
-          <div class="span_right">
+          <div class="span_right tariff-code-row">
             <input type="text" name="product_tariff_code[]" class="tariff-code-input" data-i18n-placeholder="regfull_tariff_code_placeholder" placeholder="ej: 0602.90.90.100X" maxlength="20">
             <a href="https://www.vuce.gob.ar/posicionesArancelarias" target="_blank" rel="noopener noreferrer" class="tariff-code-hint" data-i18n="regfull_tariff_code_hint">¿Conocés tu código arancelario?</a>
           </div>
@@ -854,7 +888,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
           <input type="search" name="service_description[]">
           <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario (NCM/HS)</label>
-          <div class="span_right">
+          <div class="span_right tariff-code-row">
             <input type="text" name="service_tariff_code[]" class="tariff-code-input" data-i18n-placeholder="regfull_tariff_code_placeholder" placeholder="ej: 0602.90.90.100X" maxlength="20">
             <a href="https://www.vuce.gob.ar/posicionesArancelarias" target="_blank" rel="noopener noreferrer" class="tariff-code-hint" data-i18n="regfull_tariff_code_hint">¿Conocés tu código arancelario?</a>
           </div>
@@ -2677,7 +2711,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const feriasErr = errors.find(e => e && e.startsWith('Ferias:'));
         const rondasErr = errors.find(e => e && e.startsWith('Rondas:'));
         const detailErr = premiosErr || feriasErr || rondasErr;
-        msgEl.textContent = cuitErr ? cuitErr : (otrosErr ? otrosErr : (detailErr ? detailErr : 'Por favor, complete los campos obligatorios'));
+        msgEl.textContent = cuitErr ? cuitErr : (otrosErr ? otrosErr : (detailErr ? detailErr : (errors[0] || 'Por favor, complete los campos obligatorios')));
         msgEl.style.display = 'block';
         msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
@@ -2867,21 +2901,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const appendToFormData = (name, value) => {
           formDataToSend.append(name, value);
         };
-        
-        // main_activity отправляем первым, чтобы бэкенд точно получил (из dropdown или hidden)
-        (function() {
-          const mainActivityInput = document.querySelector('input[name="main_activity"]');
-          if (!mainActivityInput) return;
-          let val = (mainActivityInput.value || '').trim();
-          const dd = mainActivityInput.closest('.custom-dropdown');
-          if (dd) {
-            const sel = dd.querySelector('.dropdown-option.selected');
-            if (sel && (sel.dataset.value || sel.textContent)) {
-              val = (sel.dataset.value || sel.textContent || '').trim();
+
+        // Antes de enviar: si "Otros (especificar)" está seleccionado, usar el valor del campo de texto
+        const orgTypeHidden = document.querySelector('input[name="organization_type"]');
+        if (orgTypeHidden && (orgTypeHidden.value || '').trim() === 'Otros (especificar)') {
+          const orgOther = document.querySelector('.organization-type-other');
+          if (orgOther && orgOther.value) {
+            orgTypeHidden.value = orgOther.value.trim();
+            orgTypeHidden.setAttribute('value', orgTypeHidden.value);
+          }
+        }
+        const mainActivityField = document.querySelector('input[name="main_activity"]');
+        if (mainActivityField) {
+          const mainActivityDropdown = mainActivityField.closest('.custom-dropdown');
+          if (mainActivityDropdown) {
+            const sel = mainActivityDropdown.querySelector('.dropdown-option.selected');
+            const v = sel ? (sel.dataset.value || sel.textContent || '').trim() : '';
+            if (v && v !== '…') {
+              if (v === 'Otros (especificar)') {
+                const mainOther = document.querySelector('.main-activity-other');
+                mainActivityField.value = (mainOther && mainOther.value) ? mainOther.value.trim() : v;
+              } else {
+                mainActivityField.value = v;
+              }
+              mainActivityField.setAttribute('value', mainActivityField.value);
             }
           }
-          if (val !== '0' && val !== '…') {
-            formDataToSend.append('main_activity', val || '');
+        }
+
+        // main_activity y organization_type (ya sincronizados arriba si era "Otros")
+        (function() {
+          const mainActivityInput = document.querySelector('input[name="main_activity"]');
+          if (mainActivityInput) {
+            const val = (mainActivityInput.value || '').trim();
+            if (val !== '0' && val !== '…') {
+              formDataToSend.append('main_activity', val);
+            }
           }
         })();
         // tax_id: solo 11 dígitos (sin guiones)
@@ -2926,23 +2981,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           });
         });
-        
-        // Синхронизируем main_activity из dropdown в hidden перед сбором, чтобы значение точно ушло
-        const mainActivityField = document.querySelector('input[name="main_activity"]');
-        if (mainActivityField) {
-          const mainActivityDropdown = mainActivityField.closest('.custom-dropdown');
-          if (mainActivityDropdown) {
-            const sel = mainActivityDropdown.querySelector('.dropdown-option.selected');
-            if (sel && (sel.dataset.value || sel.textContent)) {
-              const v = (sel.dataset.value || sel.textContent || '').trim();
-              if (v && v !== '…') {
-                mainActivityField.value = v;
-                mainActivityField.setAttribute('value', v);
-              }
-            }
-          }
-        }
-        
+
         document.querySelectorAll('input[type="hidden"]').forEach(field => {
           if (field.name) {
             // Пропускаем — уже обработаны выше
@@ -3981,59 +4020,97 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
   function fillDropdownsFromDB() {
     const data = window.companyDataFromDB;
     
+    const OTROS_ESPECIFICAR = 'Otros (especificar)';
     // Заполнение organization_type
     if (data.organization_type) {
       const orgTypeDropdown = document.querySelector('input[name="organization_type"]');
       if (orgTypeDropdown) {
-        // Всегда устанавливаем значение из БД
-        orgTypeDropdown.value = data.organization_type;
+        const v = String(data.organization_type).trim();
         const dropdown = orgTypeDropdown.closest('.custom-dropdown');
-        if (dropdown) {
-          const options = dropdown.querySelectorAll('.dropdown-option');
-          for (let option of options) {
-            if (option.dataset.value === data.organization_type) {
-              const selectedText = dropdown.querySelector('.selected-text');
-              if (selectedText) {
-                selectedText.textContent = option.textContent;
+        const options = dropdown ? dropdown.querySelectorAll('.dropdown-option') : [];
+        const hasOption = Array.from(options).some(opt => (opt.dataset.value || '').trim() === v);
+        if (hasOption) {
+          orgTypeDropdown.value = v;
+          if (dropdown) {
+            for (let option of options) {
+              if (option.dataset.value === v) {
+                const selectedText = dropdown.querySelector('.selected-text');
+                if (selectedText) selectedText.textContent = option.textContent;
+                option.classList.add('selected');
+                options.forEach(opt => { if (opt !== option) opt.classList.remove('selected'); });
+                break;
               }
-              option.classList.add('selected');
-              // Удаляем selected у других опций
-              options.forEach(opt => {
-                if (opt !== option) {
-                  opt.classList.remove('selected');
-                }
-              });
-              break;
             }
           }
-          // Триггерим событие change для обновления dropdown
-          orgTypeDropdown.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+          orgTypeDropdown.value = OTROS_ESPECIFICAR;
+          if (dropdown) {
+            const otrosOpt = Array.from(options).find(opt => (opt.dataset.value || '').trim() === OTROS_ESPECIFICAR);
+            if (otrosOpt) {
+              const selectedText = dropdown.querySelector('.selected-text');
+              if (selectedText) selectedText.textContent = otrosOpt.textContent;
+              otrosOpt.classList.add('selected');
+              options.forEach(opt => { if (opt !== otrosOpt) opt.classList.remove('selected'); });
+            }
+            const fieldCont = orgTypeDropdown.closest('.field');
+            const otherInput = fieldCont ? fieldCont.querySelector('.organization-type-other') : null;
+            const wrap = fieldCont ? fieldCont.querySelector('.organization-type-other-wrap') : null;
+            if (otherInput) otherInput.value = v;
+            if (wrap) wrap.style.display = 'block';
+            if (otherInput) otherInput.disabled = false;
+          }
         }
+        orgTypeDropdown.dispatchEvent(new Event('change', { bubbles: true }));
       }
     }
-    
+
     // Заполнение main_activity (надёжное сопоставление по data-value или тексту)
     if (data.main_activity) {
       const mainActivityInput = document.querySelector('input[name="main_activity"]');
       if (mainActivityInput) {
         const v = String(data.main_activity).trim();
         if (v && v !== '0' && v !== '…') {
-          mainActivityInput.value = v;
           const dropdown = mainActivityInput.closest('.custom-dropdown');
-          if (dropdown) {
-            const options = dropdown.querySelectorAll('.dropdown-option');
-            for (let option of options) {
-              const dVal = (option.dataset.value || '').trim();
-              const text = (option.textContent || '').trim();
-              if (dVal === v || text === v) {
-                const selectedText = dropdown.querySelector('.selected-text');
-                if (selectedText) selectedText.textContent = option.textContent;
-                option.classList.add('selected');
-                options.forEach(opt => { if (opt !== option) opt.classList.remove('selected'); });
-                mainActivityInput.dispatchEvent(new Event('change', { bubbles: true }));
-                break;
+          const options = dropdown ? dropdown.querySelectorAll('.dropdown-option') : [];
+          const hasOption = Array.from(options).some(opt => {
+            const dVal = (opt.dataset.value || '').trim();
+            const text = (opt.textContent || '').trim();
+            return dVal === v || text === v;
+          });
+          if (hasOption) {
+            mainActivityInput.value = v;
+            if (dropdown) {
+              for (let option of options) {
+                const dVal = (option.dataset.value || '').trim();
+                const text = (option.textContent || '').trim();
+                if (dVal === v || text === v) {
+                  const selectedText = dropdown.querySelector('.selected-text');
+                  if (selectedText) selectedText.textContent = option.textContent;
+                  option.classList.add('selected');
+                  options.forEach(opt => { if (opt !== option) opt.classList.remove('selected'); });
+                  mainActivityInput.dispatchEvent(new Event('change', { bubbles: true }));
+                  break;
+                }
               }
             }
+          } else {
+            mainActivityInput.value = OTROS_ESPECIFICAR;
+            if (dropdown) {
+              const otrosOpt = Array.from(options).find(opt => (opt.dataset.value || '').trim() === OTROS_ESPECIFICAR);
+              if (otrosOpt) {
+                const selectedText = dropdown.querySelector('.selected-text');
+                if (selectedText) selectedText.textContent = otrosOpt.textContent;
+                otrosOpt.classList.add('selected');
+                options.forEach(opt => { if (opt !== otrosOpt) opt.classList.remove('selected'); });
+              }
+              const fieldCont = mainActivityInput.closest('.field');
+              const otherInput = fieldCont ? fieldCont.querySelector('.main-activity-other') : null;
+              const wrap = fieldCont ? fieldCont.querySelector('.main-activity-other-wrap') : null;
+              if (otherInput) otherInput.value = v;
+              if (wrap) wrap.style.display = 'block';
+              if (otherInput) otherInput.disabled = false;
+            }
+            mainActivityInput.dispatchEvent(new Event('change', { bubbles: true }));
           }
         }
       }

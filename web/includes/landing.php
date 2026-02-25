@@ -61,48 +61,50 @@ if ($link) {
 <!-- HEADER -->
 <div class="hero-section">
     <div class="hero-header">
-        <div class="logo">
-            <img src="img/logo.svg" alt="Santiago del Estero" class="logo-image">
-        </div>
-        <div class="nav-container">
-            <nav class="hero-nav">
-                <div class="oferta-dropdown" id="oferta-dropdown">
-                    <button type="button" class="nav-link oferta-dropdown-trigger" data-i18n="nav_exportable" aria-expanded="false" aria-haspopup="true" id="oferta-dropdown-btn">Oferta exportable</button>
-                    <ul class="oferta-dropdown-menu" id="oferta-dropdown-menu" role="menu" aria-label="Formatos de oferta exportable">
-                        <li role="none">
-                            <a role="menuitem" class="oferta-dropdown-item" href="<?= htmlspecialchars($__pdf_oferta_urls['clasico']) ?>" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_urls['clasico']) ?>"><span class="oferta-dropdown-name">Clásico</span><img src="img/icons/clasico_icon.png" alt="" class="oferta-dropdown-icon"></a>
-                        </li>
-                        <li role="none">
-                            <a role="menuitem" class="oferta-dropdown-item" href="<?= htmlspecialchars($__pdf_oferta_urls['corporativo']) ?>" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_urls['corporativo']) ?>"><span class="oferta-dropdown-name">Corporativo</span><img src="img/icons/corporativo_icon.png" alt="" class="oferta-dropdown-icon"></a>
-                        </li>
-                        <li role="none">
-                            <a role="menuitem" class="oferta-dropdown-item" href="<?= htmlspecialchars($__pdf_oferta_urls['moderno']) ?>" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_urls['moderno']) ?>"><span class="oferta-dropdown-name">Moderno</span><img src="img/icons/moderno_icon.png" alt="" class="oferta-dropdown-icon"></a>
-                        </li>
-                    </ul>
-                </div>
-                <span class="hero-nav-sep" aria-hidden="true">|</span>
-                <a data-i18n="nav_turismo" href="#turismo" class="nav-link">Turismo</a>
-                <span class="hero-nav-sep" aria-hidden="true">|</span>
-                <a data-i18n="nav_news" href="#noticias" class="nav-link">Noticias</a>
-                <span class="hero-nav-sep" aria-hidden="true">|</span>
-                <a data-i18n="nav_contact" href="#contactos" class="nav-link">Contactos</a>
-                <a href="https://wa.me/" class="nav-whatsapp" target="_blank">
-                    <img src="img/icono_whatsapp.png" alt="WhatsApp" class="whatsapp-icon">
-                </a>
-            </nav>
-        </div>
-        <div class="hero-buttons">
-            <a data-i18n="btn_register" onclick="location.href='?page=regnew';" class="btn btn-register">Registrarse</a>
-            <a data-i18n="btn_login" onclick="location.href='?page=login';" class="btn btn-login">Entrar</a>
-        </div>
-        <div class="landing_header_lang" onclick="toggleLangMenu()">
-            <img src="img/icons/lang.png" />
-            <span id="current-lang">Es</span>
+        <div class="hero-header-container">
+            <div class="logo">
+                <img src="img/logo.svg" alt="Santiago del Estero" class="logo-image">
+            </div>
+            <div class="nav-container">
+                <nav class="hero-nav">
+                    <div class="oferta-dropdown" id="oferta-dropdown">
+                        <button type="button" class="nav-link oferta-dropdown-trigger" data-i18n="nav_exportable" aria-expanded="false" aria-haspopup="true" id="oferta-dropdown-btn">Oferta exportable</button>
+                        <ul class="oferta-dropdown-menu" id="oferta-dropdown-menu" role="menu" aria-label="Formatos de oferta exportable">
+                            <li role="none">
+                                <a role="menuitem" class="oferta-dropdown-item" href="<?= htmlspecialchars($__pdf_oferta_urls['clasico']) ?>" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_urls['clasico']) ?>"><span class="oferta-dropdown-name">Clásico</span><img src="img/icons/clasico_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                            </li>
+                            <li role="none">
+                                <a role="menuitem" class="oferta-dropdown-item" href="<?= htmlspecialchars($__pdf_oferta_urls['corporativo']) ?>" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_urls['corporativo']) ?>"><span class="oferta-dropdown-name">Corporativo</span><img src="img/icons/corporativo_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                            </li>
+                            <li role="none">
+                                <a role="menuitem" class="oferta-dropdown-item" href="<?= htmlspecialchars($__pdf_oferta_urls['moderno']) ?>" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_urls['moderno']) ?>"><span class="oferta-dropdown-name">Moderno</span><img src="img/icons/moderno_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                            </li>
+                        </ul>
+                    </div>
+                    <span class="hero-nav-sep" aria-hidden="true">|</span>
+                    <a data-i18n="nav_search" onclick="location.href='?page=search';" class="nav-link">Buscar</a>
+                    <span class="hero-nav-sep" aria-hidden="true">|</span>
+                    <a data-i18n="nav_turismo" href="#turismo" class="nav-link">Turismo</a>
+                    <span class="hero-nav-sep" aria-hidden="true">|</span>
+                    <a data-i18n="nav_contact" href="#contactos" class="nav-link">Contactos</a>
+                    <a href="https://wa.me/" class="nav-whatsapp" target="_blank">
+                        <img src="img/icono_whatsapp.png" alt="WhatsApp" class="whatsapp-icon">
+                    </a>
+                </nav>
+            </div>
+            <div class="hero-buttons">
+                <a data-i18n="btn_register" onclick="location.href='?page=regnew';" class="btn btn-register">Registrarse</a>
+                <a data-i18n="btn_login" onclick="location.href='?page=login';" class="btn btn-login">Entrar</a>
+            </div>
+            <div class="landing_header_lang" onclick="toggleLangMenu()">
+                <img src="img/icons/lang.png" />
+                <span id="current-lang">Es</span>
 
-            <ul id="landing_header_lang_menu" class="landing_header_lang_menu hidden">
-                <li onclick="setLang('landing', 'es')">Español</li>
-                <li onclick="setLang('landing', 'en')">English</li>
-            </ul>
+                <ul id="landing_header_lang_menu" class="landing_header_lang_menu hidden">
+                    <li onclick="setLang('landing', 'es')">Español</li>
+                    <li onclick="setLang('landing', 'en')">English</li>
+                </ul>
+            </div>
         </div>
     </div>
     <div class="hero-content">
@@ -337,7 +339,7 @@ if ($link) {
 <!-- MODAL WINDOW -->
 
 <!-- FOOTER -->
-<footer class="landing-footer" id="contactos">
+<div class="landing-footer" id="contactos">
     <div class="landing-footer-container">
         <div class="landing-footer-columns">
             <div class="landing-footer-column landing-footer-accesos">
@@ -381,7 +383,7 @@ if ($link) {
             <p class="landing-footer-copyright" data-i18n="footer_copyright">Copyright © 2026. Santiago del Estero. Todos los derechos reservados.</p>
         </div>
     </div>
-</footer>
+</div>
 <!-- FOOTER -->
 
 <script src="js/i18n.js?v=<?= asset_version('js/i18n.js') ?>"></script>

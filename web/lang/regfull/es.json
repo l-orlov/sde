@@ -28,6 +28,8 @@
   "regfull_section2_title": "2. Clasificación de la Empresa",
   "regfull_org_type": "Tipo de Organización *",
   "regfull_main_activity": "Actividad Principal *",
+  "regfull_org_type_other_placeholder": "Especifique el tipo de organización",
+  "regfull_main_activity_other_placeholder": "Especifique la actividad principal",
   "regfull_section3_title": "3. Información sobre Productos y Servicios",
   "regfull_main_product": "Producto *",
   "regfull_add_products": "Agregar productos",

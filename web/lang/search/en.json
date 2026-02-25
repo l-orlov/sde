@@ -1,0 +1,18 @@
+{
+    "login_tax_id_placeholder": "Enter your CUIL/CUIT",
+    "login_pass_placeholder": "Enter your Password",
+    "login_title": "LOG-IN",
+    "login_button": "LOGIN",
+    "login_register": "REGISTER NEW",
+    "login_forgot": "FORGOT PASSWORD",
+    "search_title": "PRODUCT AND SERVICES SEARCH ENGINE",
+    "search_placeholder": "Search by customs code or name",
+    "search_no_results": "No results found.",
+    "nav_search": "Search",
+    "nav_exportable": "Exportable Offer",
+    "nav_turismo": "Tourism",
+    "nav_news": "News",
+    "nav_contact": "Contact",
+    "btn_register": "Register",
+    "btn_login": "Login"
+}

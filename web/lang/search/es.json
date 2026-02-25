@@ -1,0 +1,19 @@
+{
+    "login_tax_id_placeholder": "Ingrese su CUIL/CUIT",
+    "login_pass_placeholder": "Ingrese su Contraseña",
+    "login_title": "LOG-IN",
+    "login_button": "INGRESAR",
+    "login_register": "REGISTRAR NUEVO",
+    "login_forgot": "ME OLVIDÉ LA CONTRASEÑA",
+    "search_title": "BUSCADOR DE PRODUCTOS Y SERVICIOS",
+    "search_placeholder": "Buscar por código arancelario o nombre",
+    "search_no_results": "No se encontraron resultados.",
+    "nav_search": "Buscar",
+    "nav_exportable": "Oferta Exportable",
+    "nav_turismo": "Turismo",
+    "nav_news": "Noticias",
+    "nav_contact": "Contacto",
+    "btn_register": "Registrarse",
+    "btn_login": "Entrar"
+}
+
