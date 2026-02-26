@@ -23,6 +23,7 @@ CREATE TABLE companies (
     legal_name          VARCHAR(255),
     start_date          DATE,
     website             VARCHAR(255),
+    nuestra_historia    VARCHAR(700),
     organization_type   VARCHAR(100),
     main_activity       VARCHAR(100),
     moderation_status   ENUM('pending', 'approved') NOT NULL DEFAULT 'pending',

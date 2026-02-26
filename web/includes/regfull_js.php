@@ -111,6 +111,11 @@ try {
     $legalName = isset($input['legal_name']) ? htmlspecialchars(trim($input['legal_name'])) : '';
     $startDate = isset($input['start_date']) ? htmlspecialchars(trim($input['start_date'])) : null;
     $website = isset($input['website']) ? htmlspecialchars(trim($input['website'])) : '';
+    $nuestraHistoria = isset($input['nuestra_historia']) ? trim((string) $input['nuestra_historia']) : '';
+    if (mb_strlen($nuestraHistoria) > 700) {
+        $nuestraHistoria = mb_substr($nuestraHistoria, 0, 700);
+    }
+    $nuestraHistoria = htmlspecialchars($nuestraHistoria);
     $organizationType = isset($input['organization_type']) ? htmlspecialchars(trim($input['organization_type'])) : '';
     $mainActivity = isset($input['main_activity']) ? htmlspecialchars(trim((string) $input['main_activity'])) : '';
     if ($mainActivity === '0' || $mainActivity === '…') {
@@ -128,20 +133,19 @@ try {
     
     if ($companyId) {
         $query = "UPDATE companies SET name = ?, tax_id = ?, legal_name = ?, start_date = ?, 
-                  website = ?, organization_type = ?, main_activity = ?, 
+                  website = ?, nuestra_historia = ?, organization_type = ?, main_activity = ?, 
                   moderation_status = 'pending', moderation_date = NULL, moderated_by = NULL,
                   updated_at = UNIX_TIMESTAMP() 
                   WHERE id = ?";
         $stmt = mysqli_prepare($link, $query);
-        mysqli_stmt_bind_param($stmt, 'sssssssi', $name, $taxId, $legalName, $startDateDb, $website, $organizationType, $mainActivity, $companyId);
+        mysqli_stmt_bind_param($stmt, 'ssssssssi', $name, $taxId, $legalName, $startDateDb, $website, $nuestraHistoria, $organizationType, $mainActivity, $companyId);
     } else {
-        // Для INSERT используем пустую строку, если значение не передано
         $mainActivityForInsert = ($mainActivity !== null && $mainActivity !== '') ? $mainActivity : '';
         $query = "INSERT INTO companies (user_id, name, tax_id, legal_name, start_date, website, 
-                  organization_type, main_activity, moderation_status) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')";
+                  nuestra_historia, organization_type, main_activity, moderation_status) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')";
         $stmt = mysqli_prepare($link, $query);
-        mysqli_stmt_bind_param($stmt, 'isssssss', $userId, $name, $taxId, $legalName, $startDateDb, $website, $organizationType, $mainActivityForInsert);
+        mysqli_stmt_bind_param($stmt, 'issssssss', $userId, $name, $taxId, $legalName, $startDateDb, $website, $nuestraHistoria, $organizationType, $mainActivityForInsert);
     }
     
     if (!mysqli_stmt_execute($stmt)) {
@@ -213,14 +217,29 @@ try {
     mysqli_stmt_close($stmt);
     
     if (isset($input['contact_person']) && !empty($input['contact_person'])) {
+        $areaCodeRaw = trim($input['contact_area_code'] ?? '');
+        $phoneRaw = trim($input['contact_phone'] ?? '');
+        $areaDigits = preg_replace('/\D/', '', $areaCodeRaw);
+        $phoneDigits = preg_replace('/\D/', '', $phoneRaw);
+        if ($areaCodeRaw !== '' || $phoneRaw !== '') {
+            if ($areaCodeRaw === '' || $phoneRaw === '') {
+                throw new Exception('Teléfono: complete código de área y número, o deje ambos campos vacíos');
+            }
+            if (strlen($areaDigits) < 2 || strlen($areaDigits) > 5) {
+                throw new Exception('Teléfono: el código de área debe tener entre 2 y 5 dígitos');
+            }
+            if (strlen($phoneDigits) < 6 || strlen($phoneDigits) > 15) {
+                throw new Exception('Teléfono: el número debe tener entre 6 y 15 dígitos');
+            }
+        }
         $query = "INSERT INTO company_contacts (company_id, contact_person, position, email, area_code, phone) 
                   VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($link, $query);
         $contactPerson = htmlspecialchars(trim($input['contact_person'] ?? ''));
         $position = htmlspecialchars(trim($input['contact_position'] ?? ''));
         $email = htmlspecialchars(trim($input['contact_email'] ?? ''));
-        $areaCode = htmlspecialchars(trim($input['contact_area_code'] ?? ''));
-        $phone = htmlspecialchars(trim($input['contact_phone'] ?? ''));
+        $areaCode = $areaDigits !== '' ? $areaDigits : htmlspecialchars($areaCodeRaw);
+        $phone = $phoneDigits !== '' ? $phoneDigits : htmlspecialchars($phoneRaw);
         mysqli_stmt_bind_param($stmt, 'isssss', $companyId, $contactPerson, $position, $email, $areaCode, $phone);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);

@@ -25,7 +25,7 @@ mysqli_begin_transaction($link);
 
 try {
     // Получаем текущие данные компании из БД
-    $query = "SELECT id, name, tax_id, legal_name, start_date, website, organization_type, main_activity 
+    $query = "SELECT id, name, tax_id, legal_name, start_date, website, nuestra_historia, organization_type, main_activity 
               FROM companies WHERE user_id = ? LIMIT 1";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $userId);
@@ -76,6 +76,11 @@ try {
     $legalName = isset($input['legal_name']) && $input['legal_name'] !== '' ? htmlspecialchars(trim($input['legal_name'])) : $currentCompany['legal_name'];
     $startDate = isset($input['start_date']) && $input['start_date'] !== '' ? htmlspecialchars(trim($input['start_date'])) : null;
     $website = isset($input['website']) && $input['website'] !== '' ? htmlspecialchars(trim($input['website'])) : $currentCompany['website'];
+    $nuestraHistoria = isset($input['nuestra_historia']) ? trim((string) $input['nuestra_historia']) : ($currentCompany['nuestra_historia'] ?? '');
+    if (mb_strlen($nuestraHistoria) > 700) {
+        $nuestraHistoria = mb_substr($nuestraHistoria, 0, 700);
+    }
+    $nuestraHistoria = htmlspecialchars($nuestraHistoria);
     $organizationType = isset($input['organization_type']) && $input['organization_type'] !== '' ? htmlspecialchars(trim($input['organization_type'])) : $currentCompany['organization_type'];
     $mainActivity = isset($input['main_activity']) && $input['main_activity'] !== '' ? htmlspecialchars(trim($input['main_activity'])) : $currentCompany['main_activity'];
     
@@ -89,28 +94,20 @@ try {
         }
     }
     
-    // Конвертация start_date из dd/mm/yyyy в timestamp
-    $startDateTimestamp = null;
-    if ($startDate) {
-        $dateParts = explode('/', $startDate);
-        if (count($dateParts) === 3) {
-            $day = intval($dateParts[0]);
-            $month = intval($dateParts[1]);
-            $year = intval($dateParts[2]);
-            if ($day > 0 && $month > 0 && $year > 0) {
-                $dateObj = new DateTime();
-                $dateObj->setDate($year, $month, $day);
-                $dateObj->setTime(0, 0, 0);
-                $startDateTimestamp = $dateObj->getTimestamp();
-            }
+    // Конвертация start_date из dd/mm/yyyy в Y-m-d для колонки DATE в БД.
+    $startDateDb = null;
+    if (!empty($startDate)) {
+        $dateObj = DateTime::createFromFormat('d/m/Y', $startDate);
+        if ($dateObj instanceof DateTime) {
+            $startDateDb = $dateObj->format('Y-m-d');
         }
     }
     
-    $query = "UPDATE companies SET name = ?, tax_id = ?, legal_name = ?, start_date = ?, 
-              website = ?, organization_type = ?, main_activity = ?, updated_at = UNIX_TIMESTAMP() 
+    $query = "UPDATE companies SET name = ?, tax_id = ?, legal_name = ?, start_date = ?,
+              website = ?, nuestra_historia = ?, organization_type = ?, main_activity = ?, updated_at = UNIX_TIMESTAMP()
               WHERE id = ?";
     $stmt = mysqli_prepare($link, $query);
-    mysqli_stmt_bind_param($stmt, 'sssissis', $name, $taxId, $legalName, $startDateTimestamp, $website, $organizationType, $mainActivity, $companyId);
+    mysqli_stmt_bind_param($stmt, 'sssssssis', $name, $taxId, $legalName, $startDateDb, $website, $nuestraHistoria, $organizationType, $mainActivity, $companyId);
     
     if (!mysqli_stmt_execute($stmt)) {
         throw new Exception("Error al actualizar datos de la empresa: " . mysqli_error($link));

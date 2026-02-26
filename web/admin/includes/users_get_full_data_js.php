@@ -52,7 +52,7 @@ try {
     $userData['updated_at'] = $userData['updated_at'] ? date('Y-m-d H:i', $userData['updated_at']) : '';
     
     // 1. Основные данные компании
-    $query = "SELECT id, name, tax_id, legal_name, start_date, website, organization_type, main_activity,
+    $query = "SELECT id, name, tax_id, legal_name, start_date, website, nuestra_historia, organization_type, main_activity,
                      moderation_status, moderation_date, moderated_by
               FROM companies WHERE user_id = ? LIMIT 1";
     $stmt = mysqli_prepare($link, $query);
@@ -81,16 +81,19 @@ try {
         exit;
     }
     
-    // Конвертация start_date (только если есть данные компании)
-    if ($companyData['start_date']) {
-        $timestamp = intval($companyData['start_date']);
-        if ($timestamp > 0) {
-            $dateObj = new DateTime();
-            $dateObj->setTimestamp($timestamp);
-            $companyData['start_date'] = $dateObj->format('d/m/Y');
+    // Конвертация start_date в d/m/Y для формы (колонка в БД — DATE, приходит как Y-m-d или исторически как timestamp)
+    if (!empty($companyData['start_date'])) {
+        $raw = $companyData['start_date'];
+        $dateObj = null;
+        if (ctype_digit((string) $raw)) {
+            $ts = (int) $raw;
+            if ($ts > 0) {
+                $dateObj = (new DateTime())->setTimestamp($ts);
+            }
         } else {
-            $companyData['start_date'] = '';
+            $dateObj = DateTime::createFromFormat('Y-m-d', $raw) ?: DateTime::createFromFormat('d/m/Y', $raw);
         }
+        $companyData['start_date'] = ($dateObj instanceof DateTime) ? $dateObj->format('d/m/Y') : '';
     }
     
     // 2. Адреса

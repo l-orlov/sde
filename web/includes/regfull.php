@@ -23,7 +23,7 @@ if (isset($_SESSION['uid'])) {
     }
     
     // Загрузка основных данных компании
-    $query = "SELECT id, name, tax_id, legal_name, start_date, website, organization_type, main_activity 
+    $query = "SELECT id, name, tax_id, legal_name, start_date, website, nuestra_historia, organization_type, main_activity
               FROM companies WHERE user_id = ? LIMIT 1";
     $stmt = mysqli_prepare($link, $query);
     if ($stmt) {
@@ -309,6 +309,9 @@ function esc_attr($value) {
       </div>
       <button type="button" class="add_more" id="add-social" data-i18n="regfull_add_more">agregar más</button>
     </div>
+    <!-- Nuestra historia -->
+    <div class="label"><label for="nuestra_historia" data-i18n="regfull_nuestra_historia">Nuestra historia</label></div>
+    <div class="field"><textarea id="nuestra_historia" name="nuestra_historia" class="ta" rows="4" maxlength="700" data-i18n-placeholder="regfull_nuestra_historia_placeholder" placeholder="Máx. 700 caracteres"><?= esc_attr($companyData['nuestra_historia'] ?? '') ?></textarea></div>
     <!-- Domicilio Legal -->
     <div class="address">
       <div class="label"><span data-i18n="regfull_legal_address">Domicilio Legal</span></div>
@@ -718,6 +721,20 @@ document.addEventListener('DOMContentLoaded', () => {
       if (this.value !== formatted) {
         this.value = formatted;
       }
+    });
+  }
+  
+  // Teléfono: solo dígitos, código de área máx. 5, número máx. 15
+  const contactAreaCode = document.querySelector('input[name="contact_area_code"]');
+  const contactPhone = document.querySelector('input[name="contact_phone"]');
+  if (contactAreaCode) {
+    contactAreaCode.addEventListener('input', function() {
+      this.value = this.value.replace(/\D/g, '').slice(0, 5);
+    });
+  }
+  if (contactPhone) {
+    contactPhone.addEventListener('input', function() {
+      this.value = this.value.replace(/\D/g, '').slice(0, 15);
     });
   }
 });
@@ -2328,13 +2345,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const hasPhone = contactPhone && contactPhone.value && contactPhone.value.trim();
       if ((hasArea && !hasPhone) || (!hasArea && hasPhone)) {
         errors.push('Teléfono: complete código de área y número, o deje ambos campos vacíos');
-        if (contactAreaCode) {
-          contactAreaCode.style.borderColor = '#f44336';
-        }
+        if (contactAreaCode) contactAreaCode.style.borderColor = '#f44336';
         if (contactPhone) {
           contactPhone.style.borderColor = '#f44336';
           contactPhone.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+      } else if (hasArea && hasPhone) {
+        const areaDigits = (contactAreaCode.value || '').replace(/\D/g, '');
+        const phoneDigits = (contactPhone.value || '').replace(/\D/g, '');
+        if (areaDigits.length < 2 || areaDigits.length > 5) {
+          errors.push('Teléfono: el código de área debe tener entre 2 y 5 dígitos');
+          if (contactAreaCode) contactAreaCode.style.borderColor = '#f44336';
+        } else if (contactAreaCode) contactAreaCode.style.borderColor = '';
+        if (phoneDigits.length < 6 || phoneDigits.length > 15) {
+          errors.push('Teléfono: el número debe tener entre 6 y 15 dígitos');
+          if (contactPhone) {
+            contactPhone.style.borderColor = '#f44336';
+            contactPhone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else if (contactPhone) contactPhone.style.borderColor = '';
       } else {
         if (contactAreaCode) contactAreaCode.style.borderColor = '';
         if (contactPhone) contactPhone.style.borderColor = '';
