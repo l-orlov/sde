@@ -119,10 +119,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mysqli_stmt_close($stmt);
         
         if (!empty($password)) {
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             $query = "UPDATE users SET company_name = ?, tax_id = ?, email = ?, phone = ?, password = ? WHERE id = ?";
             $stmt = mysqli_prepare($link, $query);
-            mysqli_stmt_bind_param($stmt, 'sssssi', $companyName, $taxId, $email, $phone, $hashedPassword, $userId);
+            mysqli_stmt_bind_param($stmt, 'sssssi', $companyName, $taxId, $email, $phone, $password, $userId);
         } else {
             $query = "UPDATE users SET company_name = ?, tax_id = ?, email = ?, phone = ? WHERE id = ?";
             $stmt = mysqli_prepare($link, $query);

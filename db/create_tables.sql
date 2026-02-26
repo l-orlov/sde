@@ -14,6 +14,19 @@ CREATE TABLE users (
     UNIQUE KEY `users_email_uidx` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Токены для сброса пароля (отдельная таблица)
+CREATE TABLE password_reset_tokens (
+    id          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    user_id     INT UNSIGNED    NOT NULL,
+    token       VARCHAR(64)     NOT NULL,
+    expires_at  INT UNSIGNED    NOT NULL,
+    created_at  INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),
+
+    PRIMARY KEY (`id`),
+    KEY `password_reset_tokens_token_idx` (`token`),
+    KEY `password_reset_tokens_user_expires_idx` (`user_id`, `expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Таблица компаний
 CREATE TABLE companies (
     id                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,

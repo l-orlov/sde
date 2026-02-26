@@ -48,7 +48,6 @@ $loginRaw = isset($input['login']) ? trim((string)$input['login']) : '';
 $pass = (string)$input['pass'];
 
 // Логин админа: допускаем как CUIL/CUIT, так и email.
-// Ищем пользователя по логину, затем проверяем пароль через password_verify (хеш в БД).
 if (strpos($loginRaw, '@') !== false) {
     $loginValue = $loginRaw;
     $query = "SELECT id, email, tax_id, password FROM users WHERE email = ? AND is_admin = 1 LIMIT 1";
@@ -64,7 +63,7 @@ $result = mysqli_stmt_get_result($stmt);
 $row = mysqli_fetch_assoc($result);
 mysqli_stmt_close($stmt);
 
-if ($row && password_verify($pass, $row['password'])) {
+if ($row && $pass === $row['password']) {
     $_SESSION['admid'] = $row['id'];
     $ok = 1;
 } else {

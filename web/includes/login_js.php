@@ -40,7 +40,7 @@ $result = mysqli_stmt_get_result($stmt);
 $row = mysqli_fetch_array($result, MYSQLI_ASSOC);
 mysqli_stmt_close($stmt);
 
-if (!$row || !password_verify($pass, $row['password'])) {
+if (!$row || $pass !== $row['password']) {
     $return['err'] = 'CUIL/CUIT o contraseña incorrectos';
     echo json_encode($return);
     exit;

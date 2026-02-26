@@ -27,7 +27,7 @@ if (isset($_GET['logout']) && $_GET['logout'] == '1') {
 							<input style="width: 100%;" type="text" id="tax_id" name="tax_id" data-i18n-placeholder="login_tax_id_placeholder" placeholder="XX-XXXXXXXX-X" inputmode="numeric" maxlength="13">
 						</div>
 						<div class="login_input_ico">
-							<img src="img/icons/telephone.png">
+							<img src="img/icons/regfull_datos.svg">
 						</div>
 					</div>
 					<div class="login_input_box">
@@ -49,6 +49,21 @@ if (isset($_GET['logout']) && $_GET['logout'] == '1') {
 				</div>
 				<div class="general_bt login_input_bt" onclick="login()" data-i18n="login_button">INGRESAR</div>
 				<div class="login_info_msg" id="login_info_msg"></div>
+			</div>
+		</div>
+	</div>
+	<!-- Overlay "Olvidé la contraseña": email + enviar -->
+	<div id="login_forgot_overlay" class="login_forgot_overlay" style="display: none;">
+		<div class="login_forgot_box">
+			<div class="login_tit" style="margin-bottom: 16px;" data-i18n="login_forgot_title">Restablecer contraseña</div>
+			<p class="login_forgot_text" data-i18n="login_forgot_hint">Ingrese su correo electrónico. Si está registrado, recibirá un enlace para crear una nueva contraseña.</p>
+			<div class="login_input_box" style="margin: 16px 0;">
+				<input type="email" id="login_forgot_email" data-i18n-placeholder="login_forgot_email_placeholder" placeholder="Correo electrónico" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px;">
+			</div>
+			<div class="login_forgot_msg" id="login_forgot_msg"></div>
+			<div class="login_forgot_buttons">
+				<button type="button" class="general_bt login_input_bt" id="login_forgot_send" data-i18n="login_forgot_send">Enviar enlace</button>
+				<button type="button" class="general_bt login_input_bt" id="login_forgot_cancel" data-i18n="login_forgot_cancel" style="background: #666;">Cancelar</button>
 			</div>
 		</div>
 	</div>
@@ -138,4 +153,60 @@ function clearForm() {
 	// Clear message
 	document.getElementById('login_info_msg').innerHTML = '';
 }
+
+function forgot_pass() {
+	var overlay = document.getElementById('login_forgot_overlay');
+	var emailInp = document.getElementById('login_forgot_email');
+	var msgEl = document.getElementById('login_forgot_msg');
+	if (overlay) {
+		overlay.style.display = 'flex';
+		if (emailInp) { emailInp.value = ''; emailInp.focus(); }
+		if (msgEl) msgEl.textContent = '';
+	}
+}
+document.addEventListener('DOMContentLoaded', function() {
+	var overlay = document.getElementById('login_forgot_overlay');
+	var cancelBtn = document.getElementById('login_forgot_cancel');
+	var sendBtn = document.getElementById('login_forgot_send');
+	var emailInp = document.getElementById('login_forgot_email');
+	var msgEl = document.getElementById('login_forgot_msg');
+	if (cancelBtn && overlay) {
+		cancelBtn.addEventListener('click', function() { overlay.style.display = 'none'; });
+	}
+	if (sendBtn && overlay && emailInp && msgEl) {
+		sendBtn.addEventListener('click', function() {
+			var email = (emailInp.value || '').trim();
+			if (!email) {
+				msgEl.textContent = 'Ingrese su correo electrónico';
+				msgEl.className = 'login_forgot_msg err';
+				return;
+			}
+			sendBtn.disabled = true;
+			msgEl.textContent = 'Enviando...';
+			msgEl.className = 'login_forgot_msg';
+			fetch('includes/login_forgot_js.php', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email: email })
+			})
+			.then(function(r) { return r.json(); })
+			.then(function(data) {
+				if (data.ok === 1) {
+					msgEl.textContent = data.res || 'Si el correo está registrado, recibirá un enlace.';
+					msgEl.className = 'login_forgot_msg';
+					msgEl.style.color = '#0a0';
+				} else {
+					msgEl.textContent = data.err || 'Error. Intente de nuevo.';
+					msgEl.className = 'login_forgot_msg err';
+				}
+				sendBtn.disabled = false;
+			})
+			.catch(function() {
+				msgEl.textContent = 'Error de conexión. Intente de nuevo.';
+				msgEl.className = 'login_forgot_msg err';
+				sendBtn.disabled = false;
+			});
+		});
+	}
+});
 </script>

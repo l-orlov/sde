@@ -72,6 +72,7 @@ async function setLang(page, lang) {
       }
     });
 
+    window.__i18nDict = dict;
   } catch (err) {
     console.error(`Language load error for ${lang}:`, err);
   }

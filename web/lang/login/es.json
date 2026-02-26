@@ -1,9 +1,25 @@
 {
-    "login_tax_id_placeholder": "Ingrese su CUIL/CUIT",
-    "login_pass_placeholder": "Ingrese su Contraseña",
-    "login_title": "LOG-IN",
-    "login_button": "INGRESAR",
-    "login_register": "REGISTRAR NUEVO",
-    "login_forgot": "ME OLVIDÉ LA CONTRASEÑA"
+  "login_tax_id_placeholder": "Ingrese su CUIL/CUIT",
+  "login_pass_placeholder": "Ingrese su Contraseña",
+  "login_title": "LOG-IN",
+  "login_button": "INGRESAR",
+  "login_register": "REGISTRAR NUEVO",
+  "login_forgot": "ME OLVIDÉ LA CONTRASEÑA",
+  "login_forgot_title": "Restablecer contraseña",
+  "login_forgot_hint": "Ingrese su correo electrónico. Si está registrado, recibirá un enlace para crear una nueva contraseña.",
+  "login_forgot_email_placeholder": "Correo electrónico",
+  "login_forgot_send": "Enviar enlace",
+  "login_forgot_cancel": "Cancelar",
+  "login_reset_title": "Restablecer contraseña",
+  "login_reset_hint": "Ingrese su nueva contraseña (mínimo 6 caracteres).",
+  "login_reset_password_placeholder": "Nueva contraseña",
+  "login_reset_confirm_placeholder": "Repetir contraseña",
+  "login_reset_submit": "Guardar nueva contraseña",
+  "login_reset_saving": "Guardando...",
+  "login_reset_back": "Volver al inicio de sesión",
+  "login_reset_err_length": "La contraseña debe tener al menos 6 caracteres.",
+  "login_reset_err_mismatch": "Las contraseñas no coinciden.",
+  "login_reset_success": "Contraseña actualizada. Redirigiendo...",
+  "login_reset_err_fail": "Error al restablecer la contraseña.",
+  "login_reset_err_connection": "Error de conexión. Intente de nuevo."
 }
-

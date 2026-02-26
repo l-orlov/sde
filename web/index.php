@@ -51,6 +51,7 @@ if ( !isset($_SESSION['uid']) ) {
         case 'regfull':			include "includes/regfull.php";             break;
         case 'regnew':			include "includes/regnew.php";              break;
         case 'login':			include "includes/login.php";               break;
+        case 'reset_password':	include "includes/reset_password.php";     break;
         default:                include "includes/landing.php";             break;
     }
 } else {
