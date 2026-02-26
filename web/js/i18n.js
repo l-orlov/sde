@@ -73,6 +73,7 @@ async function setLang(page, lang) {
     });
 
     window.__i18nDict = dict;
+    appendPdfLangToLinks(lang);
   } catch (err) {
     console.error(`Language load error for ${lang}:`, err);
   }
@@ -80,11 +81,79 @@ async function setLang(page, lang) {
 
 const supportedLangs = ['es', 'en'];
 
-function initLang(page = 'landing', defaultLang = 'es') {
-  const storedLang = localStorage.getItem('lang');
-  const browserLang = (navigator.language || '').split('-')[0];
-  const requested = storedLang ?? (supportedLangs.includes(browserLang) ? browserLang : defaultLang);
-  const lang = supportedLangs.includes(requested) ? requested : defaultLang;
+/** Текущий язык для PDF: только 'en' или 'es'. */
+function getPdfLang() {
+  var raw = (localStorage.getItem('lang') || 'es').toString().trim().toLowerCase();
+  return (raw === 'en') ? 'en' : 'es';
+}
 
+/** Ставит href у ссылок .js-pdf-link по выбранному языку (data-pdf-url-es / data-pdf-url-en). */
+function appendPdfLangToLinks(lang) {
+  var safeLang = (lang === 'en') ? 'en' : 'es';
+  var attr = 'data-pdf-url-' + safeLang;
+  document.querySelectorAll('.js-pdf-link').forEach(function (a) {
+    var url = a.getAttribute(attr);
+    if (url) a.setAttribute('href', url);
+  });
+}
+
+/** Находит ссылку .js-pdf-link, поднимаясь от узла вверх. */
+function findPdfLink(el) {
+  while (el && el !== document.body) {
+    if (el.nodeType === 1 && el.classList && el.classList.contains('js-pdf-link')) return el;
+    el = el.parentNode;
+  }
+  return null;
+}
+
+/** При mousedown обновляем href по текущему языку, чтобы и "открыть в новой вкладке" работало. */
+function initPdfMousedown() {
+  document.body.addEventListener('mousedown', function (e) {
+    var a = findPdfLink(e.target);
+    if (a) {
+      var safeLang = getPdfLang();
+      var url = a.getAttribute('data-pdf-url-' + safeLang);
+      if (url) a.setAttribute('href', url);
+    }
+  }, true);
+}
+
+/** При клике по .js-pdf-link открывать URL для текущего языка из localStorage. */
+function initPdfLangClick() {
+  document.body.addEventListener('click', function (e) {
+    var a = findPdfLink(e.target);
+    if (!a) return;
+    var safeLang = getPdfLang();
+    var url = a.getAttribute('data-pdf-url-' + safeLang);
+    if (url) {
+      e.preventDefault();
+      e.stopPropagation();
+      a.setAttribute('href', url);
+      if (a.getAttribute('target') === '_blank') {
+        window.open(url, '_blank', 'noopener');
+      } else {
+        window.location.href = url;
+      }
+    }
+  }, true);
+}
+
+function initLang(page = 'landing', defaultLang = 'es') {
+  var storedLang = localStorage.getItem('lang');
+  var browserLang = (navigator.language || '').split('-')[0];
+  var requested = storedLang != null ? storedLang : (supportedLangs.includes(browserLang) ? browserLang : defaultLang);
+  var lang = supportedLangs.includes(requested) ? requested : defaultLang;
+
+  appendPdfLangToLinks(lang);
   setLang(page, lang);
+}
+
+if (document.body) {
+  initPdfMousedown();
+  initPdfLangClick();
+} else {
+  document.addEventListener('DOMContentLoaded', function () {
+    initPdfMousedown();
+    initPdfLangClick();
+  });
 }

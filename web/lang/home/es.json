@@ -1,6 +1,7 @@
 {
   "btn_export_tariffs": "Ver aranceles de exportación",
   "home_avatar_text": "Agregar<br>logotipo",
+  "home_delete_logo": "Eliminar logotipo",
   "home_form_lastname": "Apellido:",
   "home_form_firstname": "Nombre:",
   "home_form_company": "Nombre de la empresa:",
@@ -30,6 +31,7 @@
   "product_generic": "Producto",
   "home_moderation_message": "Sus datos están en moderación. Por favor, espere la confirmación del administrador.",
   "home_no_products_message": "Aún no has agregado productos. ¡Comienza agregando tu primer producto!",
-  "home_add_products_button": "Agregar Productos"
+  "home_add_products_button": "Agregar Productos",
+  "home_pdf_blocked_moderation": "No se puede descargar el PDF. Sus datos están en moderación. Los PDF estarán disponibles cuando el administrador apruebe su empresa."
 }
 

@@ -26,7 +26,7 @@ if (!file_exists($vendorAutoload)) {
 }
 if (!file_exists($vendorAutoload)) {
     header('Content-Type: text/plain; charset=utf-8');
-    echo "Para generar el PDF, ejecute en la raíz del proyecto: composer install\n";
+    echo "To generate the PDF, run in the project root: composer install\n";
     exit;
 }
 require_once $vendorAutoload;
@@ -38,10 +38,10 @@ global $link;
 
 // ——— Configuración institucional (editar o mover a BD/config según necesidad) ———
 $configInstitucional = [
-    'titulo_documento'   => 'Oferta Exportable',
+    'titulo_documento'   => 'Exportable Supply',
     'nombre_provincia'   => 'Santiago del Estero',
     'periodo_ano'        => date('Y'),
-    'area_responsable'   => 'Área de Comercio Exterior',
+    'area_responsable'   => 'Foreign Trade Office',
     'telefono'           => '+54 385 421 1234',
     'sitio_web'          => 'https://www.santiago.gob.ar',
     'mail'               => 'comercioexterior@santiago.gob.ar',
@@ -201,7 +201,7 @@ if (!empty($companyIds)) {
 }
 $rubros = array_slice(array_keys($rubrosMap), 0, 3);
 if (count($rubros) < 3) {
-    $rubros = array_pad($rubros, 3, 'Otros sectores');
+    $rubros = array_pad($rubros, 3, 'Other sectors');
 }
 
 // Métricas: empresas con oferta y productos cargados
@@ -558,10 +558,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $s1Ty = round($hMm * 0.32);
         $mpdf->SetXY($s1TextLeft, $s1Ty);
         $mpdf->SetFont('dejavusans', 'B', 58);
-        $mpdf->Cell($s1TextW, 22, 'OFERTA', 0, 1, 'L');
+        $mpdf->Cell($s1TextW, 22, 'EXPORTABLE', 0, 1, 'L');
         $mpdf->SetX($s1TextLeft);
         $mpdf->SetFont('dejavusans', 'B', 52);
-        $mpdf->Cell($s1TextW, 20, 'EXPORTABLE', 0, 1, 'L');
+        $mpdf->Cell($s1TextW, 20, 'SUPPLY', 0, 1, 'L');
         $s1BoxPad = 8;
         $s1BoxH = 14;
         $s1BoxY = $s1Ty + 48;
@@ -600,7 +600,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             }
             $mpdf->Image($s1LogoPath, $s1LogoBadgeX + ($s1LogoBadgeW - $lw) / 2, $s1LogoBadgeY + ($s1LogoBadgeH - $lh) / 2, $lw, $lh);
         }
-        $s1EdicionText = 'Edición ' . $configInstitucional['periodo_ano'];
+        $s1EdicionText = 'Edition ' . $configInstitucional['periodo_ano'];
         $s1EdicionBoxPad = 10;
         $s1EdicionBoxH = 18;
         $s1EdicionBoxW = 58;
@@ -738,10 +738,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetTextColor(160, 35, 35);
         $mpdf->SetFont('dejavusans', 'B', 34);
         $mpdf->SetXY($s2TextLeft, $s2TitleTop);
-        $mpdf->Cell($s2TextW, 12, 'CONTEXTO', 0, 1, 'L');
+        $mpdf->Cell($s2TextW, 12, 'PROVINCIAL', 0, 1, 'L');
         $mpdf->SetFont('dejavusans', 'B', 32);
         $mpdf->SetXY($s2TextLeft, $s2TitleTop + 14);
-        $mpdf->Cell($s2TextW, 12, 'PROVINCIAL', 0, 1, 'L');
+        $mpdf->Cell($s2TextW, 12, 'CONTEXT', 0, 1, 'L');
         $s2ParaTop = $s2TitleTop + 40;
         $mpdf->SetTextColor(0, 0, 0);
         $s2FontSize = 15;
@@ -755,26 +755,25 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         };
         $mpdf->SetXY($s2TextLeft, $s2ParaTop);
         $s2Cell(true, 'Santiago del Estero', 0);
-        $s2Cell(false, ' impulsa una ', 0);
-        $s2Cell(true, 'Oferta Exportable', 1);
-        $s2Cell(true, 'Provincial', 0);
-        $s2Cell(false, ' para visibilizar, ordenar y promover su entramado ', 1);
-        $s2Cell(true, 'productivo', 0);
-        $s2Cell(false, ' ante organismos de promoción, misiones ', 1);
-        $s2Cell(false, 'comerciales y compradores.', 1);
+        $s2Cell(false, ' promotes a ', 0);
+        $s2Cell(true, 'Provincial Exportable Supply', 1);
+        $s2Cell(false, ' to showcase, organize and promote its ', 1);
+        $s2Cell(true, 'productive', 0);
+        $s2Cell(false, ' landscape to promotion agencies, trade ', 1);
+        $s2Cell(false, 'missions and buyers.', 1);
         $mpdf->Ln(9);
         $mpdf->SetX($s2TextLeft);
-        $s2Cell(false, 'Esta presentación reúne ', 0);
-        $s2Cell(true, 'información declarada por las', 1);
-        $s2Cell(true, 'empresas registradas, con foco en productos y servicios ', 1);
-        $s2Cell(true, 'exportables.', 1);
+        $s2Cell(false, 'This presentation brings together ', 0);
+        $s2Cell(true, 'information declared by', 1);
+        $s2Cell(true, 'registered companies, focusing on exportable', 1);
+        $s2Cell(true, 'products and services.', 1);
         $mpdf->Ln(9);
         $mpdf->SetX($s2TextLeft);
-        $s2Cell(false, 'La iniciativa busca ', 0);
-        $s2Cell(true, 'facilitar el acceso a datos clave, mejorar la', 1);
-        $s2Cell(true, 'difusión institucional y habilitar oportunidades de', 1);
-        $s2Cell(true, 'vinculación comercial, fortaleciendo una cultura', 1);
-        $s2Cell(true, 'exportadora moderna, inclusiva y federal.', 1);
+        $s2Cell(false, 'The initiative aims to ', 0);
+        $s2Cell(true, 'facilitate access to key data, improve', 1);
+        $s2Cell(true, 'institutional outreach and enable trade', 1);
+        $s2Cell(true, 'linkage opportunities, strengthening a modern,', 1);
+        $s2Cell(true, 'inclusive and federal export culture.', 1);
         $mpdf->SetLeftMargin(0);
         $mpdf->SetRightMargin(0);
         // No incrementar $i: en la siguiente iteración (i=2) se hará AddPage() para el slide 3
@@ -952,15 +951,15 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetTextColor($s3RedR, $s3RedG, $s3RedB);
         $mpdf->SetFont('dejavusans', 'B', 38);
         $mpdf->SetXY($s3TextLeft, $s3TitleY);
-        $mpdf->Cell($s3TextW, 14, 'IDENTIDAD', 0, 1, 'L');
+        $mpdf->Cell($s3TextW, 14, 'PROVINCIAL', 0, 1, 'L');
         $mpdf->SetFont('dejavusans', 'B', 34);
         $mpdf->SetXY($s3TextLeft, $s3TitleY + 16);
-        $mpdf->Cell($s3TextW, 14, 'PROVINCIAL', 0, 1, 'L');
+        $mpdf->Cell($s3TextW, 14, 'IDENTITY', 0, 1, 'L');
         $s3ParaY = $s3TitleY + 16 + 14 + 22;
         $mpdf->SetTextColor(0, 0, 0);
         $mpdf->SetFont('dejavusans', '', 15);
         $mpdf->SetXY($s3TextLeft, $s3ParaY);
-        $mpdf->MultiCell($s3TextW, 7, 'Un territorio con capacidad productiva diversa y proyección para la vinculación comercial.', 0, 'L');
+        $mpdf->MultiCell($s3TextW, 7, "A territory with diverse productive\ncapabilities and strong potential for\nbusiness and trade linkages.", 0, 'L');
         $mpdf->SetLeftMargin(0);
         $mpdf->SetRightMargin(0);
     } elseif ($i === 4) {
@@ -1091,9 +1090,9 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->Image($s4LogoPath, $s4LogoBadgeX + ($s4LogoBadgeW - $lw) / 2, $s4LogoBadgeY + ($s4LogoBadgeH - $lh) / 2, $lw, $lh);
         }
         $s4TitleY = round($hMm * 0.70);
-        $s4TitleLine1 = 'EMPRESAS Y PRODUCTOS';
-        $s4TitleLine2 = 'EXPORTABLES';
-        $s4Subtitle = 'Empresas registradas y productos/servicios exportables declarados para su difusión institucional.';
+        $s4TitleLine1 = 'EXPORTABLE COMPANIES AND';
+        $s4TitleLine2 = 'PRODUCTS';
+        $s4Subtitle = 'Registered companies and declared exportable products/services for institutional outreach and promotion.';
         $mpdf->SetTextColor($s4RedR, $s4RedG, $s4RedB);
         $mpdf->SetFont('dejavusans', 'B', 32);
         $mpdf->SetXY(0, $s4TitleY);
@@ -1159,7 +1158,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->SetTextColor($s5RedR, $s5RedG, $s5RedB);
             $mpdf->SetFont('dejavusans', 'B', 40);
             $mpdf->SetXY($s5RedBarW + $s5Pad, $s5TitleY);
-            $mpdf->Cell($s5NameW, 11, 'NOMBRE DE', 0, 1, 'L');
+            $mpdf->Cell($s5NameW, 11, 'NAME OF THE', 0, 1, 'L');
             $mpdf->SetFont('dejavusans', 'B', 40);
             if ($mpdf->GetStringWidth($nombreUpper) <= $s5NameW) {
                 $s5NombreDisplay = $nombreUpper;
@@ -1184,11 +1183,11 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $s5NumW = 12;
             $s5LabelLineH = 7;
             $s5Rows = [
-                ['01', "ACTIVIDAD\nPRINCIPAL", $emp['main_activity'] ?? '-'],
-                ['02', 'LOCALIDAD', $localidadPorEmpresa[$cid] ?? '-'],
-                ['03', 'SITIO WEB', $emp['website'] ?? '-'],
-                ['04', 'REDES', isset($redesPorEmpresa[$cid]) ? implode(' ', $redesPorEmpresa[$cid]) : '-'],
-                ['05', 'AÑO DE INICIO', !empty($emp['start_date']) ? date('Y', (int)$emp['start_date']) : '-'],
+                ['01', "MAIN\nACTIVITY", $emp['main_activity'] ?? '-'],
+                ['02', 'LOCATION', $localidadPorEmpresa[$cid] ?? '-'],
+                ['03', 'WEBSITE', $emp['website'] ?? '-'],
+                ['04', "SOCIAL\nMEDIA", isset($redesPorEmpresa[$cid]) ? implode(' ', $redesPorEmpresa[$cid]) : '-'],
+                ['05', "YEAR\nESTABLISHED", !empty($emp['start_date']) ? date('Y', (int)$emp['start_date']) : '-'],
             ];
             foreach ($s5Rows as $idx => $row) {
                 $col = $idx % 3;
@@ -1357,7 +1356,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetTextColor($p6RedR, $p6RedG, $p6RedB);
         $mpdf->SetFont('dejavusans', 'B', 30);
         $mpdf->SetXY($p6Pad, $p6TitleY);
-        $mpdf->Cell($wMm - 2 * $p6Pad, 12, 'PRODUCTOS Y SERVICIOS DESTACADOS', 0, 1, 'L');
+        $mpdf->Cell($wMm - 2 * $p6Pad, 12, 'FEATURED PRODUCTS AND SERVICES', 0, 1, 'L');
         $p6ImgGap = 2;
         $p6ContentW = $wMm - 2 * $p6Pad - $p6ImgGap;
         $p6ImgLeftW = round($p6ContentW * 0.48);
@@ -1434,7 +1433,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             } else {
                 $p6colX = $wMm - $p6ColMarginRight - $p6ColW;
             }
-            $p6numStr = sprintf('%02d', $p6PageIdx * 3 + $k + 1) . '. Producto/Servicio';
+            $p6numStr = sprintf('%02d', $p6PageIdx * 3 + $k + 1) . '. Product/Service';
             $mpdf->SetTextColor($p6RedR, $p6RedG, $p6RedB);
             $mpdf->SetFont('dejavusans', 'B', 14);
             $mpdf->SetXY($p6colX, $p6ColTop);
@@ -1444,7 +1443,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->SetFont('dejavusans', '', 12);
             if ($prod) {
                 $p6EmpresaNombre = $p6CompanyNameById[(int) ($prod['company_id'] ?? 0)] ?? '-';
-                $p6Prefix = 'EMPRESA: ';
+                $p6Prefix = 'COMPANY: ';
                 $p6Ellipsis = '…';
                 $p6MaxNameW = $p6ColW - $mpdf->GetStringWidth($p6Prefix) - $mpdf->GetStringWidth($p6Ellipsis);
                 if ($mpdf->GetStringWidth($p6EmpresaNombre) <= $p6MaxNameW) {
@@ -1465,20 +1464,20 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->SetXY($p6colX, $p6DataY);
                 $mpdf->Cell($p6ColW, 6, $p6Prefix . $p6EmpresaDisplay, 0, 1, 'L');
                 $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'EXPORTACIÓN ANUAL: ' . (trim($prod['annual_export'] ?? '') ?: '-'), 0, 1, 'L');
+                $mpdf->Cell($p6ColW, 6, 'ANNUAL EXPORT: ' . (trim($prod['annual_export'] ?? '') ?: '-'), 0, 1, 'L');
                 $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'CERTIFICACIONES: ' . (trim($prod['certifications'] ?? '') ?: '-'), 0, 1, 'L');
+                $mpdf->Cell($p6ColW, 6, 'CERTIFICATIONS: ' . (trim($prod['certifications'] ?? '') ?: '-'), 0, 1, 'L');
                 $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'CÓDIGO ARANCELARIO (NCM/HS): ' . (trim($prod['tariff_code'] ?? '') ?: '-'), 0, 1, 'L');
+                $mpdf->Cell($p6ColW, 6, 'Tariff code (NCM/HS): ' . (trim($prod['tariff_code'] ?? '') ?: '-'), 0, 1, 'L');
             } else {
                 $mpdf->SetXY($p6colX, $p6DataY);
-                $mpdf->Cell($p6ColW, 6, 'EMPRESA: -', 0, 1, 'L');
+                $mpdf->Cell($p6ColW, 6, 'COMPANY: -', 0, 1, 'L');
                 $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'EXPORTACIÓN ANUAL: -', 0, 1, 'L');
+                $mpdf->Cell($p6ColW, 6, 'ANNUAL EXPORT: -', 0, 1, 'L');
                 $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'CERTIFICACIONES: -', 0, 1, 'L');
+                $mpdf->Cell($p6ColW, 6, 'CERTIFICATIONS: -', 0, 1, 'L');
                 $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'CÓDIGO ARANCELARIO (NCM/HS): -', 0, 1, 'L');
+                $mpdf->Cell($p6ColW, 6, 'Tariff code (NCM/HS): -', 0, 1, 'L');
             }
         }
         $mpdf->SetDrawColor(0, 0, 0);
@@ -1593,7 +1592,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetTextColor($s7RedR, $s7RedG, $s7RedB);
         $mpdf->SetFont('dejavusans', 'B', 54);
         $mpdf->SetXY($s7Pad, $s7TitleY);
-        $mpdf->Cell($s7LeftW - 2 * $s7Pad, 16, 'CONTACTO', 0, 1, 'L');
+        $mpdf->Cell($s7LeftW - 2 * $s7Pad, 16, 'CONTACT', 0, 1, 'L');
         $contacto = $configInstitucional;
         $s7TelRaw = trim($contacto['telefono'] ?? '') ?: '-';
         $s7WebRaw = trim($contacto['sitio_web'] ?? '') ?: '-';
@@ -1613,7 +1612,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetTextColor(255, 255, 255);
         $mpdf->SetFont('dejavusans', 'B', 11);
         $mpdf->SetXY($s7Pad + $s7BoxPad, $s7BoxTop + $s7BoxPad);
-        $mpdf->Cell($s7InnerW, 5, 'Teléfonos', 0, 1, 'L');
+        $mpdf->Cell($s7InnerW, 5, 'Phone', 0, 1, 'L');
         $mpdf->SetFont('dejavusans', '', 9);
         $mpdf->SetX($s7Pad + $s7BoxPad);
         $mpdf->MultiCell($s7InnerW, 4, $s7TelRaw, 0, 'L');
@@ -1624,7 +1623,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetTextColor(0, 0, 0);
         $mpdf->SetFont('dejavusans', 'B', 11);
         $mpdf->SetXY($s7Pad + $s7BoxW + 12 + $s7BoxPad, $s7BoxTop + $s7BoxPad);
-        $mpdf->Cell($s7InnerW, 5, 'Sitios Web', 0, 1, 'L');
+        $mpdf->Cell($s7InnerW, 5, 'Website', 0, 1, 'L');
         $mpdf->SetFont('dejavusans', '', 9);
         $mpdf->SetX($s7Pad + $s7BoxW + 12 + $s7BoxPad);
         $mpdf->MultiCell($s7InnerW, 4, $s7WebRaw, 0, 'L');
@@ -1638,7 +1637,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetTextColor(0, 0, 0);
         $mpdf->SetFont('dejavusans', 'B', 11);
         $mpdf->SetXY($s7Pad + $s7BoxPad, $s7EmailBoxY + $s7BoxPad);
-        $mpdf->Cell($s7EmailBoxW - 2 * $s7BoxPad, 5, 'Emails', 0, 1, 'L');
+        $mpdf->Cell($s7EmailBoxW - 2 * $s7BoxPad, 5, 'Email', 0, 1, 'L');
         $mpdf->SetFont('dejavusans', '', 9);
         $mpdf->SetX($s7Pad + $s7BoxPad);
         $mpdf->MultiCell($s7EmailBoxW - 2 * $s7BoxPad, 4, $s7MailRaw, 0, 'L');
@@ -1653,7 +1652,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
     }
 }
 $nombreArchivo = 'Oferta_Exportable_Moderno_' . preg_replace('/\s+/', '_', $configInstitucional['nombre_provincia']) . '_' . $configInstitucional['periodo_ano'] . '.pdf';
-// Para ver cambios al editar: abrir con ?page=moderno_pdf&nocache=1 — así el nombre incluye timestamp y no se usa caché del navegador
+// Para ver cambios al editar: abrir con ?page=moderno_pdf_es o ?page=moderno_pdf_en&nocache=1 — así el nombre incluye timestamp y no se usa caché del navegador
 if (!empty($_GET['nocache'])) {
     $nombreArchivo = preg_replace('/\.pdf$/', '_' . time() . '.pdf', $nombreArchivo);
 }
@@ -1737,17 +1736,17 @@ function buildOfertaPdfHtml($data) {
     $row1Slide1 = '<table cellpadding="0" cellspacing="0" border="0" style="width:' . $slideW . 'mm;height:' . $slideH . 'mm;table-layout:fixed;">'
         . '<tr><td style="height:' . $s1HeaderMm . 'mm;background:#000;color:#fff;padding:0 14px;vertical-align:middle;">'
         . ($pdfLogoUri ? '<img src="' . $pdfLogoUri . '" alt="" style="height:18mm;vertical-align:middle;" />' : '')
-        . '<span style="float:right;font-size:14px;">Página 01</span></td></tr>'
+        . '<span style="float:right;font-size:14px;">Page 01</span></td></tr>'
         . '<tr><td style="height:' . $s1LineMm . 'mm;background:#fff;"></td></tr>'
         . '<tr><td style="height:' . $s1MiddleMm . 'mm;background:#0B1878;padding:0;vertical-align:middle;">'
         . '<div style="margin-left:20mm;display:inline-block;border:' . $s1Border . 'mm solid #fff;transform:rotate(-3deg);width:' . $s1ImgSize . 'mm;height:' . $s1ImgSize . 'mm;overflow:hidden;vertical-align:middle;">'
         . ($backgroundSlide1Uri ? '<img src="' . $backgroundSlide1Uri . '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" />' : '<div style="width:100%;height:100%;background:#1a4d8c;"></div>')
         . '</div>'
         . '<div style="display:inline-block;vertical-align:middle;margin-left:24mm;color:#fff;">'
-        . '<div style="font-size:56px;font-weight:bold;line-height:1.1;">OFERTA</div><div style="font-size:56px;font-weight:bold;">EXPORTABLE</div>'
+        . '<div style="font-size:56px;font-weight:bold;line-height:1.1;">OFFER</div><div style="font-size:56px;font-weight:bold;">EXPORTABLE</div>'
         . '<div style="font-size:22px;font-weight:bold;color:#fff;margin-top:12px;">' . htmlspecialchars(function_exists('mb_strtoupper') ? mb_strtoupper($c['nombre_provincia']) : strtoupper($c['nombre_provincia'])) . '</div></div></td></tr>'
         . '<tr><td style="height:' . $s1FooterMm . 'mm;background:#000;color:#fff;padding:0 14px 4px 14px;font-size:18px;vertical-align:middle;">'
-        . '<span style="color:#fff;">Edición ' . (int)$c['periodo_ano'] . '</span><span style="float:right;font-size:24px;font-weight:bold;color:#fff;">&#8594;</span></td></tr>'
+        . '<span style="color:#fff;">Edition ' . (int)$c['periodo_ano'] . '</span><span style="float:right;font-size:24px;font-weight:bold;color:#fff;">&#8594;</span></td></tr>'
         . '</table>';
     $s1 = '<div class="slide">' . $row1Slide1 . '</div>';
 
@@ -1768,9 +1767,9 @@ function buildOfertaPdfHtml($data) {
     <td style="' . $s2TdLeftStyle . '">' . $s2LogoBox . '</td>
     <td style="' . $s2TdRightStyle . '">
         <div style="' . $s2TextColStyle . '">
-        <h1 class="slide-title" style="margin:0 0 10px 0;font-size:32px;font-weight:700;color:#fff;">Contexto productivo provincial</h1>
-        <p class="texto" style="margin:0 0 12px 0;font-size:16px;line-height:1.4;color:#fff;">La Provincia actualiza su oferta exportable para brindar a compradores externos información clara y accesible en formatos gráficos e informáticos.</p>
-        <p class="texto" style="margin:0;font-size:15px;line-height:1.4;color:#fff;">Esta herramienta fortalece la promoción comercial, acompañando la difusión de oferta, misiones comerciales y participación en ferias y rondas de negocios.</p>
+        <h1 class="slide-title" style="margin:0 0 10px 0;font-size:32px;font-weight:700;color:#fff;">Provincial productive context</h1>
+        <p class="texto" style="margin:0 0 12px 0;font-size:16px;line-height:1.4;color:#fff;">The Province updates its exportable offer to provide external buyers with clear, accessible information in graphic and digital formats.</p>
+        <p class="texto" style="margin:0;font-size:15px;line-height:1.4;color:#fff;">This tool strengthens trade promotion, supporting the dissemination of offers, trade missions and participation in fairs and business rounds.</p>
         </div>
     </td>
     </tr>
@@ -1785,8 +1784,8 @@ function buildOfertaPdfHtml($data) {
     <div class="slide" style="display:flex;">
         <div style="width:30%;background:#75A8DA;padding:32px 24px;">
             <div class="logo-caja" style="margin-bottom:20px;">' . ($logoDataUri ? '<img src="' . $logoDataUri . '" alt="Logo" />' : '') . '</div>
-            <h1 class="slide-title" style="color:#000;">Sectores productivos</h1>
-            <p class="texto" style="color:#000;">La oferta exportable provincial se organiza por sectores para facilitar la búsqueda y la promoción internacional.</p>
+            <h1 class="slide-title" style="color:#000;">Productive sectors</h1>
+            <p class="texto" style="color:#000;">The provincial exportable offer is organized by sectors to facilitate search and international promotion.</p>
         </div>
         <div class="primario" style="width:40%;padding:32px 24px;">
             <div style="margin-bottom:16px;"><strong style="color:#75A8DA;">Rubro A</strong><br><span class="texto">' . htmlspecialchars($rubroA) . '</span></div>
@@ -1795,8 +1794,8 @@ function buildOfertaPdfHtml($data) {
         </div>
         <div style="width:30%;padding:32px 24px;">
             <div style="width:180px;height:180px;margin:0 auto 20px;overflow:hidden;border-radius:50%;">' . $s3Img . '</div>
-            <p class="texto" style="text-align:center;"><strong>N° Empresas registradas:</strong> ' . (int)$metrics['empresas'] . '</p>
-            <p class="texto" style="text-align:center;"><strong>N° Productos y servicios cargados:</strong> ' . (int)$metrics['productos'] . '</p>
+            <p class="texto" style="text-align:center;"><strong>N° Registered companies:</strong> ' . (int)$metrics['empresas'] . '</p>
+            <p class="texto" style="text-align:center;"><strong>N° Products and services loaded:</strong> ' . (int)$metrics['productos'] . '</p>
         </div>
     </div>';
 
@@ -1828,8 +1827,8 @@ function buildOfertaPdfHtml($data) {
         <div style="width:28%;background:#75A8DA;padding:24px;">' . $bloquesEmpresa . '</div>
         <div style="width:44%;display:flex;flex-direction:column;padding:24px;">' . $s4Imgs . '</div>
         <div class="primario" style="width:28%;padding:24px;position:relative;">
-            <h1 class="slide-title">Empresas destacadas</h1>
-            <p class="texto">Selección representativa de empresas con oferta exportable registrada.</p>
+            <h1 class="slide-title">Featured companies</h1>
+            <p class="texto">Representative selection of companies with registered exportable offer.</p>
             <div class="logo-caja" style="position:absolute;bottom:24px;right:24px;">' . ($logoDataUri ? '<img src="' . $logoDataUri . '" alt="Logo" />' : '') . '</div>
         </div>
     </div>';
@@ -1852,7 +1851,7 @@ function buildOfertaPdfHtml($data) {
     }
     $s5 = '
     <div class="slide primario" style="padding:40px;">
-        <h1 class="slide-title" style="text-align:center;margin-bottom:32px;">Productos exportables</h1>
+        <h1 class="slide-title" style="text-align:center;margin-bottom:32px;">Exportable products</h1>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">' . $cards . '</div>
     </div>';
 
@@ -1860,7 +1859,7 @@ function buildOfertaPdfHtml($data) {
     <div class="slide" style="display:flex;">
         <div style="width:35%;background:#C4343B;color:#fff;padding:40px;">
             <div class="logo-caja" style="margin-bottom:32px;">' . ($logoDataUri ? '<img src="' . $logoDataUri . '" alt="Logo" />' : '') . '</div>
-            <h1 class="slide-title" style="font-size:32px;">Contacto institucional</h1>
+            <h1 class="slide-title" style="font-size:32px;">Institutional contact</h1>
             <p class="texto">' . htmlspecialchars($contacto['area_responsable'] ?? '') . '</p>
             <p class="texto">Tel: ' . htmlspecialchars($contacto['telefono'] ?? '') . '</p>
             <p class="texto">Web: ' . htmlspecialchars($contacto['sitio_web'] ?? '') . '</p>
@@ -1868,7 +1867,7 @@ function buildOfertaPdfHtml($data) {
             <p class="texto">' . htmlspecialchars($contacto['localidad_direccion'] ?? '') . '</p>
         </div>
         <div style="width:65%;background:#75A8DA;display:flex;align-items:center;justify-content:center;">
-            <h1 class="slide-title" style="color:#000;">Contacto Institucional</h1>
+            <h1 class="slide-title" style="color:#000;">Institutional Contact</h1>
         </div>
     </div>';
 

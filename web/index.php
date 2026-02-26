@@ -12,16 +12,72 @@ if ($page === 'search_api') {
     require __DIR__ . '/includes/search_api.php';
     exit;
 }
-if ($page === 'clasico_pdf') {
-    require __DIR__ . '/pdf/oferta/clasico_pdf.php';
+if ($page === 'clasico_pdf' || $page === 'clasico_pdf_es') {
+    require __DIR__ . '/pdf/oferta/clasico_pdf_es.php';
     exit;
 }
-if ($page === 'corporativo_pdf') {
-    require __DIR__ . '/pdf/oferta/corporativo_pdf.php';
+if ($page === 'clasico_pdf_en') {
+    require __DIR__ . '/pdf/oferta/clasico_pdf_en.php';
     exit;
 }
-if ($page === 'moderno_pdf') {
-    require __DIR__ . '/pdf/oferta/moderno_pdf.php';
+if ($page === 'corporativo_pdf' || $page === 'corporativo_pdf_es') {
+    require __DIR__ . '/pdf/oferta/corporativo_pdf_es.php';
+    exit;
+}
+if ($page === 'corporativo_pdf_en') {
+    require __DIR__ . '/pdf/oferta/corporativo_pdf_en.php';
+    exit;
+}
+if ($page === 'moderno_pdf' || $page === 'moderno_pdf_es') {
+    require __DIR__ . '/pdf/oferta/moderno_pdf_es.php';
+    exit;
+}
+if ($page === 'moderno_pdf_en') {
+    require __DIR__ . '/pdf/oferta/moderno_pdf_en.php';
+    exit;
+}
+// Home PDFs (perfil empresa): solo si la empresa está aprobada; si está en moderación, redirigir con motivo
+$homePdfPages = ['clasico_company', 'clasico_company_es', 'clasico_company_en', 'corporativo_company', 'corporativo_company_es', 'corporativo_company_en', 'moderno_company', 'moderno_company_es', 'moderno_company_en'];
+if (in_array($page, $homePdfPages, true)) {
+    $userId = isset($_SESSION['uid']) ? (int) $_SESSION['uid'] : 0;
+    if ($userId > 0) {
+        $stmt = mysqli_prepare($link, "SELECT c.moderation_status FROM companies c WHERE c.user_id = ? LIMIT 1");
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'i', $userId);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            $row = $res && mysqli_num_rows($res) > 0 ? mysqli_fetch_assoc($res) : null;
+            mysqli_stmt_close($stmt);
+            $modStatus = $row['moderation_status'] ?? 'pending';
+            if ($modStatus !== 'approved') {
+                header('Location: index.php?page=home&pdf_blocked=moderation');
+                exit;
+            }
+        }
+    }
+}
+if ($page === 'clasico_company' || $page === 'clasico_company_es') {
+    require __DIR__ . '/pdf/home/clasico_company_es.php';
+    exit;
+}
+if ($page === 'clasico_company_en') {
+    require __DIR__ . '/pdf/home/clasico_company_en.php';
+    exit;
+}
+if ($page === 'corporativo_company' || $page === 'corporativo_company_es') {
+    require __DIR__ . '/pdf/home/corporativo_company_es.php';
+    exit;
+}
+if ($page === 'corporativo_company_en') {
+    require __DIR__ . '/pdf/home/corporativo_company_en.php';
+    exit;
+}
+if ($page === 'moderno_company' || $page === 'moderno_company_es') {
+    require __DIR__ . '/pdf/home/moderno_company_es.php';
+    exit;
+}
+if ($page === 'moderno_company_en') {
+    require __DIR__ . '/pdf/home/moderno_company_en.php';
     exit;
 }
 ?>

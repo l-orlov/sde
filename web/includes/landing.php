@@ -2,9 +2,15 @@
 $__landing_config = file_exists(__DIR__ . '/config/config.php') ? (require __DIR__ . '/config/config.php') : [];
 $__web_base = rtrim($__landing_config['web_base'] ?? '', '/');
 $__pdf_oferta_urls = [
-    'clasico'    => $__web_base . '/index.php?page=clasico_pdf',
-    'corporativo' => $__web_base . '/index.php?page=corporativo_pdf',
-    'moderno'    => $__web_base . '/index.php?page=moderno_pdf',
+    'clasico'      => $__web_base . '/index.php?page=clasico_pdf_es',
+    'clasico_es'   => $__web_base . '/index.php?page=clasico_pdf_es',
+    'clasico_en'   => $__web_base . '/index.php?page=clasico_pdf_en',
+    'corporativo'  => $__web_base . '/index.php?page=corporativo_pdf_es',
+    'corporativo_es' => $__web_base . '/index.php?page=corporativo_pdf_es',
+    'corporativo_en' => $__web_base . '/index.php?page=corporativo_pdf_en',
+    'moderno'      => $__web_base . '/index.php?page=moderno_pdf_es',
+    'moderno_es'   => $__web_base . '/index.php?page=moderno_pdf_es',
+    'moderno_en'   => $__web_base . '/index.php?page=moderno_pdf_en',
 ];
 
 // Товары/услуги из одобренных компаний для карусели
@@ -71,13 +77,13 @@ if ($link) {
                         <button type="button" class="nav-link oferta-dropdown-trigger" data-i18n="nav_exportable" aria-expanded="false" aria-haspopup="true" id="oferta-dropdown-btn">Oferta exportable</button>
                         <ul class="oferta-dropdown-menu" id="oferta-dropdown-menu" role="menu" aria-label="Formatos de oferta exportable">
                             <li role="none">
-                                <a role="menuitem" class="oferta-dropdown-item" href="<?= htmlspecialchars($__pdf_oferta_urls['clasico']) ?>" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_urls['clasico']) ?>"><span class="oferta-dropdown-name">Clásico</span><img src="img/icons/clasico_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['clasico_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_clasico">Clásico</span><img src="img/icons/clasico_icon.png" alt="" class="oferta-dropdown-icon"></a>
                             </li>
                             <li role="none">
-                                <a role="menuitem" class="oferta-dropdown-item" href="<?= htmlspecialchars($__pdf_oferta_urls['corporativo']) ?>" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_urls['corporativo']) ?>"><span class="oferta-dropdown-name">Corporativo</span><img src="img/icons/corporativo_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['corporativo_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['corporativo_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['corporativo_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_corporativo">Corporativo</span><img src="img/icons/corporativo_icon.png" alt="" class="oferta-dropdown-icon"></a>
                             </li>
                             <li role="none">
-                                <a role="menuitem" class="oferta-dropdown-item" href="<?= htmlspecialchars($__pdf_oferta_urls['moderno']) ?>" target="_blank" rel="noopener" data-pdf-url="<?= htmlspecialchars($__pdf_oferta_urls['moderno']) ?>"><span class="oferta-dropdown-name">Moderno</span><img src="img/icons/moderno_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['moderno_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['moderno_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['moderno_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_moderno">Moderno</span><img src="img/icons/moderno_icon.png" alt="" class="oferta-dropdown-icon"></a>
                             </li>
                         </ul>
                     </div>
@@ -349,7 +355,7 @@ if ($link) {
                 <h3 class="landing-footer-title" data-i18n="footer_accesos">ACCESOS</h3>
                 <ul class="landing-footer-links">
                     <li><a href="#nosotros" data-i18n="footer_nosotros">Nosotros</a></li>
-                    <li><a href="<?= htmlspecialchars($__pdf_oferta_urls['clasico']) ?>" target="_blank" rel="noopener" data-i18n="footer_oferta">Oferta exportable</a></li>
+                    <li><a href="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" class="js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['clasico_en']) ?>" data-i18n="footer_oferta">Oferta exportable</a></li>
                     <li><a href="#turismo" data-i18n="nav_turismo">Turismo</a></li>
                     <li><a href="#noticias" data-i18n="nav_news">Noticias</a></li>
                     <li><a href="#contactos" data-i18n="footer_contacto">Contacto</a></li>
@@ -408,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ofertaDropdown.classList.toggle('open');
       ofertaBtn.setAttribute('aria-expanded', ofertaDropdown.classList.contains('open'));
     });
-    document.querySelectorAll('.oferta-dropdown-item').forEach(link => {
+    document.querySelectorAll('.oferta-dropdown-item:not(.js-pdf-link)').forEach(link => {
       link.addEventListener('click', function() {
         const url = this.getAttribute('data-pdf-url');
         if (url) this.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();

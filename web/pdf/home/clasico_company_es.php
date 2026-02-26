@@ -172,6 +172,10 @@ if ($currentUserId <= 0) {
     header('Location: ' . (isset($_SERVER['REQUEST_SCHEME']) && isset($_SERVER['HTTP_HOST']) ? $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] : '') . dirname($_SERVER['PHP_SELF'], 3) . '/index.php');
     exit;
 }
+// Forzar datos frescos desde BD en cada descarga (evitar caché de respuesta)
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 $stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.main_activity, c.website, c.start_date
       FROM companies c
       WHERE c.user_id = ? AND c.moderation_status = 'approved'
@@ -241,15 +245,15 @@ if (!empty($companyIds)) {
     }
 }
 
-// Un producto o servicio por empresa para slides "Productos exportables" (grilla 2×3, 6 por página; productos y servicios)
+// Todos los productos y servicios de la empresa para slides "Productos exportables" (datos siempre desde BD)
 $productosParaSlides = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
     $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code
           FROM products p
-          INNER JOIN (SELECT company_id, MIN(id) AS mid FROM products WHERE company_id IN ($ids) GROUP BY company_id) first
-          ON p.company_id = first.company_id AND p.id = first.mid
-          ORDER BY p.company_id ASC";
+          WHERE p.company_id IN ($ids)
+          ORDER BY p.is_main DESC, p.id ASC
+          LIMIT 20";
     $r = mysqli_query($link, $q);
     if ($r) {
         while ($row = mysqli_fetch_assoc($r)) {

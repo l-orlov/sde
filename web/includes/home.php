@@ -288,6 +288,11 @@ $visibleProducts = min(4, $totalProducts);
 
     <!-- Main Content Area -->
     <div class="home-content">
+      <?php if (isset($_GET['pdf_blocked']) && $_GET['pdf_blocked'] === 'moderation'): ?>
+      <div class="home-pdf-blocked-notice" role="alert" style="margin-bottom: 20px; padding: 16px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; color: #856404;">
+        <p data-i18n="home_pdf_blocked_moderation" style="margin: 0; font-size: 16px;">No se puede descargar el PDF. Sus datos están en moderación. Los PDF estarán disponibles cuando el administrador apruebe su empresa.</p>
+      </div>
+      <?php endif; ?>
       <!-- Products Section -->
       <section class="home-section home-products-section">
         <div class="home-section-header">
@@ -360,19 +365,20 @@ $visibleProducts = min(4, $totalProducts);
         <?php endif; ?>
       </section>
 
-      <!-- Presentations Section -->
+      <!-- Presentations Section: siempre visible; si no aprobado, se muestra mensaje en lugar de la grilla -->
       <section class="home-section">
         <div class="home-section-header">
           <h2 data-i18n="home_presentations_title" class="home-section-title">Presentaciones generadas de productos y servicios <span class="home-section-count">3/3</span></h2>
         </div>
 
+        <?php if ($moderationStatus === 'approved'): ?>
         <div class="home-presentations-grid">
           <div class="home-presentation-card">
             <div class="home-presentation-image">
               <img src="img/ClasicoCuadrado.png" alt="Clásico">
             </div>
             <div class="home-presentation-content">
-              <a href="pdf/home/clasico_company.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
+              <a href="index.php?page=clasico_company_es" class="btn btn-download-pdf js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="index.php?page=clasico_company_es" data-pdf-url-en="index.php?page=clasico_company_en" data-i18n="btn_download_pdf">Descargar PDF</a>
             </div>
           </div>
           
@@ -381,7 +387,7 @@ $visibleProducts = min(4, $totalProducts);
               <img src="img/CorporativoCuadrado.png" alt="Corporativo">
             </div>
             <div class="home-presentation-content">
-              <a href="pdf/home/corporativo_company.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
+              <a href="index.php?page=corporativo_company_es" class="btn btn-download-pdf js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="index.php?page=corporativo_company_es" data-pdf-url-en="index.php?page=corporativo_company_en" data-i18n="btn_download_pdf">Descargar PDF</a>
             </div>
           </div>
           
@@ -390,10 +396,20 @@ $visibleProducts = min(4, $totalProducts);
               <img src="img/ModernoCuadrado.png" alt="Moderno">
             </div>
             <div class="home-presentation-content">
-              <a href="pdf/home/moderno_company.php" class="btn btn-download-pdf" target="_blank" rel="noopener" data-i18n="btn_download_pdf">Descargar PDF</a>
+              <a href="index.php?page=moderno_company_es" class="btn btn-download-pdf js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="index.php?page=moderno_company_es" data-pdf-url-en="index.php?page=moderno_company_en" data-i18n="btn_download_pdf">Descargar PDF</a>
             </div>
           </div>
         </div>
+        <?php else: ?>
+        <div class="home-presentations-placeholder" style="text-align: center; padding: 40px 20px; font-size: 18px; color: #666; background: #f9f9f9; border-radius: 8px;">
+          <?php if (!$hasCompanyData): ?>
+          <p data-i18n="home_no_products_message" style="margin-bottom: 20px;">Aún no has agregado productos. ¡Comienza agregando tu primer producto!</p>
+          <a href="index.php?page=regfull" class="btn btn-show-more" style="display: inline-block; text-decoration: none;" data-i18n="home_add_products_button">Agregar Productos</a>
+          <?php else: ?>
+          <p data-i18n="home_moderation_message" style="margin: 0;">Sus datos están en moderación. Por favor, espere la confirmación del administrador.</p>
+          <?php endif; ?>
+        </div>
+        <?php endif; ?>
       </section>
     </div>
   </div>

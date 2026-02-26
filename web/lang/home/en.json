@@ -1,6 +1,7 @@
 {
   "btn_export_tariffs": "View export tariffs",
   "home_avatar_text": "Add<br>logo",
+  "home_delete_logo": "Delete logo",
   "home_form_lastname": "Last name:",
   "home_form_firstname": "First name:",
   "home_form_company": "Company name:",
@@ -30,5 +31,6 @@
   "product_generic": "Product",
   "home_moderation_message": "Your data is under moderation. Please wait for administrator confirmation.",
   "home_no_products_message": "You haven't added any products yet. Start by adding your first product!",
-  "home_add_products_button": "Add Products"
+  "home_add_products_button": "Add Products",
+  "home_pdf_blocked_moderation": "PDF download is not available. Your data is under moderation. PDFs will be available once the administrator approves your company."
 }
