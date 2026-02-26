@@ -16,9 +16,9 @@ $__pdf_oferta_urls = [
 <div class="search-page-wrap">
     <div class="hero-header hero-header-search">
         <div class="hero-header-search-container">
-        <div class="logo">
+        <a href="?page=landing" class="logo logo-link">
         <img src="img/logo.svg" alt="Santiago del Estero" class="logo-image">
-        </div>
+        </a>
         <div class="nav-container">
         <nav class="hero-nav">
             <div class="oferta-dropdown" id="oferta-dropdown">
@@ -62,6 +62,9 @@ $__pdf_oferta_urls = [
     </div>
 
     <div class="search-page-main">
+        <div class="search-page-top-row">
+            <a href="?page=landing" class="search-back-btn" data-i18n="search_back">Volver</a>
+        </div>
         <h1 class="search-page-title" data-i18n="search_title">BUSCADOR DE PRODUCTOS Y SERVICIOS</h1>
 
         <div class="search-box-wrap">
