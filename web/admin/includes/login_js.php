@@ -48,22 +48,23 @@ $loginRaw = isset($input['login']) ? trim((string)$input['login']) : '';
 $pass = (string)$input['pass'];
 
 // Логин админа: допускаем как CUIL/CUIT, так и email.
-// Если есть '@' — считаем, что это email и ищем по нему.
-// Иначе — очищаем до цифр и ищем по tax_id без жёсткой проверки длины.
+// Ищем пользователя по логину, затем проверяем пароль через password_verify (хеш в БД).
 if (strpos($loginRaw, '@') !== false) {
     $loginValue = $loginRaw;
-    $query = "SELECT id, email, tax_id FROM users WHERE email = ? AND password = ? AND is_admin = 1";
+    $query = "SELECT id, email, tax_id, password FROM users WHERE email = ? AND is_admin = 1 LIMIT 1";
 } else {
     $loginValue = preg_replace('/\D/', '', $loginRaw);
-    $query = "SELECT id, email, tax_id FROM users WHERE tax_id = ? AND password = ? AND is_admin = 1";
+    $query = "SELECT id, email, tax_id, password FROM users WHERE tax_id = ? AND is_admin = 1 LIMIT 1";
 }
 
 $stmt = mysqli_prepare($link, $query);
-mysqli_stmt_bind_param($stmt, 'ss', $loginValue, $pass);
+mysqli_stmt_bind_param($stmt, 's', $loginValue);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
+$row = mysqli_fetch_assoc($result);
+mysqli_stmt_close($stmt);
 
-if ($row = mysqli_fetch_assoc($result)) {
+if ($row && password_verify($pass, $row['password'])) {
     $_SESSION['admid'] = $row['id'];
     $ok = 1;
 } else {

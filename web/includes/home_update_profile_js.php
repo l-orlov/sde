@@ -12,6 +12,15 @@ DBconnect();
 
 $return = ['res' => '', 'ok' => 0, 'err' => ''];
 
+set_exception_handler(function (Throwable $e) use (&$return) {
+    error_log("Profile update exception: " . $e->getMessage());
+    if (ob_get_level()) ob_clean();
+    header('Content-Type: application/json; charset=utf-8');
+    $return['err'] = 'Error al actualizar el perfil: ' . $e->getMessage();
+    echo json_encode($return);
+    exit;
+});
+
 if (!isset($_SESSION['uid'])) {
     if (ob_get_level()) ob_clean();
     $return['err'] = 'No autorizado. Por favor, inicie sesión.';
@@ -181,7 +190,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if (ob_get_level()) {
     ob_clean();
 }
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 echo json_encode($return);
-?>
 

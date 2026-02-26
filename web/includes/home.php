@@ -231,6 +231,7 @@ $visibleProducts = min(4, $totalProducts);
             </div>
           </div>
           <input type="file" id="home-logo-input" accept="image/jpeg,image/png,image/jpg" style="display: none;">
+          <button type="button" id="home-logo-delete" class="home-logo-delete" style="display: none;" data-i18n="home_delete_logo">Eliminar logotipo</button>
         </div>
         
         <div class="home-form-fields">
@@ -603,6 +604,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       
+      const saveBtnInitialText = saveProfileBtn.getAttribute('data-i18n') ? (saveProfileBtn.textContent || 'Guardar cambios') : 'Guardar cambios';
       saveProfileBtn.disabled = true;
       saveProfileBtn.textContent = 'Guardando...';
       
@@ -626,7 +628,17 @@ document.addEventListener('DOMContentLoaded', function() {
           body: JSON.stringify(data)
         });
         
-        const result = await response.json();
+        const text = await response.text();
+        let result;
+        try {
+          result = JSON.parse(text);
+        } catch (parseErr) {
+          console.error('Profile update: invalid JSON', text);
+          showProfileMessage('Error del servidor. Respuesta no válida.', 'error');
+          saveProfileBtn.disabled = false;
+          saveProfileBtn.textContent = saveBtnInitialText;
+          return;
+        }
         
         if (result.ok === 1) {
           showProfileMessage(result.res || 'Perfil actualizado correctamente', 'success');
@@ -639,12 +651,13 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
           showProfileMessage(result.err || 'Error al actualizar el perfil', 'error');
           saveProfileBtn.disabled = false;
-          saveProfileBtn.textContent = 'Guardar cambios';
+          saveProfileBtn.textContent = saveBtnInitialText;
         }
       } catch (error) {
+        console.error('Profile update error:', error);
         showProfileMessage('Error de conexión. Intente de nuevo.', 'error');
         saveProfileBtn.disabled = false;
-        saveProfileBtn.textContent = 'Guardar cambios';
+        saveProfileBtn.textContent = saveBtnInitialText;
       }
     });
   }
@@ -790,6 +803,8 @@ document.addEventListener('DOMContentLoaded', function() {
           if (result.url) {
             avatarImage.src = result.url;
           }
+          const logoDeleteBtn = document.getElementById('home-logo-delete');
+          if (logoDeleteBtn) logoDeleteBtn.style.display = 'block';
           console.log('✅ Logo guardado correctamente');
         } else {
           throw new Error(result.err || 'Error al guardar el logo');
@@ -813,11 +828,42 @@ document.addEventListener('DOMContentLoaded', function() {
         avatarImage.src = data.url;
         avatarImage.style.display = 'block';
         avatarText.style.display = 'none';
+        const logoDeleteBtn = document.getElementById('home-logo-delete');
+        if (logoDeleteBtn) logoDeleteBtn.style.display = 'block';
       }
     })
     .catch(error => {
       console.log('ℹ️ No hay logo guardado o error al cargar:', error);
     });
+
+  // Eliminar logotipo
+  const logoDeleteBtn = document.getElementById('home-logo-delete');
+  if (logoDeleteBtn) {
+    logoDeleteBtn.addEventListener('click', async function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const msg = document.documentElement.lang === 'es' || !document.documentElement.lang
+        ? '¿Eliminar el logotipo?'
+        : 'Delete the logo?';
+      if (!confirm(msg)) return;
+      try {
+        const response = await fetch('includes/home_delete_logo_js.php', { method: 'POST' });
+        const result = await response.json();
+        if (result.ok === 1) {
+          avatarImage.src = '';
+          avatarImage.style.display = 'none';
+          avatarText.style.display = 'block';
+          logoDeleteBtn.style.display = 'none';
+          if (logoInput) logoInput.value = '';
+        } else {
+          alert(result.err || 'Error al eliminar el logotipo');
+        }
+      } catch (err) {
+        console.error('Error deleting logo:', err);
+        alert('Error al eliminar el logotipo. Por favor, intente de nuevo.');
+      }
+    });
+  }
 });
 </script>
 <script src="js/i18n.js?v=<?= asset_version('js/i18n.js') ?>"></script>

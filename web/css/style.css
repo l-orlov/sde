@@ -3843,6 +3843,24 @@ div.label span .req,
   background: rgba(128, 128, 128, 0.9);
 }
 
+.home-logo-delete {
+  margin-top: 10px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #c00;
+  background: #fff;
+  border: 2px solid #c00;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.home-logo-delete:hover {
+  background: #c00;
+  color: #fff;
+}
+
 .home-form-fields {
   display: flex;
   flex-direction: column;

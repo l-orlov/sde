@@ -27,25 +27,24 @@ if (strlen($tax_id) !== 11) {
 	exit;
 }
 
-$query="SELECT * FROM users WHERE tax_id = ? AND password = ?";
+$query = "SELECT * FROM users WHERE tax_id = ? LIMIT 1";
 $stmt = mysqli_prepare($link, $query);
-mysqli_stmt_bind_param($stmt, "ss", $tax_id, $pass);
+mysqli_stmt_bind_param($stmt, "s", $tax_id);
 if (!mysqli_stmt_execute($stmt)) {
     error_log("SQL query error: " . mysqli_error($link));
     $return['err'] = "Login error. Por favor, intentá de nuevo";
-	echo json_encode($return);
-    exit();
-}
-
-$result = mysqli_stmt_get_result($stmt);
-$count = mysqli_num_rows($result);
-if ( !$count ) {
-	$return['err'] = 'CUIL/CUIT o contraseña incorrectos';
     echo json_encode($return);
     exit;
 }
-
+$result = mysqli_stmt_get_result($stmt);
 $row = mysqli_fetch_array($result, MYSQLI_ASSOC);
+mysqli_stmt_close($stmt);
+
+if (!$row || !password_verify($pass, $row['password'])) {
+    $return['err'] = 'CUIL/CUIT o contraseña incorrectos';
+    echo json_encode($return);
+    exit;
+}
 
 $_SESSION['uid'] = $row['id'];
 $_SESSION['company_name'] = $row['company_name'] ?? '';
