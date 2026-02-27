@@ -115,4 +115,67 @@ class FileSystemStorage implements StorageInterface {
         
         return 0;
     }
+    
+    /**
+     * Перемещает файл в новое место (в пределах basePath)
+     */
+    public function move(string $oldPath, string $newPath): bool {
+        $oldPath = ltrim($oldPath, '/');
+        $newPath = ltrim($newPath, '/');
+        $fullOld = $this->basePath . '/' . $oldPath;
+        $fullNew = $this->basePath . '/' . $newPath;
+        
+        if (!file_exists($fullOld)) {
+            return false;
+        }
+        $dir = dirname($fullNew);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        $ok = rename($fullOld, $fullNew);
+        if ($ok) {
+            chmod($fullNew, 0644);
+        }
+        return $ok;
+    }
+    
+    /**
+     * Удаляет каталог и всё содержимое рекурсивно
+     */
+    public function deleteDirectory(string $path): bool {
+        $path = ltrim($path, '/');
+        $fullPath = $this->basePath . '/' . $path;
+        if (!is_dir($fullPath)) {
+            return true;
+        }
+        $items = @scandir($fullPath);
+        if ($items === false) {
+            return false;
+        }
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $child = $fullPath . '/' . $item;
+            $childPath = $path . '/' . $item;
+            if (is_dir($child)) {
+                $this->deleteDirectory($childPath);
+            } else {
+                @unlink($child);
+            }
+        }
+        return @rmdir($fullPath);
+    }
+
+    /**
+     * Создаёт каталог (и родительские при необходимости), если не существует.
+     */
+    public function ensureDirectory(string $path): bool {
+        $path = ltrim($path, '/');
+        $fullPath = $this->basePath . '/' . $path;
+        if (is_dir($fullPath)) {
+            return true;
+        }
+        return @mkdir($fullPath, 0755, true);
+    }
 }

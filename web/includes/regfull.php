@@ -853,6 +853,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
           <input type="hidden" name="product_type[]" value="product">
+          <input type="hidden" name="product_id[]" value="">
           <button type="button" class="remove remove-product" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
         </div>
       </div>
@@ -976,6 +977,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
           <input type="hidden" name="service_type[]" value="service">
+          <input type="hidden" name="service_id[]" value="">
           <button type="button" class="remove remove-service" aria-label="Eliminar" data-i18n-aria-label="regfull_remove">&times;</button>
         </div>
       </div>
@@ -2977,14 +2979,46 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         })();
         
+        // Сначала явно собираем массивы продуктов и услуг по порядку строк, чтобы индексы 0,1,2 совпадали с product_photo_index_N и product_id[] на сервере
+        document.querySelectorAll('.product-item').forEach((item, productIndex) => {
+          const nameInput = item.querySelector('input[name="product_name[]"]');
+          const idInput = item.querySelector('input[type="hidden"][name="product_id[]"]');
+          const descInput = item.querySelector('textarea[name="product_description[]"], input[name="product_description[]"]');
+          const certInput = item.querySelector('input[name="product_certifications[]"]');
+          const exportInput = item.querySelector('input[name="annual_export[]"]');
+          const tariffInput = item.querySelector('input[name="product_tariff_code[]"]');
+          if (nameInput) appendToFormData('product_name[]', nameInput.value || '');
+          if (idInput) appendToFormData('product_id[]', idInput.value || '');
+          if (descInput) appendToFormData('product_description[]', descInput.value || '');
+          if (certInput) appendToFormData('product_certifications[]', certInput.value || '');
+          if (exportInput) appendToFormData('annual_export[]', exportInput.value || '');
+          if (tariffInput) appendToFormData('product_tariff_code[]', tariffInput.value || '');
+        });
+        document.querySelectorAll('.service-item').forEach((item, serviceIndex) => {
+          const nameInput = item.querySelector('input[name="service_name[]"]');
+          const idInput = item.querySelector('input[type="hidden"][name="service_id[]"]');
+          const descInput = item.querySelector('textarea[name="service_description[]"], input[name="service_description[]"]');
+          const certInput = item.querySelector('input[name="service_certifications[]"]');
+          const exportInput = item.querySelector('input[name="annual_export[]"]');
+          const tariffInput = item.querySelector('input[name="service_tariff_code[]"]');
+          if (nameInput) appendToFormData('service_name[]', nameInput.value || '');
+          if (idInput) appendToFormData('service_id[]', idInput.value || '');
+          if (descInput) appendToFormData('service_description[]', descInput.value || '');
+          if (certInput) appendToFormData('service_certifications[]', certInput.value || '');
+          if (exportInput) appendToFormData('service_annual_export[]', exportInput.value || '');
+          if (tariffInput) appendToFormData('service_tariff_code[]', tariffInput.value || '');
+        });
+
         document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], input[type="url"], input:not([type]), textarea').forEach(field => {
           if (field.type !== 'file' && !field.hidden && field.name) {
             if (field.name === 'tax_id') return;
+            // Не дублируем поля продуктов/услуг — уже собраны выше по порядку .product-item / .service-item
+            if (field.closest('.product-item') || field.closest('.service-item')) return;
             // Для estimated_term отправляем даже если значение пустое
             if (field.name === 'estimated_term') {
               appendToFormData(field.name, field.value || '');
             } else if (field.value) {
-            appendToFormData(field.name, field.value);
+              appendToFormData(field.name, field.value);
             }
           }
         });
@@ -3019,6 +3053,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 field.name === 'main_activity') {
               return;
             }
+            // product_id[] и service_id[] уже отправлены в блоке по .product-item / .service-item по порядку строк
+            if (field.name === 'product_id[]' || field.name === 'service_id[]') return;
             if (field.value) {
               appendToFormData(field.name, field.value);
             }
@@ -4461,6 +4497,9 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
       container = input.closest('.producto_grid');
     }
     if (!container) {
+      container = input.closest('.servicio_grid');
+    }
+    if (!container) {
       container = input.closest('.sec_item');
     }
     if (!container) {
@@ -4508,6 +4547,9 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
     
     if (container.classList.contains('producto_grid')) {
       console.log('displayFilePreview: Appending to producto_grid');
+      container.appendChild(preview);
+    } else if (container.classList.contains('servicio_grid')) {
+      console.log('displayFilePreview: Appending to servicio_grid');
       container.appendChild(preview);
     } else if (container.classList.contains('sec_item')) {
       console.log('displayFilePreview: Found sec_item, looking for producto_grid');
@@ -4711,35 +4753,45 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
           }
         });
         
-        Object.keys(files.service_photo).forEach(key => {
-          let serviceId = null;
-          
-          // Проверяем, является ли ключ service_id (число)
-          const keyAsNum = parseInt(key, 10);
-          if (!isNaN(keyAsNum) && serviceIdToItem.has(keyAsNum)) {
-            // Ключ - это service_id
-            serviceId = keyAsNum;
-          } else {
-            // Пропускаем, если ключ не является service_id
-            return;
-          }
-          
-          const item = serviceIdToItem.get(serviceId);
-          if (item) {
-            const input = item.querySelector('input[name="service_photo[]"]');
-            if (input) {
-              const fileData = files.service_photo[key];
-              const file = Array.isArray(fileData) ? fileData[0] : fileData;
-              if (file && file.url) {
-                if (window.updateFileDisplay) {
-                  window.updateFileDisplay(input, file.url, file.name);
-                } else {
-                  displayFilePreview(input, file.url, file.name, false);
+        const applyServicePhotos = () => {
+          Object.keys(files.service_photo).forEach(key => {
+            const keyAsNum = parseInt(key, 10);
+            if (isNaN(keyAsNum)) return;
+            const item = serviceIdToItem.get(keyAsNum);
+            if (item) {
+              const input = item.querySelector('input[name="service_photo[]"]');
+              if (input) {
+                const fileData = files.service_photo[key];
+                const file = Array.isArray(fileData) ? fileData[0] : fileData;
+                if (file && file.url) {
+                  if (window.updateFileDisplay) {
+                    window.updateFileDisplay(input, file.url, file.name);
+                  } else {
+                    displayFilePreview(input, file.url, file.name, false);
+                  }
                 }
               }
             }
-          }
-        });
+          });
+        };
+        
+        applyServicePhotos();
+        // Повторная попытка через 500ms, если карта пуста (DOM мог ещё не обновиться)
+        if (serviceIdToItem.size === 0 && Object.keys(files.service_photo).length > 0) {
+          setTimeout(() => {
+            const retryServiceItems = document.querySelectorAll('.service-item');
+            retryServiceItems.forEach((item) => {
+              const hiddenInput = item.querySelector('input[type="hidden"][name="service_id[]"]');
+              if (hiddenInput && hiddenInput.value) {
+                const serviceId = parseInt(hiddenInput.value, 10);
+                if (!isNaN(serviceId)) {
+                  serviceIdToItem.set(serviceId, item);
+                }
+              }
+            });
+            applyServicePhotos();
+          }, 500);
+        }
       }
     }
     
@@ -5184,11 +5236,16 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
               
               if (service.id) {
                 let hiddenInput = serviceItem.querySelector('input[type="hidden"][name="service_id[]"]');
-            if (!hiddenInput) {
-              hiddenInput = document.createElement('input');
-              hiddenInput.type = 'hidden';
+                if (!hiddenInput) {
+                  hiddenInput = document.createElement('input');
+                  hiddenInput.type = 'hidden';
                   hiddenInput.name = 'service_id[]';
-                  serviceItem.appendChild(hiddenInput);
+                  const servicioGrid = serviceItem.querySelector('.servicio_grid');
+                  if (servicioGrid) {
+                    servicioGrid.appendChild(hiddenInput);
+                  } else {
+                    serviceItem.appendChild(hiddenInput);
+                  }
                 }
                 hiddenInput.value = service.id;
               }

@@ -299,6 +299,97 @@ class FileManager {
     }
     
     /**
+     * Удаляет каталог продукта/услуги в хранилище (user_X/products/{id} или user_X/services/{id}).
+     * Вызывать после deleteProductFiles при удалении записи из products.
+     *
+     * @param int $productId ID записи в products
+     * @param int $userId ID пользователя
+     * @param string $type 'product' или 'service'
+     * @return bool
+     */
+    public function deleteProductOrServiceFolder(int $productId, int $userId, string $type): bool {
+        $folder = ($type === 'service') ? 'services' : 'products';
+        $path = "user_{$userId}/{$folder}/{$productId}";
+        try {
+            $storage = StorageFactory::create();
+            return $storage->deleteDirectory($path);
+        } catch (Exception $e) {
+            error_log("deleteProductOrServiceFolder: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Создаёт каталог продукта/услуги (user_X/products/{id} или user_X/services/{id}),
+     * если его ещё нет. Вызывать после INSERT новой записи в products, чтобы папка существовала.
+     *
+     * @param int $productId ID записи в products
+     * @param int $userId ID пользователя
+     * @param string $type 'product' или 'service'
+     * @return bool
+     */
+    public function ensureProductOrServiceFolder(int $productId, int $userId, string $type): bool {
+        $folder = ($type === 'service') ? 'services' : 'products';
+        $path = "user_{$userId}/{$folder}/{$productId}";
+        try {
+            $storage = StorageFactory::create();
+            return $storage->ensureDirectory($path);
+        } catch (Exception $e) {
+            error_log("ensureProductOrServiceFolder: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Переносит файл из products/0/ или services/0/ в products/{newProductId}/ или services/{newProductId}/,
+     * обновляет file_path и product_id в БД. Вызывается при сохранении формы, когда «временному» файлу
+     * назначается реальный ID продукта/услуги.
+     *
+     * @param int $fileId ID записи в files
+     * @param int $newProductId Новый product_id (id продукта или услуги в products)
+     * @param int $userId ID пользователя (проверка прав)
+     * @return bool true если перенос выполнен или не требовался, false если файл не найден
+     */
+    public function moveFileToNewProduct(int $fileId, int $newProductId, int $userId): bool {
+        $stmt = $this->db->prepare("SELECT id, file_path, file_type, storage_type, user_id FROM files WHERE id = ?");
+        $stmt->bind_param("i", $fileId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if (!$row = $result->fetch_assoc()) {
+            return false;
+        }
+        $stmt->close();
+        if ($row['user_id'] != $userId) {
+            throw new Exception("Access denied: user does not own this file");
+        }
+        $oldPath = $row['file_path'];
+        $fileType = $row['file_type'];
+        $storageType = $row['storage_type'] ?? 'local';
+        $pathUser = 'user_' . $row['user_id'];
+        $needMove = (strpos($oldPath, $pathUser . '/products/0/') !== false
+            || strpos($oldPath, $pathUser . '/services/0/') !== false
+            || strpos($oldPath, $pathUser . '/product_0/') !== false);
+        if (!$needMove) {
+            return true;
+        }
+        $basename = basename($oldPath);
+        if ($fileType === 'service_photo') {
+            $newPath = $pathUser . '/services/' . $newProductId . '/' . $basename;
+        } else {
+            $newPath = $pathUser . '/products/' . $newProductId . '/' . $basename;
+        }
+        $storage = StorageFactory::createByType($storageType);
+        if (!$storage->move($oldPath, $newPath)) {
+            throw new Exception("Failed to move file from {$oldPath} to {$newPath}");
+        }
+        $up = $this->db->prepare("UPDATE files SET file_path = ?, product_id = ? WHERE id = ? AND user_id = ?");
+        $up->bind_param("siii", $newPath, $newProductId, $fileId, $userId);
+        $ok = $up->execute();
+        $up->close();
+        return $ok;
+    }
+    
+    /**
      * Валидация файла
      */
     private function validateFile($file): void {
@@ -614,13 +705,26 @@ class FileManager {
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
         $hash = md5($userId . ($productId ?? 'company') . time() . rand());
         $fileName = $hash . '.' . $extension;
-        
-        // Если productId = null (файлы компании), используем структуру company
-        if ($productId === null) {
+
+        $id = $productId ?? 0;
+
+        // 1) Файлы компании: логотип, видео, процесс, цифровой каталог
+        $companyTypes = ['logo', 'process_photo', 'digital_catalog', 'institutional_video'];
+        if ($productId === null || in_array($fileType, $companyTypes, true)) {
             return "user_{$userId}/company/{$fileType}_{$fileName}";
         }
-        
-        // Структура для файлов товаров: user_{id}/product_{id}/{type}_{filename}
-        return "user_{$userId}/product_{$productId}/{$fileType}_{$fileName}";
+
+        // 2) Изображения продуктов
+        if ($fileType === 'product_photo' || $fileType === 'product_photo_sec') {
+            return "user_{$userId}/products/{$id}/{$fileType}_{$fileName}";
+        }
+
+        // 3) Изображения услуг
+        if ($fileType === 'service_photo') {
+            return "user_{$userId}/services/{$id}/{$fileType}_{$fileName}";
+        }
+
+        // Прочие типы — в company
+        return "user_{$userId}/company/{$fileType}_{$fileName}";
     }
 }

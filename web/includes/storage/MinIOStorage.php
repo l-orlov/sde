@@ -125,4 +125,23 @@ class MinIOStorage implements StorageInterface {
         
         return 0;
     }
+    
+    /**
+     * Перемещение в MinIO не реализовано
+     */
+    public function move(string $oldPath, string $newPath): bool {
+        throw new Exception("MinIO move is not implemented.");
+    }
+    
+    /**
+     * Удаление каталога в MinIO не реализовано
+     */
+    public function deleteDirectory(string $path): bool {
+        throw new Exception("MinIO deleteDirectory is not implemented.");
+    }
+
+    public function ensureDirectory(string $path): bool {
+        // В MinIO/S3 нет пустых "папок" — путь создаётся при загрузке объекта
+        return true;
+    }
 }

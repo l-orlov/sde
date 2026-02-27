@@ -123,7 +123,7 @@ if ($link) {
         <div class="hero-tagline">
             <span data-i18n="hero_tagline_normal" class="tagline-normal">CON </span>
             <span data-i18n="hero_tagline_bold" class="tagline-bold">SU GENTE</span>
-            <span data-i18n="hero_tagline_normal_2" class="tagline-normal">, EL NORTE AVANZA</span><br>
+            <span data-i18n="hero_tagline_normal_2" class="tagline-normal">, EL NORTE CAMINA</span><br>
             <span data-i18n="hero_tagline_normal_3" class="tagline-normal">HACIA UN </span>
             <span data-i18n="hero_tagline_bold_2" class="tagline-bold">FUTURO SOSTENIBLE.</span>
         </div>

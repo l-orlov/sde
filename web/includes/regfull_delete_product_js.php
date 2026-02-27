@@ -63,6 +63,8 @@ try {
     
     // Удаляем все файлы, связанные с продуктом/услугой
     $deletedFilesCount = $fileManager->deleteProductFiles($productId, $userId);
+    // Удаляем каталог продукта/услуги (products/{id} или services/{id})
+    $fileManager->deleteProductOrServiceFolder($productId, $userId, $product['type'] === 'service' ? 'service' : 'product');
     
     // Удаляем запись из таблицы products
     $deleteQuery = "DELETE FROM products WHERE id = ? AND user_id = ?";

@@ -54,4 +54,29 @@ interface StorageInterface {
      * @return int Размер в байтах
      */
     public function getSize($path): int;
+    
+    /**
+     * Перемещает файл внутри хранилища
+     * 
+     * @param string $oldPath Текущий путь (из БД)
+     * @param string $newPath Новый путь
+     * @return bool true если успешно
+     */
+    public function move(string $oldPath, string $newPath): bool;
+    
+    /**
+     * Удаляет каталог и всё его содержимое
+     * 
+     * @param string $path Относительный путь каталога (например: "user_16/products/52")
+     * @return bool true если каталог удалён или не существовал
+     */
+    public function deleteDirectory(string $path): bool;
+
+    /**
+     * Создаёт каталог (и родительские при необходимости), если не существует.
+     *
+     * @param string $path Относительный путь каталога (например: "user_16/products/52")
+     * @return bool true если каталог существует или успешно создан
+     */
+    public function ensureDirectory(string $path): bool;
 }

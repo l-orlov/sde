@@ -315,12 +315,25 @@ try {
         mysqli_stmt_close($stmt);
         
         $processedProductIds = [];
-        $existingProductIndex = 0; // Индекс для последовательного сопоставления
+        // Карта id продукта -> запись (для сопоставления строк формы с продуктами по product_id[] из формы)
+        $existingProductsById = [];
+        foreach ($existingProducts as $p) {
+            $existingProductsById[(int) $p['id']] = $p;
+        }
         
         foreach ($input['product_name'] as $index => $productName) {
             $productName = trim($productName);
-            if (empty($productName)) {
-                continue; // Пропускаем пустые продукты
+
+            // product_id[] из формы: строка с этим индексом относится к существующему продукту или к новому
+            $rowProductId = 0;
+            if (isset($input['product_id'][$index]) && is_array($input['product_id'])) {
+                $raw = trim((string) $input['product_id'][$index]);
+                $rowProductId = $raw !== '' ? (int) $raw : 0;
+            }
+
+            // Пропускаем только существующие продукты с пустым именем (не новые строки — для новых всегда INSERT, чтобы создалась папка и привязался файл)
+            if (empty($productName) && $rowProductId > 0) {
+                continue; // Существующий продукт с пустым именем — пропуск
             }
             
             // Все продукты равны, is_main = 0 для всех
@@ -385,12 +398,10 @@ try {
             }
             $targetMarketsJson = json_encode($targetMarkets, JSON_UNESCAPED_UNICODE);
             
-            // Найти существующий продукт для обновления (последовательное сопоставление по индексу)
+            // Сопоставление по product_id[] из формы: строка с id = обновление, без id = новый продукт
             $existingProduct = null;
-            if ($existingProductIndex < count($existingProducts)) {
-                // Используем следующий доступный существующий продукт
-                $existingProduct = $existingProducts[$existingProductIndex];
-                $existingProductIndex++;
+            if ($rowProductId > 0 && isset($existingProductsById[$rowProductId])) {
+                $existingProduct = $existingProductsById[$rowProductId];
             }
             
             // Проверяем, есть ли поля current_markets и target_markets в таблице
@@ -480,6 +491,12 @@ try {
                         mysqli_stmt_close($st);
                     }
                 }
+                // Создаём папку продукта в uploads (user_X/products/{id}), чтобы при переносе файла она существовала
+                try {
+                    $fileManager->ensureProductOrServiceFolder((int) $productId, $userId, 'product');
+                } catch (Exception $e) {
+                    error_log("ensureProductOrServiceFolder product {$productId}: " . $e->getMessage());
+                }
                 $processedProductIds[] = $productId;
             }
             
@@ -505,6 +522,12 @@ try {
                     $productIdToCheck = $row['id'];
                     // Удаляем только те, которых нет в обработанных
                     if (!in_array($productIdToCheck, $processedProductIds)) {
+                        try {
+                            $fileManager->deleteProductFiles($productIdToCheck, $userId);
+                            $fileManager->deleteProductOrServiceFolder($productIdToCheck, $userId, 'product');
+                        } catch (Exception $e) {
+                            error_log("Error deleting product files/folder {$productIdToCheck}: " . $e->getMessage());
+                        }
                         $deleteQuery = "DELETE FROM products WHERE id = ? AND company_id = ?";
                         $deleteStmt = mysqli_prepare($link, $deleteQuery);
                         if ($deleteStmt) {
@@ -527,10 +550,26 @@ try {
         $existingMain = mysqli_fetch_assoc($result);
         mysqli_stmt_close($stmt);
         
-        $productName = htmlspecialchars(trim($input['main_product'] ?? ''));
-        $description = htmlspecialchars(trim($input['product_description'] ?? ''));
-        $annualExport = htmlspecialchars(trim($input['annual_export'] ?? ''));
-        $certifications = htmlspecialchars(trim($input['certifications'] ?? ''));
+        $mainProductRaw = $input['main_product'] ?? '';
+        $productDescRaw = $input['product_description'] ?? '';
+        $annualExportRaw = $input['annual_export'] ?? '';
+        $certificationsRaw = $input['certifications'] ?? '';
+        if (is_array($mainProductRaw)) {
+            $mainProductRaw = $mainProductRaw[0] ?? '';
+        }
+        if (is_array($productDescRaw)) {
+            $productDescRaw = $productDescRaw[0] ?? '';
+        }
+        if (is_array($annualExportRaw)) {
+            $annualExportRaw = $annualExportRaw[0] ?? '';
+        }
+        if (is_array($certificationsRaw)) {
+            $certificationsRaw = $certificationsRaw[0] ?? '';
+        }
+        $productName = htmlspecialchars(trim((string) $mainProductRaw));
+        $description = htmlspecialchars(trim((string) $productDescRaw));
+        $annualExport = htmlspecialchars(trim((string) $annualExportRaw));
+        $certifications = htmlspecialchars(trim((string) $certificationsRaw));
         $type = 'product'; // Устанавливаем тип продукта
         $isMain = 0; // Все продукты равны
         
@@ -573,11 +612,22 @@ try {
         mysqli_stmt_close($stmt);
         
         $processedServiceIds = [];
-        $existingServiceIndex = 0;
+        $existingServicesById = [];
+        foreach ($existingServices as $s) {
+            $existingServicesById[(int) $s['id']] = $s;
+        }
         
         foreach ($input['service_name'] as $index => $serviceName) {
             $serviceName = trim($serviceName);
-            if (empty($serviceName)) {
+
+            $rowServiceId = 0;
+            if (isset($input['service_id'][$index]) && is_array($input['service_id'])) {
+                $raw = trim((string) $input['service_id'][$index]);
+                $rowServiceId = $raw !== '' ? (int) $raw : 0;
+            }
+
+            // Пропускаем только существующие услуги с пустым именем (новые строки всегда INSERT для папки и привязки файла)
+            if (empty($serviceName) && $rowServiceId > 0) {
                 continue;
             }
             
@@ -607,8 +657,9 @@ try {
                 $tariffCode = null;
             }
             $tariffCodeBind = ($tariffCode !== null && $tariffCode !== '') ? $tariffCode : '';
-            $annualExport = isset($input['annual_export'][$index]) && is_array($input['annual_export'])
-                ? htmlspecialchars(trim($input['annual_export'][$index])) : '';
+            $annualExport = isset($input['service_annual_export'][$index]) && is_array($input['service_annual_export'])
+                ? htmlspecialchars(trim($input['service_annual_export'][$index])) : (isset($input['annual_export'][$index]) && is_array($input['annual_export'])
+                ? htmlspecialchars(trim($input['annual_export'][$index])) : '');
             $certifications = isset($input['service_certifications'][$index]) && is_array($input['service_certifications'])
                 ? htmlspecialchars(trim($input['service_certifications'][$index])) : '';
             $activity = isset($input['service_activity'][$index]) && is_array($input['service_activity'])
@@ -642,11 +693,9 @@ try {
             }
             $targetMarketsJson = json_encode($targetMarkets, JSON_UNESCAPED_UNICODE);
             
-            // Найти существующую услугу для обновления
             $existingService = null;
-            if ($existingServiceIndex < count($existingServices)) {
-                $existingService = $existingServices[$existingServiceIndex];
-                $existingServiceIndex++;
+            if ($rowServiceId > 0 && isset($existingServicesById[$rowServiceId])) {
+                $existingService = $existingServicesById[$rowServiceId];
             }
             
             // Проверяем, есть ли поля current_markets, target_markets y tariff_code en la tabla
@@ -736,6 +785,12 @@ try {
                         mysqli_stmt_close($st);
                     }
                 }
+                // Создаём папку услуги в uploads (user_X/services/{id})
+                try {
+                    $fileManager->ensureProductOrServiceFolder((int) $serviceId, $userId, 'service');
+                } catch (Exception $e) {
+                    error_log("ensureProductOrServiceFolder service {$serviceId}: " . $e->getMessage());
+                }
                 $processedServiceIds[] = $serviceId;
             }
             
@@ -759,6 +814,12 @@ try {
                 while ($row = mysqli_fetch_assoc($result)) {
                     $serviceIdToCheck = $row['id'];
                     if (!in_array($serviceIdToCheck, $processedServiceIds)) {
+                        try {
+                            $fileManager->deleteProductFiles($serviceIdToCheck, $userId);
+                            $fileManager->deleteProductOrServiceFolder($serviceIdToCheck, $userId, 'service');
+                        } catch (Exception $e) {
+                            error_log("Error deleting service files/folder {$serviceIdToCheck}: " . $e->getMessage());
+                        }
                         $deleteQuery = "DELETE FROM products WHERE id = ? AND company_id = ?";
                         $deleteStmt = mysqli_prepare($link, $deleteQuery);
                         if ($deleteStmt) {
@@ -944,9 +1005,24 @@ try {
             $productIndexKey = 'new_file_product_index_' . $fileKey;
             $productIndex = isset($input[$productIndexKey]) ? intval($input[$productIndexKey]) : null;
             
-            // Определяем product_id по индексу для product_photo
+            // Сначала определяем по fileKey: для service_photo — только service_*, для product_photo — только product_*
+            // Иначе при productIndex=0 фото услуги ошибочно привязывалось бы к product_0
+            if ($productId === null && strpos($fileKey, 'service_photo_index_') === 0) {
+                $indexStr = substr($fileKey, 20); // 'service_photo_index_'.length = 20
+                $index = intval($indexStr);
+                if (isset($productIds['service_' . $index])) {
+                    $productId = $productIds['service_' . $index];
+                }
+            }
+            if ($productId === null && strpos($fileKey, 'product_photo_index_') === 0) {
+                $indexStr = substr($fileKey, 20);
+                $index = intval($indexStr);
+                if (isset($productIds['product_' . $index])) {
+                    $productId = $productIds['product_' . $index];
+                }
+            }
+            // Общий fallback по индексу только если тип по fileKey не определился
             if ($productId === null && $productIndex !== null) {
-                // Пробуем найти по префиксу 'product_' или 'service_'
                 if (isset($productIds['product_' . $productIndex])) {
                     $productId = $productIds['product_' . $productIndex];
                 } elseif (isset($productIds['service_' . $productIndex])) {
@@ -956,31 +1032,7 @@ try {
                 }
             }
             
-            // Обработка product_photo_index_X
-            if ($productId === null && strpos($fileKey, 'product_photo_index_') === 0) {
-                $indexStr = substr($fileKey, 20); // 'product_photo_index_'.length = 20
-                $index = intval($indexStr);
-                // Ищем по префиксу 'product_'
-                if (isset($productIds['product_' . $index])) {
-                    $productId = $productIds['product_' . $index];
-                } elseif (isset($productIds[$index])) {
-                    $productId = $productIds[$index];
-                }
-            }
-            
-            // Обработка service_photo_index_X
-            if ($productId === null && strpos($fileKey, 'service_photo_index_') === 0) {
-                $indexStr = substr($fileKey, 20); // 'service_photo_index_'.length = 20
-                $index = intval($indexStr);
-                // Ищем по префиксу 'service_'
-                if (isset($productIds['service_' . $index])) {
-                    $productId = $productIds['service_' . $index];
-                } elseif (isset($productIds[$index])) {
-                    $productId = $productIds[$index];
-                }
-            }
-            
-            // Обработка старого формата product_photo (без индекса) - используем первый продукт
+            // Старый формат без индекса: product_photo — первый продукт, service_photo — первая услуга
             if ($productId === null && $fileKey === 'product_photo') {
                 if (isset($productIdsByType['product'][0])) {
                     $productId = $productIdsByType['product'][0];
@@ -990,8 +1042,6 @@ try {
                     $productId = $productIds[0];
                 }
             }
-            
-            // Обработка service_photo (без индекса) - используем первую услугу
             if ($productId === null && $fileKey === 'service_photo') {
                 if (isset($productIdsByType['service'][0])) {
                     $productId = $productIdsByType['service'][0];
@@ -999,6 +1049,23 @@ try {
                     $productId = $productIds['service_0'];
                 } elseif (isset($productIds[0])) {
                     $productId = $productIds[0];
+                }
+            }
+            
+            // Проверка типа записи в БД: service_photo только для type='service', product_photo только для type='product'
+            $isServicePhoto = (strpos($fileKey, 'service_photo') === 0);
+            if ($productId && ($isServicePhoto || strpos($fileKey, 'product_photo') === 0)) {
+                $expectType = $isServicePhoto ? 'service' : 'product';
+                $checkType = mysqli_prepare($link, "SELECT type FROM products WHERE id = ? AND company_id = ?");
+                if ($checkType) {
+                    mysqli_stmt_bind_param($checkType, 'ii', $productId, $companyId);
+                    mysqli_stmt_execute($checkType);
+                    $typeRes = mysqli_stmt_get_result($checkType);
+                    $typeRow = $typeRes ? mysqli_fetch_assoc($typeRes) : null;
+                    mysqli_stmt_close($checkType);
+                    if (!$typeRow || ($typeRow['type'] ?? '') !== $expectType) {
+                        $productId = null;
+                    }
                 }
             }
             
@@ -1073,6 +1140,13 @@ try {
             }
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
+            if ($productId) {
+                try {
+                    $fileManager->moveFileToNewProduct((int) $newFileId, (int) $productId, $userId);
+                } catch (Exception $e) {
+                    error_log("Error moving file {$newFileId} to product {$productId}: " . $e->getMessage());
+                }
+            }
         }
     }
     
@@ -1154,22 +1228,16 @@ try {
                         $targetProductId = $productIds[0];
                     }
                 } elseif (strpos($fileKey, 'product_photo_index_') === 0) {
-                    // Новый формат с индексами
-                    $indexStr = substr($fileKey, 20); // 'product_photo_index_'.length = 20
+                    $indexStr = substr($fileKey, 20);
                     $index = intval($indexStr);
                     if (isset($productIds['product_' . $index])) {
                         $targetProductId = $productIds['product_' . $index];
-                    } elseif (isset($productIds[$index])) {
-                        $targetProductId = $productIds[$index];
                     }
                 } elseif (strpos($fileKey, 'service_photo_index_') === 0) {
-                    // Новый формат с индексами для услуг
-                    $indexStr = substr($fileKey, 20); // 'service_photo_index_'.length = 20
+                    $indexStr = substr($fileKey, 20);
                     $index = intval($indexStr);
                     if (isset($productIds['service_' . $index])) {
                         $targetProductId = $productIds['service_' . $index];
-                    } elseif (isset($productIds[$index])) {
-                        $targetProductId = $productIds[$index];
                     }
                 } elseif (strpos($fileKey, 'product_photo_sec_') === 0) {
                     // Вторичный продукт
@@ -1192,6 +1260,22 @@ try {
                     }
                 }
                 
+                // Проверка типа: для service_photo — только type='service', для product_photo — только type='product'
+                if ($targetProductId && (strpos($fileKey, 'service_photo') === 0 || strpos($fileKey, 'product_photo') === 0)) {
+                    $expectType = (strpos($fileKey, 'service_photo') === 0) ? 'service' : 'product';
+                    $checkType = mysqli_prepare($link, "SELECT type FROM products WHERE id = ? AND company_id = ?");
+                    if ($checkType) {
+                        mysqli_stmt_bind_param($checkType, 'ii', $targetProductId, $companyId);
+                        mysqli_stmt_execute($checkType);
+                        $typeRes = mysqli_stmt_get_result($checkType);
+                        $typeRow = $typeRes ? mysqli_fetch_assoc($typeRes) : null;
+                        mysqli_stmt_close($checkType);
+                        if (!$typeRow || ($typeRow['type'] ?? '') !== $expectType) {
+                            $targetProductId = null;
+                        }
+                    }
+                }
+                
                 if ($targetProductId) {
                             foreach ($fileIds as $fileId) {
                                 if ($fileId > 0) {
@@ -1201,6 +1285,11 @@ try {
                             mysqli_stmt_bind_param($stmt, 'iii', $targetProductId, $fileId, $userId);
                                     mysqli_stmt_execute($stmt);
                                     mysqli_stmt_close($stmt);
+                                    try {
+                                        $fileManager->moveFileToNewProduct((int) $fileId, (int) $targetProductId, $userId);
+                                    } catch (Exception $e) {
+                                        error_log("Error moving file {$fileId} to product {$targetProductId}: " . $e->getMessage());
+                                    }
                         }
                     }
                 } else {
