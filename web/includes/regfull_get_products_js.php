@@ -36,22 +36,22 @@ try {
     if ($hasCurrentMarketsField && $hasTariffCodeField) {
         $query = "SELECT id, is_main, type, activity, name, description, tariff_code, annual_export, certifications, current_markets, target_markets
                   FROM products
-                  WHERE user_id = ?
+                  WHERE user_id = ? AND (deleted_at IS NULL)
                   ORDER BY type ASC, id ASC";
     } elseif ($hasCurrentMarketsField) {
         $query = "SELECT id, is_main, type, activity, name, description, annual_export, certifications, current_markets, target_markets
                   FROM products
-                  WHERE user_id = ?
+                  WHERE user_id = ? AND (deleted_at IS NULL)
                   ORDER BY type ASC, id ASC";
     } elseif ($hasTariffCodeField) {
         $query = "SELECT id, is_main, type, activity, name, description, tariff_code, annual_export, certifications
                   FROM products
-                  WHERE user_id = ?
+                  WHERE user_id = ? AND (deleted_at IS NULL)
                   ORDER BY type ASC, id ASC";
     } else {
         $query = "SELECT id, is_main, type, activity, name, description, annual_export, certifications
                   FROM products
-                  WHERE user_id = ?
+                  WHERE user_id = ? AND (deleted_at IS NULL)
                   ORDER BY type ASC, id ASC";
     }
     

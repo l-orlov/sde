@@ -268,10 +268,10 @@ try {
         }
     }
     
-    // 4. Обновляем users.company_name синхронизированно с companies.name
-    $query = "UPDATE users SET company_name = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?";
+    // 4. Синхронизируем users: company_name и tax_id (CUIT) с companies
+    $query = "UPDATE users SET company_name = ?, tax_id = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?";
     $stmt = mysqli_prepare($link, $query);
-    mysqli_stmt_bind_param($stmt, 'si', $name, $userId);
+    mysqli_stmt_bind_param($stmt, 'ssi', $name, $taxId, $userId);
     if (!mysqli_stmt_execute($stmt)) {
         throw new Exception("Error al actualizar nombre en users: " . mysqli_error($link));
     }

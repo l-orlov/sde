@@ -8,6 +8,11 @@ include "includes/functions.php";
 DBconnect();
 
 $page = isset($_REQUEST['page']) ? $_REQUEST['page'] : '';
+// Лендинг — без кэша, чтобы карусель при обновлении всегда подгружала актуальные данные из БД
+if ($page === 'landing' || ($page === '' && !isset($_SESSION['uid']))) {
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+}
 if ($page === 'search_api') {
     require __DIR__ . '/includes/search_api.php';
     exit;

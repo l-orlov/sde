@@ -13,15 +13,26 @@ $__pdf_oferta_urls = [
     'moderno_en'   => $__web_base . '/index.php?page=moderno_pdf_en',
 ];
 
-// Товары/услуги из одобренных компаний для карусели
+// Товары/услуги только из компаний с пройденной модерацией (approved); без удалённых (deleted_at IS NULL); данные при каждой загрузке страницы
 $__carousel_products = [];
 global $link;
 if ($link) {
+    // Проверяем наличие колонки deleted_at (если миграция не применена — фильтр не используем)
+    $hasDeletedAt = false;
+    $checkCol = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'deleted_at'");
+    if ($checkCol && mysqli_fetch_assoc($checkCol)) {
+        $hasDeletedAt = true;
+    }
+    $deletedCondition = $hasDeletedAt ? " AND (p.deleted_at IS NULL)" : "";
+    // Сначала выбираем только одобренные компании, затем только товары этих компаний (жёсткая связь по id и user_id)
     $q = "SELECT p.id, p.name, p.description, p.type, p.company_id, c.name AS company_name
           FROM products p
-          INNER JOIN companies c ON c.id = p.company_id AND c.user_id = p.user_id
-          WHERE c.moderation_status = 'approved'
-          ORDER BY p.id DESC";
+          INNER JOIN (
+            SELECT id, user_id, name FROM companies WHERE BINARY moderation_status = 'approved'
+          ) c ON c.id = p.company_id AND c.user_id = p.user_id
+          WHERE 1=1" . $deletedCondition . "
+          ORDER BY COALESCE(p.updated_at, p.id) DESC
+          LIMIT 60";
     $res = @mysqli_query($link, $q);
     if ($res) {
         while ($row = mysqli_fetch_assoc($res)) {
@@ -35,18 +46,17 @@ if ($link) {
             ];
         }
     }
-    // Изображения для товаров
+    // Изображения для товаров (только для уже отфильтрованного списка товаров одобренных компаний)
     $__carousel_photos = [];
     if (!empty($__carousel_products)) {
         $productIds = array_column($__carousel_products, 'id');
         $placeholders = implode(',', array_fill(0, count($productIds), '?'));
         $q = "SELECT f.id, f.product_id FROM files f
               INNER JOIN products p ON p.id = f.product_id
-              INNER JOIN companies c ON c.id = p.company_id AND c.user_id = p.user_id
+              INNER JOIN (SELECT id, user_id FROM companies WHERE BINARY moderation_status = 'approved') c ON c.id = p.company_id AND c.user_id = p.user_id
               WHERE f.product_id IN ($placeholders)
                 AND f.file_type IN ('product_photo', 'product_photo_sec', 'service_photo')
-                AND (f.is_temporary = 0 OR f.is_temporary IS NULL)
-                AND c.moderation_status = 'approved'
+                AND (f.is_temporary = 0 OR f.is_temporary IS NULL)" . $deletedCondition . "
               ORDER BY f.product_id, f.id ASC";
         $stmt = mysqli_prepare($link, $q);
         if ($stmt) {
@@ -80,10 +90,10 @@ if ($link) {
                                 <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['clasico_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_clasico">Clásico</span><img src="img/icons/clasico_icon.png" alt="" class="oferta-dropdown-icon"></a>
                             </li>
                             <li role="none">
-                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['corporativo_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['corporativo_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['corporativo_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_corporativo">Corporativo</span><img src="img/icons/corporativo_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['clasico_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_corporativo">Corporativo</span><img src="img/icons/corporativo_icon.png" alt="" class="oferta-dropdown-icon"></a>
                             </li>
                             <li role="none">
-                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['moderno_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['moderno_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['moderno_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_moderno">Moderno</span><img src="img/icons/moderno_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['clasico_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_moderno">Moderno</span><img src="img/icons/moderno_icon.png" alt="" class="oferta-dropdown-icon"></a>
                             </li>
                         </ul>
                     </div>

@@ -127,6 +127,7 @@ CREATE TABLE products (
     certifications      TEXT,
     created_at          INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),
     updated_at          INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),
+    deleted_at          INT UNSIGNED    NULL     DEFAULT NULL COMMENT 'Unix timestamp when soft-deleted; NULL = not deleted',
 
     PRIMARY KEY (`id`),
     KEY `products_company_idx` (`company_id`),

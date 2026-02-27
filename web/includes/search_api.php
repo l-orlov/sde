@@ -26,6 +26,7 @@ if (!$link) {
     $out($suggest ? [] : null, $suggest ? null : []);
 }
 
+// Подсказки и результаты поиска — только товары/услуги компаний с moderation_status = 'approved'
 $likeArg = '%' . $q . '%';
 
 if ($suggest) {
@@ -33,6 +34,7 @@ if ($suggest) {
         FROM products p
         INNER JOIN companies c ON c.id = p.company_id AND c.user_id = p.user_id
         WHERE c.moderation_status = 'approved'
+          AND (p.deleted_at IS NULL)
           AND p.tariff_code IS NOT NULL AND p.tariff_code != ''
           AND (p.tariff_code LIKE ? OR p.name LIKE ?)
         ORDER BY p.tariff_code
@@ -64,6 +66,7 @@ $stmt = @mysqli_prepare($link, "SELECT p.id, p.name, p.tariff_code, p.company_id
     FROM products p
     INNER JOIN companies c ON c.id = p.company_id AND c.user_id = p.user_id
     WHERE c.moderation_status = 'approved'
+      AND (p.deleted_at IS NULL)
       AND (p.tariff_code LIKE ? OR p.name LIKE ?)
     ORDER BY p.tariff_code, p.id
     LIMIT 50");
@@ -160,6 +163,7 @@ if (!empty($productIds)) {
             AND f.file_type IN ('product_photo', 'product_photo_sec', 'service_photo')
             AND (f.is_temporary = 0 OR f.is_temporary IS NULL)
             AND c.moderation_status = 'approved'
+            AND (p.deleted_at IS NULL)
           ORDER BY f.product_id, f.id ASC";
     $stmt = mysqli_prepare($link, $q);
     if ($stmt) {

@@ -297,6 +297,9 @@ function generateUserFormHTML(data, userId) {
     html += '<div class="user-form-section">';
     html += '<div class="alert ' + statusClass + '" style="margin-bottom: 20px;">';
     html += '<strong>Estado de moderación:</strong> ' + statusText;
+    if (isApproved) {
+        html += ' <button type="button" class="btn btn-danger btn-sm" onclick="revokeModeration(' + userId + ')" style="margin-left: 10px;">Quitar aprobación</button>';
+    }
     html += '</div>';
     html += '</div>';
     
@@ -1053,6 +1056,42 @@ function approveModeration(userId) {
     })
     .catch(error => {
         console.error('Error approving moderation:', error);
+        if (messageEl) {
+            messageEl.innerHTML = '<div class="alert alert-danger">Error de conexión</div>';
+        }
+    });
+}
+
+// Функция снятия одобрения модерации (вернуть компанию в "En moderación")
+function revokeModeration(userId) {
+    if (!confirm('¿Está seguro de que desea quitar la aprobación? La empresa volverá a estado "En moderación".')) {
+        return;
+    }
+    const basePathValue = window.basePath || basePath || '';
+    const messageEl = document.getElementById('save_message');
+    if (messageEl) {
+        messageEl.innerHTML = '<div class="alert alert-info">Revocando aprobación...</div>';
+    }
+    fetch(basePathValue + 'includes/users_revoke_moderation_js.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.ok === 1) {
+            if (messageEl) {
+                messageEl.innerHTML = '<div class="alert alert-success">' + (data.res || 'Aprobación revocada. Recargando...') + '</div>';
+            }
+            setTimeout(() => location.reload(), 500);
+        } else {
+            if (messageEl) {
+                messageEl.innerHTML = '<div class="alert alert-danger">Error: ' + (data.err || 'Error desconocido') + '</div>';
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error revoking moderation:', error);
         if (messageEl) {
             messageEl.innerHTML = '<div class="alert alert-danger">Error de conexión</div>';
         }

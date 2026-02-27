@@ -66,18 +66,32 @@ try {
     // Удаляем каталог продукта/услуги (products/{id} или services/{id})
     $fileManager->deleteProductOrServiceFolder($productId, $userId, $product['type'] === 'service' ? 'service' : 'product');
     
-    // Удаляем запись из таблицы products
-    $deleteQuery = "DELETE FROM products WHERE id = ? AND user_id = ?";
-    $deleteStmt = $link->prepare($deleteQuery);
-    if (!$deleteStmt) {
-        throw new Exception("Failed to prepare delete query: " . $link->error);
+    // Мягкое удаление, если есть колонка deleted_at; иначе — физическое удаление
+    $checkCol = $link->query("SHOW COLUMNS FROM products LIKE 'deleted_at'");
+    $hasDeletedAt = ($checkCol && $checkCol->num_rows > 0);
+    if ($hasDeletedAt) {
+        $updateQuery = "UPDATE products SET deleted_at = UNIX_TIMESTAMP() WHERE id = ? AND user_id = ?";
+        $updateStmt = $link->prepare($updateQuery);
+        if (!$updateStmt) {
+            throw new Exception("Failed to prepare update query: " . $link->error);
+        }
+        $updateStmt->bind_param("ii", $productId, $userId);
+        if (!$updateStmt->execute()) {
+            throw new Exception("Failed to mark product as deleted: " . $updateStmt->error);
+        }
+        $updateStmt->close();
+    } else {
+        $deleteQuery = "DELETE FROM products WHERE id = ? AND user_id = ?";
+        $deleteStmt = $link->prepare($deleteQuery);
+        if (!$deleteStmt) {
+            throw new Exception("Failed to prepare delete query: " . $link->error);
+        }
+        $deleteStmt->bind_param("ii", $productId, $userId);
+        if (!$deleteStmt->execute()) {
+            throw new Exception("Failed to delete product: " . $deleteStmt->error);
+        }
+        $deleteStmt->close();
     }
-    $deleteStmt->bind_param("ii", $productId, $userId);
-    
-    if (!$deleteStmt->execute()) {
-        throw new Exception("Failed to delete product: " . $deleteStmt->error);
-    }
-    $deleteStmt->close();
     
     $itemType = ($product['type'] === 'service') ? 'servicio' : 'producto';
     $itemName = htmlspecialchars($product['name'] ?? '');
