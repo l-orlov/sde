@@ -51,8 +51,8 @@ $busc = '';
 					<!-- Форма добавления -->
 					<div class="addnew">
 						<div class="form-field-group">
-							<div class="adm_add_tit">Nombre de la Empresa:</div>
-							<div class="adm_add_txt"><input class="add_input" type="text" id="company_name"></div>
+							<div class="adm_add_tit">Nombre de la Empresa (en lista se muestran máx. 16 caracteres):</div>
+							<div class="adm_add_txt"><input class="add_input" type="text" id="company_name" placeholder="En la lista se mostrarán máx. 16 caracteres"></div>
 						</div>
 
 						<div class="form-field-group">

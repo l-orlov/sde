@@ -17,29 +17,26 @@ if (!$input) {
   exit;
 }
 
-$company_name = isset($input['company_name']) ? mysqli_real_escape_string($link, $input['company_name']) : '';
+$company_name_raw = isset($input['company_name']) ? trim($input['company_name']) : '';
+$company_name = mysqli_real_escape_string($link, $company_name_raw);
 $tax_id = isset($input['tax_id']) ? mysqli_real_escape_string($link, $input['tax_id']) : '';
 $email = isset($input['email']) ? mysqli_real_escape_string($link, $input['email']) : '';
 $phone = isset($input['phone']) ? mysqli_real_escape_string($link, $input['phone']) : '';
 $password = isset($input['password']) ? mysqli_real_escape_string($link, $input['password']) : '';
 $is_admin = isset($input['is_admin']) ? intval($input['is_admin']) : 0;
 
-// Проверка обязательных полей
-if (empty($company_name) || empty($tax_id) || empty($email) || empty($phone) || empty($password)) {
-  echo json_encode(['ok' => 0, 'err' => 'Todos los campos son obligatorios']);
-  exit;
-}
-
-// Проверка уникальности email и phone
-$checkQuery = "SELECT id FROM users WHERE email = ? OR phone = ?";
-$checkStmt = mysqli_prepare($link, $checkQuery);
-mysqli_stmt_bind_param($checkStmt, "ss", $email, $phone);
-mysqli_stmt_execute($checkStmt);
-$checkResult = mysqli_stmt_get_result($checkStmt);
-
-if (mysqli_num_rows($checkResult) > 0) {
-  echo json_encode(['ok' => 0, 'err' => 'El correo electrónico o teléfono ya existe']);
-  exit;
+// En la administración no hay campos obligatorios
+// Проверка уникальности email и phone (только если указаны)
+if (!empty($email) || !empty($phone)) {
+  $checkQuery = "SELECT id FROM users WHERE (? != '' AND email = ?) OR (? != '' AND phone = ?)";
+  $checkStmt = mysqli_prepare($link, $checkQuery);
+  mysqli_stmt_bind_param($checkStmt, "ssss", $email, $email, $phone, $phone);
+  mysqli_stmt_execute($checkStmt);
+  $checkResult = mysqli_stmt_get_result($checkStmt);
+  if (mysqli_num_rows($checkResult) > 0) {
+    echo json_encode(['ok' => 0, 'err' => 'El correo electrónico o teléfono ya existe']);
+    exit;
+  }
 }
 
 $query = "INSERT INTO users 

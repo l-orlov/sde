@@ -41,8 +41,9 @@ $res .= '
 
 // Убираем пагинацию - загружаем всех пользователей
 // Используем companies.name если есть, иначе users.company_name
-// Загружаем moderation_status для отображения статуса
+// Статус: нет компании (c.id IS NULL) = серый; компания pending = красный; approved = зеленый
 $query="SELECT u.id, COALESCE(c.name, u.company_name) as company_name, 
+               c.id as company_id,
                COALESCE(c.moderation_status, 'pending') as moderation_status
         FROM users u 
         LEFT JOIN companies c ON c.user_id = u.id";
@@ -55,9 +56,13 @@ if ( strlen($busc) > 0 ) {
 			c.name				LIKE '%".$buscEscaped."%'";
 }
 
-// Сортировка: pending сверху, approved внизу, внутри по id DESC
+// Сортировка: красный (pending) сверху, серый (sin datos) по середине, зеленый (approved) внизу
 $query .= " ORDER BY 
-            CASE WHEN COALESCE(c.moderation_status, 'pending') = 'pending' THEN 0 ELSE 1 END,
+            CASE 
+                WHEN c.id IS NULL THEN 1 
+                WHEN COALESCE(c.moderation_status, 'pending') = 'pending' THEN 0 
+                ELSE 2 
+            END,
             u.id DESC";
 $result = mysqli_query($link, $query);
 
@@ -73,19 +78,33 @@ if (!$result) {
 
 while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
 	$cant++;
-	$displayName = $row['company_name'] ? htmlspecialchars($row['company_name']) : '(Sin nombre)';
+	$rawName = $row['company_name'] ? $row['company_name'] : '';
+	$nameLen = function_exists('mb_strlen') ? mb_strlen($rawName) : strlen($rawName);
+	$displayName = $rawName ? htmlspecialchars(($nameLen > 16) ? (function_exists('mb_substr') ? mb_substr($rawName, 0, 16) : substr($rawName, 0, 16)) . '…' : $rawName) : '(Sin nombre)';
+	$displayTitle = $rawName ? htmlspecialchars($rawName) : '';
+	$hasCompany = !empty($row['company_id']);
 	$moderationStatus = $row['moderation_status'] ?? 'pending';
-	$statusColor = ($moderationStatus === 'approved') ? '#4CAF50' : '#f44336'; // Зеленый или красный
-	
+	// Серый = зарегался, но не заполнил большую форму; красный = данные не подтверждены; зеленый = подтверждены
+	if (!$hasCompany) {
+		$statusColor = '#9e9e9e';
+		$statusTitle = 'Sin datos completos (no completó el formulario)';
+	} elseif ($moderationStatus === 'approved') {
+		$statusColor = '#4CAF50';
+		$statusTitle = 'Aprobado';
+	} else {
+		$statusColor = '#f44336';
+		$statusTitle = 'En moderación';
+	}
+
 	$res .= '
 		<div class="adm_list_txt user-row" id="user_row_'.$row['id'].'" onclick="selectUser('.$row['id'].')" style="cursor: pointer;">
 			'.$row['id'].'
 		</div>
-		<div class="adm_list_txt user-row" id="user_row_name_'.$row['id'].'" onclick="selectUser('.$row['id'].')" style="cursor: pointer;">
+		<div class="adm_list_txt user-row" id="user_row_name_'.$row['id'].'" onclick="selectUser('.$row['id'].')" style="cursor: pointer;"'.($displayTitle ? ' title="'.$displayTitle.'"' : '').'>
 			'.$displayName.'
 		</div>
 		<div class="adm_list_txt pad user-row" id="user_row_status_'.$row['id'].'" style="display: flex; align-items: center; justify-content: center;">
-			<div class="moderation-status-indicator" style="width: 14px; height: 14px; background-color: '.$statusColor.'; border-radius: 2px;" title="'.($moderationStatus === 'approved' ? 'Aprobado' : 'En moderación').'"></div>
+			<div class="moderation-status-indicator" style="width: 14px; height: 14px; background-color: '.$statusColor.'; border-radius: 2px;" title="'.$statusTitle.'"></div>
 		</div>
 		<div class="adm_list_txt pad user-row" id="user_row_del_'.$row['id'].'" onclick="event.stopPropagation(); user_del('.$row['id'].')">
 			<img src="'.$basePath.'img/trash.png" class="edit-icon-size">

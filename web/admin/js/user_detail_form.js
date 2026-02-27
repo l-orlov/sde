@@ -4,8 +4,41 @@
 var originalFormData = {};
 var changedFields = {};
 
+// Clasificación: значения и "Otros (especificar)"
+const OTROS_ESPECIFICAR = 'Otros (especificar)';
+const ORG_TYPES = ['Empresa grande', 'PyME', 'Cooperativa', 'Emprendimiento', 'Startup', 'Clúster', 'Consorcio', OTROS_ESPECIFICAR];
+const MAIN_ACTIVITIES = ['Agroindustria', 'Industria manufacturera', 'Servicios basados en conocimiento', 'Turismo', 'Economía cultural/creativa', OTROS_ESPECIFICAR];
+
+function initClasificacionOtrosBindings() {
+    const bindOtros = (selectId, wrapId, inputId) => {
+        const select = document.getElementById(selectId);
+        const wrap = document.getElementById(wrapId);
+        const input = document.getElementById(inputId);
+        if (!select || !wrap || !input) return;
+
+        const toggle = () => {
+            const isOtros = (select.value || '') === OTROS_ESPECIFICAR;
+            wrap.style.display = isOtros ? '' : 'none';
+            if (!isOtros) {
+                input.value = '';
+            }
+        };
+
+        select.addEventListener('change', toggle);
+        toggle();
+    };
+
+    bindOtros('form_organization_type', 'form_organization_type_other_wrap', 'form_organization_type_other');
+    bindOtros('form_main_activity', 'form_main_activity_other_wrap', 'form_main_activity_other');
+}
+
 // Инициализация отслеживания изменений
 function initChangeTracking(data) {
+    const orgTypeRaw = data.company?.organization_type || '';
+    const mainActivityRaw = data.company?.main_activity || '';
+    const orgTypeIsOther = !!orgTypeRaw && !ORG_TYPES.includes(orgTypeRaw);
+    const mainActivityIsOther = !!mainActivityRaw && !MAIN_ACTIVITIES.includes(mainActivityRaw);
+
     // Сохраняем исходные данные
     originalFormData = {
         user_email: data.user?.email || '',
@@ -16,8 +49,13 @@ function initChangeTracking(data) {
         legal_name: data.company?.legal_name || '',
         start_date: data.company?.start_date || '',
         website: data.company?.website || '',
-        organization_type: data.company?.organization_type || '',
-        main_activity: data.company?.main_activity || '',
+        nuestra_historia: data.company?.nuestra_historia || '',
+        organization_type_raw: orgTypeRaw,
+        organization_type_select: orgTypeIsOther ? OTROS_ESPECIFICAR : orgTypeRaw,
+        organization_type_other: orgTypeIsOther ? orgTypeRaw : '',
+        main_activity_raw: mainActivityRaw,
+        main_activity_select: mainActivityIsOther ? OTROS_ESPECIFICAR : mainActivityRaw,
+        main_activity_other: mainActivityIsOther ? mainActivityRaw : '',
         main_product: {
             name: data.products?.main?.name || '',
             description: data.products?.main?.description || '',
@@ -47,15 +85,24 @@ function initChangeTracking(data) {
             }
             
             const orgTypeField = document.getElementById('form_organization_type');
-            if (orgTypeField && originalFormData.organization_type) {
-                orgTypeField.value = originalFormData.organization_type;
+            if (orgTypeField && originalFormData.organization_type_select) {
+                orgTypeField.value = originalFormData.organization_type_select;
+            }
+            const orgTypeOtherField = document.getElementById('form_organization_type_other');
+            if (orgTypeOtherField && originalFormData.organization_type_other !== undefined) {
+                orgTypeOtherField.value = String(originalFormData.organization_type_other || '');
             }
             
             const mainActivityField = document.getElementById('form_main_activity');
-            if (mainActivityField && originalFormData.main_activity) {
-                mainActivityField.value = originalFormData.main_activity;
+            if (mainActivityField && originalFormData.main_activity_select) {
+                mainActivityField.value = originalFormData.main_activity_select;
+            }
+            const mainActivityOtherField = document.getElementById('form_main_activity_other');
+            if (mainActivityOtherField && originalFormData.main_activity_other !== undefined) {
+                mainActivityOtherField.value = String(originalFormData.main_activity_other || '');
             }
             
+            initClasificacionOtrosBindings();
             
             // Добавляем обработчики событий для всех редактируемых полей
             setupChangeTracking();
@@ -67,7 +114,8 @@ function setupChangeTracking() {
     // Основные текстовые поля
     const textFields = [
         'form_user_email', 'form_user_phone',
-        'form_name', 'form_tax_id', 'form_legal_name', 'form_start_date', 'form_website',
+        'form_name', 'form_tax_id', 'form_legal_name', 'form_start_date', 'form_website', 'form_nuestra_historia',
+        'form_organization_type_other', 'form_main_activity_other',
         'form_main_product_name', 'form_main_product_description',
         'form_main_product_annual_export'
     ];
@@ -143,8 +191,11 @@ function getOriginalValue(fieldId) {
         'form_legal_name': 'legal_name',
         'form_start_date': 'start_date',
         'form_website': 'website',
-        'form_organization_type': 'organization_type',
-        'form_main_activity': 'main_activity',
+        'form_nuestra_historia': 'nuestra_historia',
+        'form_organization_type': 'organization_type_select',
+        'form_organization_type_other': 'organization_type_other',
+        'form_main_activity': 'main_activity_select',
+        'form_main_activity_other': 'main_activity_other',
         'form_main_product_name': 'main_product.name',
         'form_main_product_description': 'main_product.description',
         'form_main_product_annual_export': 'main_product.annual_export'
@@ -200,14 +251,14 @@ function generateUserFormHTML(data, userId) {
     html += '<div class="user-form-section">';
     html += '<h4 class="section-title">0. Datos Básicos</h4>';
     
-    html += '<div class="form-group"><label>Correo electrónico <span class="req">*</span></label>';
-    html += '<input type="email" class="form-control" id="form_user_email" value="' + escapeHtml(user.email || '') + '" required></div>';
+    html += '<div class="form-group"><label>Correo electrónico</label>';
+    html += '<input type="email" class="form-control" id="form_user_email" value="' + escapeHtml(user.email || '') + '"></div>';
     
-    html += '<div class="form-group"><label>Teléfono <span class="req">*</span></label>';
-    html += '<input type="text" class="form-control" id="form_user_phone" value="' + escapeHtml(user.phone || '') + '" required></div>';
+    html += '<div class="form-group"><label>Teléfono</label>';
+    html += '<input type="text" class="form-control" id="form_user_phone" value="' + escapeHtml(user.phone || '') + '"></div>';
     
-    html += '<div class="form-group"><label>Es Administrador <span class="req">*</span></label>';
-    html += '<select class="form-control" id="form_user_is_admin" required>';
+    html += '<div class="form-group"><label>Es Administrador</label>';
+    html += '<select class="form-control" id="form_user_is_admin">';
     html += '<option value="0"' + (user.is_admin == 0 ? ' selected' : '') + '>No</option>';
     html += '<option value="1"' + (user.is_admin == 1 ? ' selected' : '') + '>Sí</option>';
     html += '</select></div>';
@@ -253,20 +304,23 @@ function generateUserFormHTML(data, userId) {
     html += '<div class="user-form-section">';
     html += '<h4 class="section-title">1. Datos de la Empresa</h4>';
     
-    html += '<div class="form-group"><label>Nombre de la Empresa <span class="req">*</span></label>';
-    html += '<input type="text" class="form-control" id="form_name" value="' + escapeHtml(company.name || '') + '" required></div>';
+    html += '<div class="form-group"><label>Nombre de la Empresa (en lista se muestran máx. 16 caracteres)</label>';
+    html += '<input type="text" class="form-control" id="form_name" value="' + escapeHtml(company.name || '') + '"></div>';
     
-    html += '<div class="form-group"><label>CUIT / Identificación Fiscal <span class="req">*</span></label>';
-    html += '<input type="text" class="form-control" id="form_tax_id" value="' + escapeHtml(company.tax_id || '') + '" required></div>';
+    html += '<div class="form-group"><label>CUIT / Identificación Fiscal</label>';
+    html += '<input type="text" class="form-control" id="form_tax_id" value="' + escapeHtml(company.tax_id || '') + '"></div>';
     
-    html += '<div class="form-group"><label>Razón social <span class="req">*</span></label>';
-    html += '<input type="text" class="form-control" id="form_legal_name" value="' + escapeHtml(company.legal_name || '') + '" required></div>';
+    html += '<div class="form-group"><label>Razón social</label>';
+    html += '<input type="text" class="form-control" id="form_legal_name" value="' + escapeHtml(company.legal_name || '') + '"></div>';
     
-    html += '<div class="form-group"><label>Fecha de Inicio de Actividad <span class="req">*</span></label>';
-    html += '<input type="text" class="form-control" id="form_start_date" value="' + escapeHtml(company.start_date || '') + '" placeholder="dd/mm/yyyy" required></div>';
+    html += '<div class="form-group"><label>Fecha de Inicio de Actividad</label>';
+    html += '<input type="text" class="form-control" id="form_start_date" value="' + escapeHtml(company.start_date || '') + '" placeholder="dd/mm/yyyy"></div>';
     
     html += '<div class="form-group"><label>Página web</label>';
     html += '<input type="text" class="form-control" id="form_website" value="' + escapeHtml(company.website || '') + '"></div>';
+    
+    html += '<div class="form-group"><label>Nuestra historia</label>';
+    html += '<textarea class="form-control" id="form_nuestra_historia" rows="4" maxlength="700" placeholder="Máx. 700 caracteres">' + escapeHtml(company.nuestra_historia || '') + '</textarea></div>';
     
     // Redes sociales (только чтение)
     if (socialNetworks.length > 0) {
@@ -309,23 +363,35 @@ function generateUserFormHTML(data, userId) {
     html += '<div class="user-form-section">';
     html += '<h4 class="section-title">2. Clasificación de la Empresa</h4>';
     
-    html += '<div class="form-group"><label>Tipo de Organización <span class="req">*</span></label>';
-    html += '<select class="form-control" id="form_organization_type" required>';
+    html += '<div class="form-group"><label>Tipo de Organización</label>';
+    html += '<select class="form-control" id="form_organization_type">';
     html += '<option value="">...</option>';
-    const orgTypes = ['Empresa grande', 'PyME', 'Cooperativa', 'Emprendimiento', 'Startup', 'Clúster', 'Consorcio', 'Otros (especificar)'];
-    orgTypes.forEach(type => {
-        html += '<option value="' + escapeHtml(type) + '"' + (company.organization_type === type ? ' selected' : '') + '>' + escapeHtml(type) + '</option>';
+    const orgTypeRaw = (company.organization_type || '').trim();
+    const orgTypeIsOther = !!orgTypeRaw && !ORG_TYPES.includes(orgTypeRaw);
+    const orgTypeSelectValue = orgTypeIsOther ? OTROS_ESPECIFICAR : orgTypeRaw;
+    ORG_TYPES.forEach(type => {
+        html += '<option value="' + escapeHtml(type) + '"' + (orgTypeSelectValue === type ? ' selected' : '') + '>' + escapeHtml(type) + '</option>';
     });
     html += '</select></div>';
+
+    html += '<div class="form-group" id="form_organization_type_other_wrap" style="' + (orgTypeSelectValue === OTROS_ESPECIFICAR ? '' : 'display:none;') + '">';
+    html += '<label>Otros (Tipo de Organización)</label>';
+    html += '<input type="text" class="form-control" id="form_organization_type_other" value="' + escapeHtml(orgTypeIsOther ? orgTypeRaw : '') + '" placeholder="Especifique..."></div>';
     
-    html += '<div class="form-group"><label>Actividad Principal <span class="req">*</span></label>';
-    html += '<select class="form-control" id="form_main_activity" required>';
+    html += '<div class="form-group"><label>Actividad Principal</label>';
+    html += '<select class="form-control" id="form_main_activity">';
     html += '<option value="">...</option>';
-    const activities = ['Agroindustria', 'Industria manufacturera', 'Servicios basados en conocimiento', 'Turismo', 'Economía cultural/creativa', 'Otros (especificar)'];
-    activities.forEach(act => {
-        html += '<option value="' + escapeHtml(act) + '"' + (company.main_activity === act ? ' selected' : '') + '>' + escapeHtml(act) + '</option>';
+    const mainActivityRaw = (company.main_activity || '').trim();
+    const mainActivityIsOther = !!mainActivityRaw && !MAIN_ACTIVITIES.includes(mainActivityRaw);
+    const mainActivitySelectValue = mainActivityIsOther ? OTROS_ESPECIFICAR : mainActivityRaw;
+    MAIN_ACTIVITIES.forEach(act => {
+        html += '<option value="' + escapeHtml(act) + '"' + (mainActivitySelectValue === act ? ' selected' : '') + '>' + escapeHtml(act) + '</option>';
     });
     html += '</select></div>';
+
+    html += '<div class="form-group" id="form_main_activity_other_wrap" style="' + (mainActivitySelectValue === OTROS_ESPECIFICAR ? '' : 'display:none;') + '">';
+    html += '<label>Otros (Actividad Principal)</label>';
+    html += '<input type="text" class="form-control" id="form_main_activity_other" value="' + escapeHtml(mainActivityIsOther ? mainActivityRaw : '') + '" placeholder="Especifique..."></div>';
     
     html += '</div>';
     
@@ -373,11 +439,11 @@ function generateUserFormHTML(data, userId) {
             html += '<div class="item-badge-admin item-badge-product-admin" style="position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; color: #fff; background: #4CAF50; text-transform: uppercase; z-index: 10;">Producto</div>';
             html += '<h5 style="margin-top: 30px; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Producto ' + (itemIndex + 1) + '</h5>';
             
-            html += '<div class="form-group"><label>Producto <span class="req">*</span></label>';
-            html += '<input type="text" class="form-control product-name" data-index="' + itemIndex + '" value="' + escapeHtml(item.name || '') + '" required></div>';
+            html += '<div class="form-group"><label>Producto</label>';
+            html += '<input type="text" class="form-control product-name" data-index="' + itemIndex + '" value="' + escapeHtml(item.name || '') + '"></div>';
             
-            html += '<div class="form-group"><label>Descripción <span class="req">*</span></label>';
-            html += '<input type="text" class="form-control product-description" data-index="' + itemIndex + '" value="' + escapeHtml(item.description || '') + '" required></div>';
+            html += '<div class="form-group"><label>Descripción</label>';
+            html += '<input type="text" class="form-control product-description" data-index="' + itemIndex + '" value="' + escapeHtml(item.description || '') + '"></div>';
             
             html += '<div class="form-group"><label>Exportación Anual (USD)</label>';
             html += '<input type="text" class="form-control product-export" data-index="' + itemIndex + '" value="' + escapeHtml(item.annual_export || '') + '"></div>';
@@ -389,8 +455,8 @@ function generateUserFormHTML(data, userId) {
             // Mercados Actuales (индивидуальное для каждого продукта)
             const markets = ['América del Norte', 'América del Sur', 'Europa', 'Asia', 'África', 'Oceanía'];
             const currentMarketsValue = item.current_markets || '';
-            html += '<div class="form-group"><label>Mercados Actuales (Continente) <span class="req">*</span></label>';
-            html += '<select class="form-control product-current-markets" data-index="' + itemIndex + '" data-product-id="' + (itemId || '') + '" required>';
+            html += '<div class="form-group"><label>Mercados Actuales (Continente)</label>';
+            html += '<select class="form-control product-current-markets" data-index="' + itemIndex + '" data-product-id="' + (itemId || '') + '">';
             html += '<option value="">...</option>';
             markets.forEach(market => {
                 const selected = (currentMarketsValue === market) ? ' selected' : '';
@@ -460,8 +526,8 @@ function generateUserFormHTML(data, userId) {
                 'Economía del Conocimiento – Productos orientados a Salud',
                 'Sistemas de facturación'
             ];
-            html += '<div class="form-group"><label>Actividad <span class="req">*</span></label>';
-            html += '<select class="form-control service-activity" data-index="' + itemIndex + '" required>';
+            html += '<div class="form-group"><label>Actividad</label>';
+            html += '<select class="form-control service-activity" data-index="' + itemIndex + '">';
             html += '<option value="">...</option>';
             activityOptions.forEach(option => {
                 const selected = (item.activity === option) ? ' selected' : '';
@@ -469,11 +535,11 @@ function generateUserFormHTML(data, userId) {
             });
             html += '</select></div>';
             
-            html += '<div class="form-group"><label>Servicio <span class="req">*</span></label>';
-            html += '<input type="text" class="form-control service-name" data-index="' + itemIndex + '" value="' + escapeHtml(item.name || '') + '" required></div>';
+            html += '<div class="form-group"><label>Servicio</label>';
+            html += '<input type="text" class="form-control service-name" data-index="' + itemIndex + '" value="' + escapeHtml(item.name || '') + '"></div>';
             
-            html += '<div class="form-group"><label>Descripción <span class="req">*</span></label>';
-            html += '<input type="text" class="form-control service-description" data-index="' + itemIndex + '" value="' + escapeHtml(item.description || '') + '" required></div>';
+            html += '<div class="form-group"><label>Descripción</label>';
+            html += '<input type="text" class="form-control service-description" data-index="' + itemIndex + '" value="' + escapeHtml(item.description || '') + '"></div>';
             
             html += '<div class="form-group"><label>Exportación Anual (USD)</label>';
             html += '<input type="text" class="form-control service-export" data-index="' + itemIndex + '" value="' + escapeHtml(item.annual_export || '') + '"></div>';
@@ -485,8 +551,8 @@ function generateUserFormHTML(data, userId) {
             // Mercados Actuales (индивидуальное для каждой услуги)
             const markets = ['América del Norte', 'América del Sur', 'Europa', 'Asia', 'África', 'Oceanía'];
             const currentMarketsValue = item.current_markets || '';
-            html += '<div class="form-group"><label>Mercados Actuales (Continente) <span class="req">*</span></label>';
-            html += '<select class="form-control service-current-markets" data-index="' + itemIndex + '" data-service-id="' + (itemId || '') + '" required>';
+            html += '<div class="form-group"><label>Mercados Actuales (Continente)</label>';
+            html += '<select class="form-control service-current-markets" data-index="' + itemIndex + '" data-service-id="' + (itemId || '') + '">';
             html += '<option value="">...</option>';
             markets.forEach(market => {
                 const selected = (currentMarketsValue === market) ? ' selected' : '';
@@ -564,13 +630,13 @@ function generateUserFormHTML(data, userId) {
     
     // Historia de la Empresa
     const companyHistory = (companyData.competitiveness && companyData.competitiveness.company_history) ? companyData.competitiveness.company_history : '';
-    html += '<div class="form-group"><label>Historia de la Empresa y del Producto <span class="req">*</span></label>';
-    html += '<textarea class="form-control" id="form_company_history" rows="4" required>' + escapeHtml(companyHistory) + '</textarea></div>';
+    html += '<div class="form-group"><label>Historia de la Empresa y del Producto</label>';
+    html += '<textarea class="form-control" id="form_company_history" rows="4">' + escapeHtml(companyHistory) + '</textarea></div>';
     
     // Premios
     const awards = (companyData.competitiveness && companyData.competitiveness.awards) ? companyData.competitiveness.awards : '';
     const awardsDetail = (companyData.competitiveness && companyData.competitiveness.awards_detail) ? companyData.competitiveness.awards_detail : '';
-    html += '<div class="form-group"><label>Premios <span class="req">*</span></label>';
+    html += '<div class="form-group"><label>Premios</label>';
     html += '<div class="radio-group">';
     html += '<label><input type="radio" name="form_awards" value="si"' + (awards === 'si' ? ' checked' : '') + '> Sí</label>';
     html += '<label><input type="radio" name="form_awards" value="no"' + (awards === 'no' ? ' checked' : '') + '> No</label>';
@@ -580,7 +646,7 @@ function generateUserFormHTML(data, userId) {
     
     // Ferias
     const fairs = (companyData.competitiveness && companyData.competitiveness.fairs) ? companyData.competitiveness.fairs : '';
-    html += '<div class="form-group"><label>Ferias <span class="req">*</span></label>';
+    html += '<div class="form-group"><label>Ferias</label>';
     html += '<div class="radio-group">';
     html += '<label><input type="radio" name="form_fairs" value="si"' + (fairs === 'si' ? ' checked' : '') + '> Sí</label>';
     html += '<label><input type="radio" name="form_fairs" value="no"' + (fairs === 'no' ? ' checked' : '') + '> No</label>';
@@ -588,7 +654,7 @@ function generateUserFormHTML(data, userId) {
     
     // Rondas
     const rounds = (companyData.competitiveness && companyData.competitiveness.rounds) ? companyData.competitiveness.rounds : '';
-    html += '<div class="form-group"><label>Rondas <span class="req">*</span></label>';
+    html += '<div class="form-group"><label>Rondas</label>';
     html += '<div class="radio-group">';
     html += '<label><input type="radio" name="form_rounds" value="si"' + (rounds === 'si' ? ' checked' : '') + '> Sí</label>';
     html += '<label><input type="radio" name="form_rounds" value="no"' + (rounds === 'no' ? ' checked' : '') + '> No</label>';
@@ -596,8 +662,8 @@ function generateUserFormHTML(data, userId) {
     
     // Experiencia Exportadora
     const exportExperience = (companyData.competitiveness && companyData.competitiveness.export_experience) ? companyData.competitiveness.export_experience : '';
-    html += '<div class="form-group"><label>Experiencia Exportadora previa <span class="req">*</span></label>';
-    html += '<select class="form-control" id="form_export_experience" required>';
+    html += '<div class="form-group"><label>Experiencia Exportadora previa</label>';
+    html += '<select class="form-control" id="form_export_experience">';
     html += '<option value="">...</option>';
     const expOptions = ['Sí, ya exportamos regularmente', 'Hemos exportado ocasionalmente', 'Nunca exportamos'];
     expOptions.forEach(opt => {
@@ -607,8 +673,8 @@ function generateUserFormHTML(data, userId) {
     
     // Referencias comerciales
     const commercialRefs = (companyData.competitiveness && companyData.competitiveness.commercial_references) ? companyData.competitiveness.commercial_references : '';
-    html += '<div class="form-group"><label>Referencias comerciales <span class="req">*</span></label>';
-    html += '<textarea class="form-control" id="form_commercial_references" rows="4" required>' + escapeHtml(commercialRefs) + '</textarea></div>';
+    html += '<div class="form-group"><label>Referencias comerciales</label>';
+    html += '<textarea class="form-control" id="form_commercial_references" rows="4">' + escapeHtml(commercialRefs) + '</textarea></div>';
     
     html += '</div>';
     
@@ -652,20 +718,20 @@ function generateUserFormHTML(data, userId) {
     const logisticsInfra = logistics.logistics_infrastructure || '';
     const portsAirports = logistics.ports_airports || '';
     
-    html += '<div class="form-group"><label>Capacidad de Exportación Inmediata <span class="req">*</span></label>';
+    html += '<div class="form-group"><label>Capacidad de Exportación Inmediata</label>';
     html += '<div class="radio-group">';
     html += '<label><input type="radio" name="form_export_capacity" value="si"' + (exportCapacity === 'si' ? ' checked' : '') + '> Sí</label>';
     html += '<label><input type="radio" name="form_export_capacity" value="no"' + (exportCapacity === 'no' ? ' checked' : '') + '> No</label>';
     html += '</div></div>';
     
-    html += '<div class="form-group"><label>Plazo estimado <span class="req">*</span></label>';
-    html += '<input type="text" class="form-control" id="form_estimated_term" placeholder="meses" value="' + escapeHtml(estimatedTerm) + '" required></div>';
+    html += '<div class="form-group"><label>Plazo estimado</label>';
+    html += '<input type="text" class="form-control" id="form_estimated_term" placeholder="meses" value="' + escapeHtml(estimatedTerm) + '"></div>';
     
-    html += '<div class="form-group"><label>Infraestructura Logística Disponible <span class="req">*</span></label>';
-    html += '<input type="text" class="form-control" id="form_logistics_infrastructure" placeholder="ejemplo: frigoríficos, transporte propio, alianzas logísticas, etc." value="' + escapeHtml(logisticsInfra) + '" required></div>';
+    html += '<div class="form-group"><label>Infraestructura Logística Disponible</label>';
+    html += '<input type="text" class="form-control" id="form_logistics_infrastructure" placeholder="ejemplo: frigoríficos, transporte propio, alianzas logísticas, etc." value="' + escapeHtml(logisticsInfra) + '"></div>';
     
-    html += '<div class="form-group"><label>Puertos/Aeropuertos de Salida habituales o posibles <span class="req">*</span></label>';
-    html += '<textarea class="form-control" id="form_ports_airports" rows="4" required>' + escapeHtml(portsAirports) + '</textarea></div>';
+    html += '<div class="form-group"><label>Puertos/Aeropuertos de Salida habituales o posibles</label>';
+    html += '<textarea class="form-control" id="form_ports_airports" rows="4">' + escapeHtml(portsAirports) + '</textarea></div>';
     
     html += '</div>';
     
@@ -679,7 +745,7 @@ function generateUserFormHTML(data, userId) {
     const interestParticipate = (companyData.expectations && companyData.expectations.interest_participate) ? companyData.expectations.interest_participate : '';
     const trainingAvailability = (companyData.expectations && companyData.expectations.training_availability) ? companyData.expectations.training_availability : '';
     
-    html += '<div class="form-group"><label>Principales Necesidades para mejorar capacidad exportadora <span class="req">*</span></label>';
+    html += '<div class="form-group"><label>Principales Necesidades para mejorar capacidad exportadora</label>';
     const needsOptions = ['Capacitación', 'Acceso a ferias', 'Certificaciones', 'Financiamiento', 'Socios comerciales', 'Otros'];
     needsOptions.forEach(need => {
         const checked = needs.includes(need) ? ' checked' : '';
@@ -691,13 +757,13 @@ function generateUserFormHTML(data, userId) {
     html += '<input type="text" class="form-control" id="form_other_needs" placeholder="Especificar otras necesidades" value="' + escapeHtml(otherNeeds) + '"' + (hasOtherNeeds ? '' : ' disabled') + '>';
     html += '</div></div>';
     
-    html += '<div class="form-group"><label>Interés en Participar de Misiones Comerciales/Ferias Internacionales <span class="req">*</span></label>';
+    html += '<div class="form-group"><label>Interés en Participar de Misiones Comerciales/Ferias Internacionales</label>';
     html += '<div class="radio-group">';
     html += '<label><input type="radio" name="form_interest_participate" value="si"' + (interestParticipate === 'si' ? ' checked' : '') + '> Sí</label>';
     html += '<label><input type="radio" name="form_interest_participate" value="no"' + (interestParticipate === 'no' ? ' checked' : '') + '> No</label>';
     html += '</div></div>';
     
-    html += '<div class="form-group"><label>Disponibilidad para Capacitaciones y Asistencia Técnica <span class="req">*</span></label>';
+    html += '<div class="form-group"><label>Disponibilidad para Capacitaciones y Asistencia Técnica</label>';
     html += '<div class="radio-group">';
     html += '<label><input type="radio" name="form_training_availability" value="si"' + (trainingAvailability === 'si' ? ' checked' : '') + '> Sí</label>';
     html += '<label><input type="radio" name="form_training_availability" value="no"' + (trainingAvailability === 'no' ? ' checked' : '') + '> No</label>';
@@ -714,19 +780,19 @@ function generateUserFormHTML(data, userId) {
     const authPublication = consents.authorization_publication || '';
     const acceptContact = consents.accept_contact || '';
     
-    html += '<div class="form-group"><label>Autorización para Difundir la Información Cargada en la Plataforma Provincial <span class="req">*</span></label>';
+    html += '<div class="form-group"><label>Autorización para Difundir la Información Cargada en la Plataforma Provincial</label>';
     html += '<div class="radio-group">';
     html += '<label><input type="radio" name="form_authorization_publish" value="si"' + (authPublish === 'si' ? ' checked' : '') + '> Sí</label>';
     html += '<label><input type="radio" name="form_authorization_publish" value="no"' + (authPublish === 'no' ? ' checked' : '') + '> No</label>';
     html += '</div></div>';
     
-    html += '<div class="form-group"><label>Autorizo la Publicación de mi Información para Promoción Exportadora <span class="req">*</span></label>';
+    html += '<div class="form-group"><label>Autorizo la Publicación de mi Información para Promoción Exportadora</label>';
     html += '<div class="radio-group">';
     html += '<label><input type="radio" name="form_authorization_publication" value="si"' + (authPublication === 'si' ? ' checked' : '') + '> Sí</label>';
     html += '<label><input type="radio" name="form_authorization_publication" value="no"' + (authPublication === 'no' ? ' checked' : '') + '> No</label>';
     html += '</div></div>';
     
-    html += '<div class="form-group"><label>Acepto ser Contactado por Organismos de Promoción y Compradores Internacionales <span class="req">*</span></label>';
+    html += '<div class="form-group"><label>Acepto ser Contactado por Organismos de Promoción y Compradores Internacionales</label>';
     html += '<div class="radio-group">';
     html += '<label><input type="radio" name="form_accept_contact" value="si"' + (acceptContact === 'si' ? ' checked' : '') + '> Sí</label>';
     html += '<label><input type="radio" name="form_accept_contact" value="no"' + (acceptContact === 'no' ? ' checked' : '') + '> No</label>';
@@ -873,12 +939,23 @@ function saveUserFullData(userId) {
         legal_name: getFieldValue('form_legal_name', originalFormData.legal_name),
         start_date: getFieldValue('form_start_date', originalFormData.start_date),
         website: getFieldValue('form_website', originalFormData.website),
-        organization_type: isFieldChanged('form_organization_type') 
-            ? (document.getElementById('form_organization_type')?.value || '') 
-            : (originalFormData.organization_type || ''),
-        main_activity: isFieldChanged('form_main_activity') 
-            ? (document.getElementById('form_main_activity')?.value || '') 
-            : (originalFormData.main_activity || ''),
+        nuestra_historia: getFieldValue('form_nuestra_historia', originalFormData.nuestra_historia),
+        organization_type: (isFieldChanged('form_organization_type') || isFieldChanged('form_organization_type_other'))
+            ? (() => {
+                const v = document.getElementById('form_organization_type')?.value || '';
+                if (v !== OTROS_ESPECIFICAR) return v;
+                const other = (document.getElementById('form_organization_type_other')?.value || '').trim();
+                return other || v;
+            })()
+            : (originalFormData.organization_type_raw || ''),
+        main_activity: (isFieldChanged('form_main_activity') || isFieldChanged('form_main_activity_other'))
+            ? (() => {
+                const v = document.getElementById('form_main_activity')?.value || '';
+                if (v !== OTROS_ESPECIFICAR) return v;
+                const other = (document.getElementById('form_main_activity_other')?.value || '').trim();
+                return other || v;
+            })()
+            : (originalFormData.main_activity_raw || ''),
         // Продукты (массив)
         products: collectProductsData(),
         // Секция 4: Competitividad
@@ -936,138 +1013,8 @@ function saveUserFullData(userId) {
 }
 
 function validateForm() {
-    const errors = [];
-    
-    // Умная валидация: проверяем только измененные поля или обязательные поля, которые пустые в исходных данных
-    
-    // Email
-    const emailValue = getFieldValue('form_user_email', originalFormData.user_email);
-    if (isFieldChanged('form_user_email')) {
-        if (!emailValue) {
-            errors.push('Correo electrónico');
-        } else {
-            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailPattern.test(emailValue)) {
-                errors.push('Correo electrónico (formato inválido)');
-            }
-        }
-    } else if (!originalFormData.user_email) {
-        errors.push('Correo electrónico');
-    }
-    
-    // Teléfono
-    const phoneValue = getFieldValue('form_user_phone', originalFormData.user_phone);
-    if (isFieldChanged('form_user_phone')) {
-        if (!phoneValue) errors.push('Teléfono');
-    } else if (!originalFormData.user_phone) {
-        errors.push('Teléfono');
-    }
-    
-    // Es Administrador
-    const isAdminField = document.getElementById('form_user_is_admin');
-    const isAdminValue = isFieldChanged('form_user_is_admin') ? (isAdminField ? isAdminField.value : '0') : originalFormData.user_is_admin;
-    if (isFieldChanged('form_user_is_admin')) {
-        if (isAdminValue === '' || isAdminValue === null) errors.push('Es Administrador');
-    } else if (originalFormData.user_is_admin === '' || originalFormData.user_is_admin === null) {
-        errors.push('Es Administrador');
-    }
-    
-    // Nombre de la Empresa
-    const nameValue = getFieldValue('form_name', originalFormData.name);
-    if (isFieldChanged('form_name')) {
-        if (!nameValue) errors.push('Nombre de la Empresa');
-    } else if (!originalFormData.name) {
-        errors.push('Nombre de la Empresa');
-    }
-    
-    // CUIT
-    const taxIdValue = getFieldValue('form_tax_id', originalFormData.tax_id);
-    if (isFieldChanged('form_tax_id')) {
-        if (!taxIdValue) errors.push('CUIT');
-    } else if (!originalFormData.tax_id) {
-        errors.push('CUIT');
-    }
-    
-    // Razón social
-    const legalNameValue = getFieldValue('form_legal_name', originalFormData.legal_name);
-    if (isFieldChanged('form_legal_name')) {
-        if (!legalNameValue) errors.push('Razón social');
-    } else if (!originalFormData.legal_name) {
-        errors.push('Razón social');
-    }
-    
-    // Fecha de Inicio
-    const startDateValue = getFieldValue('form_start_date', originalFormData.start_date);
-    if (isFieldChanged('form_start_date')) {
-        if (!startDateValue) {
-            errors.push('Fecha de Inicio');
-        } else {
-            const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
-            if (!datePattern.test(startDateValue)) {
-                errors.push('Fecha de Inicio (formato: dd/mm/yyyy)');
-            }
-        }
-    } else if (!originalFormData.start_date) {
-        errors.push('Fecha de Inicio');
-    } else {
-        const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
-        if (originalFormData.start_date && !datePattern.test(originalFormData.start_date)) {
-            errors.push('Fecha de Inicio (formato: dd/mm/yyyy)');
-        }
-    }
-    
-    // Tipo de Organización
-    const orgTypeField = document.getElementById('form_organization_type');
-    const orgTypeValue = isFieldChanged('form_organization_type') ? (orgTypeField ? orgTypeField.value : '') : originalFormData.organization_type;
-    if (isFieldChanged('form_organization_type')) {
-        if (!orgTypeValue) errors.push('Tipo de Organización');
-    } else if (!originalFormData.organization_type) {
-        errors.push('Tipo de Organización');
-    }
-    
-    // Actividad Principal
-    const mainActivityField = document.getElementById('form_main_activity');
-    const mainActivityValue = isFieldChanged('form_main_activity') ? (mainActivityField ? mainActivityField.value : '') : originalFormData.main_activity;
-    if (isFieldChanged('form_main_activity')) {
-        if (!mainActivityValue) errors.push('Actividad Principal');
-    } else if (!originalFormData.main_activity) {
-        errors.push('Actividad Principal');
-    }
-    
-    // Основной продукт
-    const mainProduct = originalFormData.main_product || {};
-    const mainProductNameValue = getFieldValue('form_main_product_name', mainProduct.name);
-    if (isFieldChanged('form_main_product_name')) {
-        if (!mainProductNameValue) errors.push('Producto principal');
-    } else if (!mainProduct.name) {
-        errors.push('Producto principal');
-    }
-    
-    const mainProductDescValue = getFieldValue('form_main_product_description', mainProduct.description);
-    if (isFieldChanged('form_main_product_description')) {
-        if (!mainProductDescValue) errors.push('Descripción del producto');
-    } else if (!mainProduct.description) {
-        errors.push('Descripción del producto');
-    }
-    
-    // Проверяем Mercados Actuales для каждого продукта/услуги
-    const productItems = document.querySelectorAll('.product-item-admin');
-    productItems.forEach((item, index) => {
-        const currentMarketsInput = item.querySelector('.product-current-markets');
-        if (currentMarketsInput && !currentMarketsInput.value) {
-            errors.push('Mercados Actuales (Continente) для Producto ' + (index + 1));
-        }
-    });
-    
-    const serviceItems = document.querySelectorAll('.service-item-admin');
-    serviceItems.forEach((item, index) => {
-        const currentMarketsInput = item.querySelector('.service-current-markets');
-        if (currentMarketsInput && !currentMarketsInput.value) {
-            errors.push('Mercados Actuales (Continente) para Servicio ' + (index + 1));
-        }
-    });
-    
-    return errors;
+    // En la administración no hay campos obligatorios: se puede guardar con cualquier combinación de datos (como en regfull)
+    return [];
 }
 
 // Функция подтверждения модерации
