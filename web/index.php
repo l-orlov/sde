@@ -13,6 +13,10 @@ if ($page === 'landing' || ($page === '' && !isset($_SESSION['uid']))) {
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('Pragma: no-cache');
 }
+if ($page === 'download_oferta_pdf') {
+    require __DIR__ . '/includes/serve_static_oferta_pdf.php';
+    exit;
+}
 if ($page === 'search_api') {
     require __DIR__ . '/includes/search_api.php';
     exit;

@@ -21,8 +21,17 @@ if ($fileId <= 0) {
     exit('Invalid file id');
 }
 
-// Только авторизованный пользователь может смотреть свои файлы
-if (!isset($_SESSION['uid'])) {
+// Доступ: авторизованный пользователь (личный кабинет) — только свои файлы; админ — любые файлы
+$isAdmin = false;
+if (isset($_SESSION['admid']) && (int) $_SESSION['admid'] > 0) {
+    global $link;
+    $check = $link->prepare("SELECT 1 FROM users WHERE id = ? AND is_admin = 1 LIMIT 1");
+    $check->bind_param('i', $_SESSION['admid']);
+    $check->execute();
+    $isAdmin = $check->get_result()->fetch_row() !== null;
+    $check->close();
+}
+if (!$isAdmin && !isset($_SESSION['uid'])) {
     http_response_code(403);
     exit('Forbidden');
 }
@@ -38,7 +47,7 @@ $result = $stmt->get_result();
 $row = $result->fetch_assoc();
 $stmt->close();
 
-if (!$row || (int) $row['user_id'] !== (int) $_SESSION['uid']) {
+if (!$row || (!$isAdmin && (int) $row['user_id'] !== (int) $_SESSION['uid'])) {
     http_response_code(404);
     exit('Not found');
 }

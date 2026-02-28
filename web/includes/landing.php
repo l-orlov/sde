@@ -11,6 +11,7 @@ $__pdf_oferta_urls = [
     'moderno'      => $__web_base . '/index.php?page=moderno_pdf_es',
     'moderno_es'   => $__web_base . '/index.php?page=moderno_pdf_es',
     'moderno_en'   => $__web_base . '/index.php?page=moderno_pdf_en',
+    'static_pdf'   => $__web_base . '/index.php?page=download_oferta_pdf',
 ];
 
 // Товары/услуги только из компаний с пройденной модерацией (approved); без удалённых (deleted_at IS NULL); данные при каждой загрузке страницы
@@ -87,13 +88,13 @@ if ($link) {
                         <button type="button" class="nav-link oferta-dropdown-trigger" data-i18n="nav_exportable" aria-expanded="false" aria-haspopup="true" id="oferta-dropdown-btn">Oferta exportable</button>
                         <ul class="oferta-dropdown-menu" id="oferta-dropdown-menu" role="menu" aria-label="Formatos de oferta exportable">
                             <li role="none">
-                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['clasico_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_clasico">Clásico</span><img src="img/icons/clasico_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_clasico">Clásico</span><img src="img/icons/clasico_icon.png" alt="" class="oferta-dropdown-icon"></a>
                             </li>
                             <li role="none">
-                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['clasico_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_corporativo">Corporativo</span><img src="img/icons/corporativo_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_corporativo">Corporativo</span><img src="img/icons/corporativo_icon.png" alt="" class="oferta-dropdown-icon"></a>
                             </li>
                             <li role="none">
-                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['clasico_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_moderno">Moderno</span><img src="img/icons/moderno_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_moderno">Moderno</span><img src="img/icons/moderno_icon.png" alt="" class="oferta-dropdown-icon"></a>
                             </li>
                         </ul>
                     </div>
@@ -365,7 +366,7 @@ if ($link) {
                 <h3 class="landing-footer-title" data-i18n="footer_accesos">ACCESOS</h3>
                 <ul class="landing-footer-links">
                     <li><a href="#nosotros" data-i18n="footer_nosotros">Nosotros</a></li>
-                    <li><a href="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" class="js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['clasico_en']) ?>" data-i18n="footer_oferta">Oferta exportable</a></li>
+                    <li><a href="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" class="js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" data-i18n="footer_oferta">Oferta exportable</a></li>
                     <li><a href="#turismo" data-i18n="nav_turismo">Turismo</a></li>
                     <li><a href="#noticias" data-i18n="nav_news">Noticias</a></li>
                     <li><a href="#contactos" data-i18n="footer_contacto">Contacto</a></li>
