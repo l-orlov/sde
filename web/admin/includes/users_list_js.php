@@ -36,7 +36,7 @@ $res .= '<div class="adm_busc">
 </div>';
 
 $res .= '
-	<div class="adm_zag">ID</div>
+	<div class="adm_zag">№</div>
 	<div class="adm_zag">Nombre de la Empresa</div>
 	<div class="adm_zag">CUIL/CUIT</div>
 	<div class="adm_zag">Correo electrónico</div>
@@ -77,13 +77,13 @@ if (!$result) {
 }
 
 while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
+	$cant++;
 	$created_at_human = date('Y-m-d H:i', $row['created_at']);
 	$updated_at_human = date('Y-m-d H:i', $row['updated_at']);
 
 	$is_admin_text = ($row['is_admin'] == 1) ? 'Sí' : 'No';
-	$cant++;
 	$res .= '
-		<div class="adm_list_txt" id="c0_'.$row['id'].'">'.$row['id'].'</div>
+		<div class="adm_list_txt" id="c0_'.$row['id'].'">'.$cant.'</div>
 		<div class="adm_list_txt" id="c1_'.$row['id'].'">'.htmlspecialchars($row['company_name']).'</div>
 		<div class="adm_list_txt" id="c2_'.$row['id'].'">'.htmlspecialchars($row['tax_id']).'</div>
 		<div class="adm_list_txt" id="c3_'.$row['id'].'">'.htmlspecialchars($row['email']).'</div>

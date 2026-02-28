@@ -251,6 +251,9 @@ function generateUserFormHTML(data, userId) {
     html += '<div class="user-form-section">';
     html += '<h4 class="section-title">0. Datos Básicos</h4>';
     
+    html += '<div class="form-group"><label>ID</label>';
+    html += '<div class="readonly-field">' + escapeHtml(String(userId)) + '</div></div>';
+    
     html += '<div class="form-group"><label>Correo electrónico</label>';
     html += '<input type="email" class="form-control" id="form_user_email" value="' + escapeHtml(user.email || '') + '"></div>';
     

@@ -33,7 +33,7 @@ $page = isset($input['pg']) 	? intval($input['pg']) : 0;
 $busc = isset($input['busc'])	? trim($input['busc']) : '';
 
 $res .= '
-	<div class="adm_zag">ID</div>
+	<div class="adm_zag">№</div>
 	<div class="adm_zag">Nombre de la Empresa</div>
 	<div class="adm_zag"></div>
 	<div class="adm_zag"></div>
@@ -76,7 +76,9 @@ if (!$result) {
     exit;
 }
 
+$num = 0;
 while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
+	$num++;
 	$cant++;
 	$rawName = $row['company_name'] ? $row['company_name'] : '';
 	$nameLen = function_exists('mb_strlen') ? mb_strlen($rawName) : strlen($rawName);
@@ -98,7 +100,7 @@ while ($row = mysqli_fetch_array($result, MYSQLI_ASSOC)) {
 
 	$res .= '
 		<div class="adm_list_txt user-row" id="user_row_'.$row['id'].'" onclick="selectUser('.$row['id'].')" style="cursor: pointer;">
-			'.$row['id'].'
+			'.$num.'
 		</div>
 		<div class="adm_list_txt user-row" id="user_row_name_'.$row['id'].'" onclick="selectUser('.$row['id'].')" style="cursor: pointer;"'.($displayTitle ? ' title="'.$displayTitle.'"' : '').'>
 			'.$displayName.'
