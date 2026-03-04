@@ -14,7 +14,7 @@ CREATE TABLE users (
     UNIQUE KEY `users_email_uidx` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Токены для сброса пароля (отдельная таблица)
+-- Password reset tokens (separate table)
 CREATE TABLE password_reset_tokens (
     id          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     user_id     INT UNSIGNED    NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE password_reset_tokens (
     KEY `password_reset_tokens_user_expires_idx` (`user_id`, `expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Таблица компаний
+-- Companies table
 CREATE TABLE companies (
     id                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     user_id             INT UNSIGNED    NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE companies (
     UNIQUE KEY `companies_user_uidx` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Адреса компаний
+-- Company addresses
 CREATE TABLE company_addresses (
     id              INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     company_id      INT UNSIGNED    NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE company_addresses (
     KEY `company_addresses_company_idx` (`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Контактные лица компаний
+-- Company contacts
 CREATE TABLE company_contacts (
     id              INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     company_id      INT UNSIGNED    NOT NULL,
@@ -82,7 +82,7 @@ CREATE TABLE company_contacts (
     KEY `company_contacts_company_idx` (`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Социальные сети компаний
+-- Company social networks
 CREATE TABLE company_social_networks (
     id              INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     company_id      INT UNSIGNED    NOT NULL,
@@ -94,7 +94,7 @@ CREATE TABLE company_social_networks (
     KEY `company_social_company_idx` (`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Дополнительные данные компаний (JSON)
+-- Additional company data (JSON)
 CREATE TABLE company_data (
     id                      INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     company_id             INT UNSIGNED    NOT NULL,
@@ -112,7 +112,7 @@ CREATE TABLE company_data (
     PRIMARY KEY (`id`),
     UNIQUE KEY `company_data_company_uidx` (`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
--- Таблица товаров
+-- Products table
 CREATE TABLE products (
     id                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     company_id          INT UNSIGNED,
@@ -122,7 +122,7 @@ CREATE TABLE products (
     activity            VARCHAR(255)    NULL,
     name                VARCHAR(255)    NOT NULL,
     description         TEXT,
-    tariff_code         VARCHAR(20)     NULL COMMENT 'NCM/HS ej: 0602.90.90.100X',
+    tariff_code         VARCHAR(20)     NULL COMMENT 'NCM/HS e.g. 0602.90.90.100X',
     annual_export       VARCHAR(100),
     certifications      TEXT,
     created_at          INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),
@@ -134,25 +134,25 @@ CREATE TABLE products (
     KEY `products_user_idx` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Таблица файлов (универсальная)
+-- Files table (universal)
 CREATE TABLE files (
     id          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     product_id  INT UNSIGNED,
     user_id     INT UNSIGNED    NOT NULL,
     
-    -- Универсальный путь (работает для обоих хранилищ)
+    -- Universal path (works for both storage types)
     file_path   VARCHAR(500)    NOT NULL,
     
-    -- Метаданные
+    -- Metadata
     file_name   VARCHAR(255)    NOT NULL,
     file_type   VARCHAR(50)     NOT NULL DEFAULT 'product_photo',
     mime_type   VARCHAR(100),
     file_size   INT UNSIGNED,
     
-    -- Тип хранилища (для совместимости)
+    -- Storage type (for compatibility)
     storage_type VARCHAR(20)    NOT NULL DEFAULT 'local',
     
-    -- Временный файл (загружен, но еще не сохранен в форме)
+    -- Temporary file (uploaded but not yet saved in form)
     is_temporary TINYINT(1)     NOT NULL DEFAULT 0,
     
     created_at  INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),
