@@ -32,6 +32,11 @@
   "home_moderation_message": "Sus datos están en moderación. Por favor, espere la confirmación del administrador.",
   "home_no_products_message": "Aún no has agregado productos. ¡Comienza agregando tu primer producto!",
   "home_add_products_button": "Agregar Productos",
-  "home_pdf_blocked_moderation": "No se puede descargar el PDF. Sus datos están en moderación. Los PDF estarán disponibles cuando el administrador apruebe su empresa."
+  "home_pdf_blocked_moderation": "No se puede descargar el PDF. Sus datos están en moderación. Los PDF estarán disponibles cuando el administrador apruebe su empresa.",
+  "home_gemini_section_title": "Recomendaciones de mercados con IA",
+  "home_gemini_intro": "Obtenga sugerencias sobre países y estrategias para exportar o vender sus productos y servicios.",
+  "home_gemini_btn": "Obtener recomendaciones con IA",
+  "home_gemini_loading": "Cargando...",
+  "home_gemini_need_data": "Agregue empresa y productos para obtener recomendaciones de mercados."
 }
 

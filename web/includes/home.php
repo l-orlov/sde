@@ -365,6 +365,27 @@ $visibleProducts = min(4, $totalProducts);
         <?php endif; ?>
       </section>
 
+      <!-- Recomendaciones de mercados con IA -->
+      <section class="home-section home-gemini-section">
+        <div class="home-section-header">
+          <h2 data-i18n="home_gemini_section_title" class="home-section-title">Recomendaciones de mercados con IA</h2>
+        </div>
+        <?php if ($hasCompanyData && !empty($products)): ?>
+        <p class="home-gemini-intro" data-i18n="home_gemini_intro">Obtenga sugerencias sobre países y estrategias para exportar o vender sus productos y servicios.</p>
+        <div class="home-gemini-actions">
+          <button type="button" class="btn btn-generate-ai" id="btnGeminiMarkets" data-i18n="home_gemini_btn">Obtener recomendaciones con IA</button>
+        </div>
+        <div id="home-gemini-loading" class="home-gemini-loading" style="display: none;" data-i18n="home_gemini_loading">Cargando...</div>
+        <div id="home-gemini-error" class="home-gemini-error" style="display: none;"></div>
+        <div id="home-gemini-result" class="home-gemini-result" style="display: none;"></div>
+        <?php else: ?>
+        <div class="home-gemini-placeholder" style="text-align: center; padding: 40px 20px; font-size: 18px; color: #666; background: #f9f9f9; border-radius: 8px;">
+          <p data-i18n="home_gemini_need_data" style="margin-bottom: 20px;">Agregue empresa y productos para obtener recomendaciones de mercados.</p>
+          <a href="index.php?page=regfull" class="btn btn-show-more" style="display: inline-block; text-decoration: none;" data-i18n="home_add_products_button">Agregar Productos</a>
+        </div>
+        <?php endif; ?>
+      </section>
+
       <!-- Presentations Section: siempre visible; si no aprobado, se muestra mensaje en lugar de la grilla -->
       <section class="home-section">
         <div class="home-section-header">
@@ -877,6 +898,41 @@ document.addEventListener('DOMContentLoaded', function() {
       } catch (err) {
         console.error('Error deleting logo:', err);
         alert('Error al eliminar el logotipo. Por favor, intente de nuevo.');
+      }
+    });
+  }
+
+  // Recomendaciones de mercados con IA
+  const btnGemini = document.getElementById('btnGeminiMarkets');
+  const geminiLoading = document.getElementById('home-gemini-loading');
+  const geminiError = document.getElementById('home-gemini-error');
+  const geminiResult = document.getElementById('home-gemini-result');
+  if (btnGemini) {
+    btnGemini.addEventListener('click', async function() {
+      geminiLoading.style.display = 'block';
+      geminiError.style.display = 'none';
+      geminiError.textContent = '';
+      geminiResult.style.display = 'none';
+      geminiResult.textContent = '';
+      btnGemini.disabled = true;
+      try {
+        const res = await fetch('includes/gemini_markets_js.php', { method: 'POST' });
+        const data = await res.json();
+        geminiLoading.style.display = 'none';
+        btnGemini.disabled = false;
+        if (data.ok && data.text) {
+          geminiResult.style.display = 'block';
+          geminiResult.textContent = data.text;
+          geminiResult.style.whiteSpace = 'pre-wrap';
+        } else {
+          geminiError.style.display = 'block';
+          geminiError.textContent = data.error || 'Error al obtener recomendaciones.';
+        }
+      } catch (err) {
+        geminiLoading.style.display = 'none';
+        btnGemini.disabled = false;
+        geminiError.style.display = 'block';
+        geminiError.textContent = 'Error de conexión. Intente de nuevo.';
       }
     });
   }

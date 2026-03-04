@@ -4,7 +4,7 @@ set_time_limit (0);
 error_reporting(E_ALL);
 ob_implicit_flush();
 
-include "functions.php";
+include __DIR__ . '/functions.php';
 DBconnect();
 
 $return = ['res' => '', 'ok' => 0, 'err' => ''];

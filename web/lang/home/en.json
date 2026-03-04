@@ -32,5 +32,10 @@
   "home_moderation_message": "Your data is under moderation. Please wait for administrator confirmation.",
   "home_no_products_message": "You haven't added any products yet. Start by adding your first product!",
   "home_add_products_button": "Add Products",
-  "home_pdf_blocked_moderation": "PDF download is not available. Your data is under moderation. PDFs will be available once the administrator approves your company."
+  "home_pdf_blocked_moderation": "PDF download is not available. Your data is under moderation. PDFs will be available once the administrator approves your company.",
+  "home_gemini_section_title": "Market recommendations with AI",
+  "home_gemini_intro": "Get suggestions on countries and strategies to export or sell your products and services.",
+  "home_gemini_btn": "Get recommendations with AI",
+  "home_gemini_loading": "Loading...",
+  "home_gemini_need_data": "Add company and products to get market recommendations."
 }
