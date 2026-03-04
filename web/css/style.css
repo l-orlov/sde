@@ -1706,6 +1706,22 @@ div.label span .req,
   flex-direction: column;
 }
 
+/* Фоновое видео — показывается только на больших экранах */
+.hero-bg-video {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+}
+.hero-bg-video-file {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .hero-section::before {
   content: '';
   position: absolute;
@@ -1718,6 +1734,14 @@ div.label span .req,
   background-size: cover;
   background-repeat: no-repeat;
   z-index: 0;
+}
+@media (min-width: 769px) {
+  .hero-bg-video {
+    display: block;
+  }
+  .hero-section::before {
+    background-image: none;
+  }
 }
 .hero-header {
   position: fixed;

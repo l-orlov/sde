@@ -5,9 +5,45 @@ error_reporting(E_ALL);
 ob_implicit_flush();
 
 include "includes/functions.php";
+
+// Если запрос к статическому файлу (css, js, img и т.д.) попал в index.php — отдать файл и выйти (чтобы не возвращать HTML gate)
+$requestUri = $_SERVER['REQUEST_URI'] ?? '';
+$requestPath = parse_url($requestUri, PHP_URL_PATH);
+if ($requestPath !== '' && $requestPath !== false && preg_match('/\.(css|js|ico|png|jpe?g|gif|svg|woff2?|ttf|eot)(\?|$)/i', $requestPath)) {
+    $config = file_exists(__DIR__ . '/includes/config/config.php') ? (require __DIR__ . '/includes/config/config.php') : [];
+    $web_base = rtrim($config['web_base'] ?? '', '/');
+    $basePath = $requestPath;
+    if ($web_base !== '' && strpos($basePath, $web_base) === 0) {
+        $basePath = substr($basePath, strlen($web_base)) ?: '/';
+    }
+    $basePath = '/' . trim($basePath, '/');
+    $localFile = __DIR__ . str_replace(['../', '..\\'], '', $basePath);
+    $ext = strtolower(pathinfo($localFile, PATHINFO_EXTENSION));
+    $mimes = ['css' => 'text/css', 'js' => 'application/javascript', 'ico' => 'image/x-icon', 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif', 'svg' => 'image/svg+xml', 'woff' => 'font/woff', 'woff2' => 'font/woff2', 'ttf' => 'font/ttf', 'eot' => 'application/vnd.ms-fontobject'];
+    if (is_file($localFile) && isset($mimes[$ext])) {
+        header('Content-Type: ' . $mimes[$ext] . '; charset=utf-8');
+        header('Content-Length: ' . filesize($localFile));
+        readfile($localFile);
+        exit;
+    }
+}
+
 DBconnect();
 
 $page = isset($_REQUEST['page']) ? $_REQUEST['page'] : '';
+
+// Заглушка: проверка логина до любого вывода (ответ должен быть только JSON)
+if ($page === 'site_gate_check' && !isset($_SESSION['uid'])) {
+    require __DIR__ . '/includes/site_gate_check.php';
+    exit;
+}
+// Сброс gate (для теста): снова покажет форму входа при следующем заходе
+if ($page === 'gate_logout' && !isset($_SESSION['uid'])) {
+    unset($_SESSION['gate_remember'], $_SESSION['gate_one_time']);
+    header('Location: index.php?page=landing');
+    exit;
+}
+
 // Лендинг — без кэша, чтобы карусель при обновлении всегда подгружала актуальные данные из БД
 if ($page === 'landing' || ($page === '' && !isset($_SESSION['uid']))) {
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -89,19 +125,22 @@ if ($page === 'moderno_company_en') {
     require __DIR__ . '/pdf/home/moderno_company_en.php';
     exit;
 }
-?>
 
+$__config = file_exists(__DIR__ . '/includes/config/config.php') ? (require __DIR__ . '/includes/config/config.php') : [];
+$__web_base = rtrim($__config['web_base'] ?? '', '/');
+$__asset_prefix = $__web_base ? $__web_base . '/' : '';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>sde</title>
-    <link rel="stylesheet" href="css/style.css?v=<?= asset_version('css/style.css') ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars($__asset_prefix) ?>css/style.css?v=<?= asset_version('css/style.css') ?>">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="img/icons/logo_icon.png">
-    <link rel="shortcut icon" type="image/png" href="img/icons/logo_icon.png">
-    <link rel="apple-touch-icon" href="img/icons/logo_icon.png">
+    <link rel="icon" type="image/png" href="<?= htmlspecialchars($__asset_prefix) ?>img/icons/logo_icon.png">
+    <link rel="shortcut icon" type="image/png" href="<?= htmlspecialchars($__asset_prefix) ?>img/icons/logo_icon.png">
+    <link rel="apple-touch-icon" href="<?= htmlspecialchars($__asset_prefix) ?>img/icons/logo_icon.png">
 </head>
 <body>
 
@@ -110,6 +149,18 @@ $page = isset($_REQUEST['page']) ? htmlspecialchars($_REQUEST['page']) : '';
 if ($page === 'logout') include 'includes/logout.php';
 
 if ( !isset($_SESSION['uid']) ) {
+    // Пропуск: либо «не спрашивать снова» (gate_remember), либо одноразовый (gate_one_time)
+    $gate_allow = (isset($_SESSION['gate_remember']) && $_SESSION['gate_remember'])
+        || (isset($_SESSION['gate_one_time']) && $_SESSION['gate_one_time']);
+    if (!$gate_allow) {
+        $gate_return_page = ($page !== '' && in_array($page, ['search', 'landing', 'regfull', 'regnew', 'login', 'reset_password'], true)) ? $page : 'landing';
+        include __DIR__ . '/includes/site_gate.php';
+        exit;
+    }
+    // Одноразовый пропуск использован — при следующем запросе снова gate (gate_remember не сбрасываем)
+    if (isset($_SESSION['gate_one_time']) && $_SESSION['gate_one_time']) {
+        $_SESSION['gate_one_time'] = false;
+    }
     SWITCH ( $page ) {
         case 'search':           include "includes/search.php";             break;
         case 'landing':         include "includes/landing.php";             break;
