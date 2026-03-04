@@ -43,6 +43,11 @@ if ($page === 'gate_logout' && !isset($_SESSION['uid'])) {
     header('Location: index.php?page=landing');
     exit;
 }
+// Recomendaciones de mercados con IA (JSON)
+if ($page === 'gemini_markets') {
+    require __DIR__ . '/includes/gemini_markets_js.php';
+    exit;
+}
 
 // Лендинг — без кэша, чтобы карусель при обновлении всегда подгружала актуальные данные из БД
 if ($page === 'landing' || ($page === '' && !isset($_SESSION['uid']))) {

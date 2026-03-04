@@ -37,5 +37,7 @@
   "home_gemini_intro": "Get suggestions on countries and strategies to export or sell your products and services.",
   "home_gemini_btn": "Get recommendations with AI",
   "home_gemini_loading": "Loading...",
-  "home_gemini_need_data": "Add company and products to get market recommendations."
+  "home_gemini_need_data": "Add company and products to get market recommendations.",
+  "home_gemini_expand": "Expand all",
+  "home_gemini_less": "Show less"
 }

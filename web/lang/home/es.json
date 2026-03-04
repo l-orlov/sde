@@ -37,6 +37,8 @@
   "home_gemini_intro": "Obtenga sugerencias sobre países y estrategias para exportar o vender sus productos y servicios.",
   "home_gemini_btn": "Obtener recomendaciones con IA",
   "home_gemini_loading": "Cargando...",
-  "home_gemini_need_data": "Agregue empresa y productos para obtener recomendaciones de mercados."
+  "home_gemini_need_data": "Agregue empresa y productos para obtener recomendaciones de mercados.",
+  "home_gemini_expand": "Expandir todo",
+  "home_gemini_less": "Ver menos"
 }
 

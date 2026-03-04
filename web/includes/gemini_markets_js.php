@@ -1,12 +1,14 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
 header('Content-Type: application/json; charset=utf-8');
 
-include __DIR__ . '/functions.php';
+require_once __DIR__ . '/functions.php';
 
 DBconnect();
 
@@ -157,8 +159,9 @@ foreach ($products as $i => $p) {
 
 $context = implode("\n", $parts);
 
-$prompt = "Con base únicamente en los siguientes datos de una empresa y sus productos/servicios, responde en el mismo idioma (español o inglés según el usuario):\n\n"
-. "¿En qué países del mundo sería más conveniente exportar o vender estos productos o servicios, y qué recomendaciones concretas darías (canales, requisitos, mercados prioritarios)? Responde de forma clara y estructurada (por ejemplo: países recomendados, breve justificación, y 2-4 consejos prácticos).\n\n"
+$prompt = "Con base únicamente en los siguientes datos de una empresa y sus productos/servicios, responde en el mismo idioma (español o inglés según el usuario).\n\n"
+. "IMPORTANTE: Responde solo en TEXTO PLANO. No uses Markdown: sin asteriscos (**), sin almohadillas (#), sin guiones para líneas (---). Usa solo saltos de línea y, si quieres destacar títulos, escríbelos en mayúsculas seguidos de dos puntos.\n\n"
+. "Pregunta: ¿En qué países del mundo sería más conveniente exportar o vender estos productos o servicios, y qué recomendaciones concretas darías (canales, requisitos, mercados prioritarios)? Responde de forma clara y estructurada: países recomendados, breve justificación y 2-4 consejos prácticos.\n\n"
 . "Datos:\n" . $context;
 
 $payload = [

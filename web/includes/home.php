@@ -377,7 +377,10 @@ $visibleProducts = min(4, $totalProducts);
         </div>
         <div id="home-gemini-loading" class="home-gemini-loading" style="display: none;" data-i18n="home_gemini_loading">Cargando...</div>
         <div id="home-gemini-error" class="home-gemini-error" style="display: none;"></div>
-        <div id="home-gemini-result" class="home-gemini-result" style="display: none;"></div>
+        <div id="home-gemini-result-wrap" class="home-gemini-result-wrap" style="display: none;">
+          <div id="home-gemini-result" class="home-gemini-result"></div>
+          <button type="button" id="home-gemini-expand-btn" class="home-gemini-expand-btn" style="display: none;" data-i18n="home_gemini_expand">Expandir todo</button>
+        </div>
         <?php else: ?>
         <div class="home-gemini-placeholder" style="text-align: center; padding: 40px 20px; font-size: 18px; color: #666; background: #f9f9f9; border-radius: 8px;">
           <p data-i18n="home_gemini_need_data" style="margin-bottom: 20px;">Agregue empresa y productos para obtener recomendaciones de mercados.</p>
@@ -906,24 +909,32 @@ document.addEventListener('DOMContentLoaded', function() {
   const btnGemini = document.getElementById('btnGeminiMarkets');
   const geminiLoading = document.getElementById('home-gemini-loading');
   const geminiError = document.getElementById('home-gemini-error');
+  const geminiResultWrap = document.getElementById('home-gemini-result-wrap');
   const geminiResult = document.getElementById('home-gemini-result');
+  const geminiExpandBtn = document.getElementById('home-gemini-expand-btn');
   if (btnGemini) {
     btnGemini.addEventListener('click', async function() {
       geminiLoading.style.display = 'block';
       geminiError.style.display = 'none';
       geminiError.textContent = '';
-      geminiResult.style.display = 'none';
+      geminiResultWrap.style.display = 'none';
       geminiResult.textContent = '';
+      if (geminiExpandBtn) { geminiExpandBtn.style.display = 'none'; geminiExpandBtn.classList.remove('home-gemini-result-expanded'); }
       btnGemini.disabled = true;
       try {
-        const res = await fetch('includes/gemini_markets_js.php', { method: 'POST' });
+        const res = await fetch('index.php?page=gemini_markets', { method: 'POST' });
         const data = await res.json();
         geminiLoading.style.display = 'none';
         btnGemini.disabled = false;
         if (data.ok && data.text) {
-          geminiResult.style.display = 'block';
           geminiResult.textContent = data.text;
           geminiResult.style.whiteSpace = 'pre-wrap';
+          geminiResultWrap.style.display = 'block';
+          if (geminiExpandBtn && geminiResult.scrollHeight > 320) {
+            geminiExpandBtn.style.display = 'block';
+            var d = window.__i18nDict || {};
+            geminiExpandBtn.textContent = d.home_gemini_expand || 'Expandir todo';
+          }
         } else {
           geminiError.style.display = 'block';
           geminiError.textContent = data.error || 'Error al obtener recomendaciones.';
@@ -934,6 +945,14 @@ document.addEventListener('DOMContentLoaded', function() {
         geminiError.style.display = 'block';
         geminiError.textContent = 'Error de conexión. Intente de nuevo.';
       }
+    });
+  }
+  if (geminiExpandBtn && geminiResult) {
+    geminiExpandBtn.addEventListener('click', function() {
+      var isExpanded = this.classList.toggle('home-gemini-result-expanded');
+      geminiResult.classList.toggle('home-gemini-result-expanded', isExpanded);
+      var d = window.__i18nDict || {};
+      this.textContent = isExpanded ? (d.home_gemini_less || 'Ver menos') : (d.home_gemini_expand || 'Expandir todo');
     });
   }
 });
