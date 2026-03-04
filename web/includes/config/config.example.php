@@ -47,4 +47,8 @@ return [
             'bitrate' => '2000k',     // Битрейт для сжатия
         ],
     ],
+
+    // Google Gemini API (recomendaciones de mercados)
+    // Obtener clave en: https://aistudio.google.com/app/apikey
+    'gemini_api_key' => 'AIzaSyAk7ArWH79Fhpqv_vs8p7a6n5JD_DlKSBk',
 ];

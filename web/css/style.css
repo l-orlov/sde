@@ -1735,13 +1735,12 @@ div.label span .req,
   background-repeat: no-repeat;
   z-index: 0;
 }
+/* Desktop: show video; keep ::before image as fallback when video fails to load */
 @media (min-width: 769px) {
   .hero-bg-video {
     display: block;
   }
-  .hero-section::before {
-    background-image: none;
-  }
+  /* Do not set background-image: none — same image shows behind/under video and when video does not load */
 }
 .hero-header {
   position: fixed;
@@ -4374,6 +4373,70 @@ div.label span .req,
   font-size: 16px;
   font-weight: 600;
   border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+.btn-generate-ai:hover:not(:disabled) {
+  background: #5a8fc9;
+  transform: translateY(-2px);
+}
+.btn-generate-ai:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.home-gemini-intro {
+  margin-bottom: 20px;
+  color: #6b7280;
+  font-size: 16px;
+}
+.home-gemini-actions {
+  margin-bottom: 20px;
+}
+.home-gemini-loading {
+  padding: 16px;
+  color: #003399;
+  font-weight: 600;
+}
+.home-gemini-error {
+  padding: 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  margin-bottom: 16px;
+}
+.home-gemini-result-wrap {
+  margin-top: 16px;
+}
+.home-gemini-result {
+  padding: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #1b1f23;
+  white-space: pre-wrap;
+}
+.home-gemini-result.home-gemini-result-expanded {
+  max-height: none;
+}
+.home-gemini-expand-btn {
+  display: block;
+  margin-top: 10px;
+  padding: 8px 16px;
+  font-size: 14px;
+  background: transparent;
+  border: 1px solid #75A8DA;
+  color: #003399;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.home-gemini-expand-btn:hover {
+  background: #f0f7ff;
 }
 
 /* Footer Action */
