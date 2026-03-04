@@ -1735,13 +1735,12 @@ div.label span .req,
   background-repeat: no-repeat;
   z-index: 0;
 }
+/* Desktop: show video; keep ::before image as fallback when video fails to load */
 @media (min-width: 769px) {
   .hero-bg-video {
     display: block;
   }
-  .hero-section::before {
-    background-image: none;
-  }
+  /* Do not set background-image: none — same image shows behind/under video and when video does not load */
 }
 .hero-header {
   position: fixed;
