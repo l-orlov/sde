@@ -258,7 +258,12 @@ if (!empty($companyIds)) {
 $productosParaSlides = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code
+    $chk = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'current_markets'");
+    $hasCurrentMarkets = ($chk && mysqli_num_rows($chk) > 0);
+    $chk = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'target_markets'");
+    $hasTargetMarkets = ($chk && mysqli_num_rows($chk) > 0);
+    $marketsCols = ($hasCurrentMarkets ? ', p.current_markets' : '') . ($hasTargetMarkets ? ', p.target_markets' : '');
+    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code" . $marketsCols . "
           FROM products p
           WHERE p.company_id IN ($ids)
           ORDER BY p.is_main DESC, p.id ASC
@@ -412,6 +417,7 @@ if (!empty($companyIds)) {
                 $t = trim($row['network_type'] ?? '');
                 $u = trim($row['url'] ?? '');
                 if ($u !== '') {
+                    $u = preg_replace('#^https?://#i', '', $u);
                     if (!isset($redesPorEmpresa[$cid])) {
                         $redesPorEmpresa[$cid] = [];
                     }
@@ -523,14 +529,28 @@ $htmlChunks = buildOfertaPdfHtml([
 ]);
 
 // ——— Generar PDF con mPDF ———
-$mpdf = new \Mpdf\Mpdf([
+$pdfFontsDir = dirname(__DIR__) . '/fonts';
+$blinkerR = $pdfFontsDir . '/Blinker-Regular.ttf';
+$blinkerB = $pdfFontsDir . '/Blinker-Bold.ttf';
+$useBlinker = file_exists($blinkerR) && file_exists($blinkerB);
+$pdfFontFamily = $useBlinker ? 'blinker' : 'dejavusans';
+$mpdfConfig = [
     'mode' => 'utf-8',
     'format' => [$wMm, $hMm],
     'margin_left' => 0,
     'margin_right' => 0,
     'margin_top' => 0,
     'margin_bottom' => 0,
-]);
+];
+if ($useBlinker) {
+    $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
+    $fontDirs = $defaultConfig['fontDir'] ?? [];
+    $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
+    $fontData = $defaultFontConfig['fontdata'] ?? [];
+    $mpdfConfig['fontDir'] = array_merge($fontDirs, [$pdfFontsDir]);
+    $mpdfConfig['fontdata'] = $fontData + ['blinker' => ['R' => 'Blinker-Regular.ttf', 'B' => 'Blinker-Bold.ttf']];
+}
+$mpdf = new \Mpdf\Mpdf($mpdfConfig);
 $mpdf->SetDisplayMode('fullpage');
 $mpdf->SetTitle($configInstitucional['titulo_documento'] . ' - ' . $configInstitucional['nombre_provincia']);
 
@@ -603,7 +623,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->Image($s1CompanyLogoPath, $s1CompanyLogoX, ($s1HeaderH - $lh) / 2, $lw, $lh);
             }
         }
-        $mpdf->SetFont('dejavusans', '', 17);
+        $mpdf->SetFont($pdfFontFamily, '', 17);
         $mpdf->SetXY($wMm - $s1Pad - 36, ($s1HeaderH - 8) / 2);
         $mpdf->SetTextColor(255, 255, 255);
         $mpdf->Cell(32, 8, 'Página 01', 0, 0, 'R');
@@ -737,10 +757,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetRightMargin($s1Pad);
         $s1Ty = $s1MiddleY + 28;
         $mpdf->SetXY($s1TextLeft, $s1Ty);
-        $mpdf->SetFont('dejavusans', 'B', 56);
+        $mpdf->SetFont($pdfFontFamily, 'B', 56);
         $mpdf->SetTextColor(255, 255, 255);
         $mpdf->Cell($s1TextW, 20, 'EMPRESA /', 0, 1, 'L');
-        $mpdf->SetFont('dejavusans', 'B', 56);
+        $mpdf->SetFont($pdfFontFamily, 'B', 56);
         $mpdf->Cell($s1TextW, 20, 'EMPRENDIMIENTO', 0, 1, 'L');
         $s1Sub = 'ACTIVIDAD PRINCIPAL • LOCALIDAD';
         if (!empty($companies[0])) {
@@ -751,17 +771,17 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $s1Sub = (function_exists('mb_strtoupper') ? mb_strtoupper($act) : strtoupper($act)) . ($act !== '' && $loc !== '' ? ' • ' : '') . (function_exists('mb_strtoupper') ? mb_strtoupper($loc) : strtoupper($loc));
             }
         }
-        $mpdf->SetFont('dejavusans', '', 22);
+        $mpdf->SetFont($pdfFontFamily, '', 22);
         $mpdf->SetXY($s1TextLeft, $s1Ty + 48);
         $mpdf->Cell($s1TextW, 10, $s1Sub, 0, 0, 'L');
 
         // Pie: Edición 2026 y flecha — mismos márgenes s1Pad que header; fuente más grande, flecha más ancha y grande
         $s1FootTextY = $s1FootY + ($s1FooterH - 10) / 2 + 1;
         $mpdf->SetTextColor(255, 255, 255);
-        $mpdf->SetFont('dejavusans', '', 22);
+        $mpdf->SetFont($pdfFontFamily, '', 22);
         $mpdf->SetXY($s1Pad, $s1FootTextY);
         $mpdf->Cell($wMm - 2 * $s1Pad - 28, 10, 'Edición ' . $configInstitucional['periodo_ano'], 0, 0, 'L');
-        $mpdf->SetFont('dejavusans', 'B', 28);
+        $mpdf->SetFont($pdfFontFamily, 'B', 28);
         $mpdf->SetXY($wMm - $s1Pad - 24, $s1FootTextY - 2);
         $mpdf->SetTextColor(255, 255, 255);
         $mpdf->Cell(22, 12, chr(0xE2) . chr(0x86) . chr(0x92), 0, 0, 'R');
@@ -814,7 +834,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->Image($pfCompanyLogoPath, $pfCompanyLogoX, ($pfHeaderH - $lh) / 2, $lw, $lh);
             }
         }
-        $mpdf->SetFont('dejavusans', '', 17);
+        $mpdf->SetFont($pdfFontFamily, '', 17);
         $mpdf->SetXY($wMm - $pfPad - 36, ($pfHeaderH - 8) / 2);
         $mpdf->Cell(32, 8, 'Página 02', 0, 0, 'R');
         $pfLineH = 0.5;
@@ -837,14 +857,12 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $pfTitleY = $pfContentY + 26;
         $mpdf->SetXY($pfTitleX, $pfTitleY);
         $mpdf->SetTextColor(141, 188, 220);
-        $mpdf->SetFont('dejavusans', 'B', 38);
+        $mpdf->SetFont($pdfFontFamily, 'B', 42);
         $mpdf->Cell($pfTitleW, 14, 'PERFIL DE LA', 0, 1, 'L');
+        $mpdf->SetXY($pfTitleX, $pfTitleY + 18);
         $mpdf->SetTextColor(255, 255, 255);
-        $mpdf->SetFont('dejavusans', 'B', 38);
-        $pfCompanyName = trim($companies[0]['name'] ?? '') ?: 'EMPRESA';
-        $pfCompanyName = (function_exists('mb_strlen') && function_exists('mb_substr') && mb_strlen($pfCompanyName) > 14) ? mb_substr($pfCompanyName, 0, 14) . '…' : $pfCompanyName;
-        $mpdf->SetXY($pfTitleX, $pfTitleY + 20);
-        $mpdf->Cell($pfTitleW, 14, $pfCompanyName, 0, 1, 'L');
+        $mpdf->SetFont($pdfFontFamily, 'B', 48);
+        $mpdf->Cell($pfTitleW, 18, 'EMPRESA', 0, 1, 'L');
 
         $pfImgPath = $pfCompanyLogoPath;
         if (!$pfImgPath || !file_exists($pfImgPath)) {
@@ -881,12 +899,14 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $pfDept = $pfCid && isset($departamentoPorEmpresa[$pfCid]) ? $departamentoPorEmpresa[$pfCid] : '';
         $pfDom = $pfCid && isset($domicilioPorEmpresa[$pfCid]) ? $domicilioPorEmpresa[$pfCid] : '';
         $pfWeb = trim($pfFirst['website'] ?? '');
-        $pfRedes = ($pfCid && isset($redesPorEmpresa[$pfCid]) && is_array($redesPorEmpresa[$pfCid])) ? implode(', ', $redesPorEmpresa[$pfCid]) : '';
+        $pfWebStr = $pfWeb !== '' ? preg_replace('#^https?://#i', '', $pfWeb) : '-';
+        $pfRedesLines = ($pfCid && isset($redesPorEmpresa[$pfCid]) && is_array($redesPorEmpresa[$pfCid])) ? $redesPorEmpresa[$pfCid] : ['-'];
+        $pfCanalesLines = array_merge(['Web: ' . $pfWebStr], ['Redes:'], $pfRedesLines);
         $pfContact = ($pfCid && isset($contactoPorEmpresa[$pfCid])) ? $contactoPorEmpresa[$pfCid] : ['position' => '', 'email' => '', 'phone' => ''];
         $pfSections = [
             ['ACTIVIDAD PRINCIPAL', ['Tipo de Organización: ' . $pfOrgType, 'Actividad principal: ' . $pfAct]],
             ['UBICACIÓN', ['Localidad: ' . $pfLoc, 'Departamento: ' . $pfDept, 'Domicilio: ' . $pfDom]],
-            ['CANALES', ['Web: ' . $pfWeb, 'Redes: ' . $pfRedes]],
+            ['CANALES', $pfCanalesLines],
             ['CONTACTO', ['Cargo: ' . $pfContact['position'], 'Email: ' . $pfContact['email'], 'Teléfono: ' . $pfContact['phone']]],
         ];
         $pfY = $pfPanelY + $pfInnerPad;
@@ -902,9 +922,9 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             }
             $mpdf->SetXY($pfPanelX + $pfInnerPad, $pfY);
             $mpdf->SetTextColor(255, 255, 255);
-            $mpdf->SetFont('dejavusans', 'B', $pfTitleFs);
+            $mpdf->SetFont($pdfFontFamily, 'B', $pfTitleFs);
             $mpdf->Cell($pfPanelW - 2 * $pfInnerPad, $pfRowH, $sec[0], 0, 1, 'L');
-            $mpdf->SetFont('dejavusans', '', $pfLabelFs);
+            $mpdf->SetFont($pdfFontFamily, '', $pfLabelFs);
             $pfLabelRowH = 5.5;
             foreach ($sec[1] as $line) {
                 $mpdf->SetX($pfPanelX + $pfInnerPad);
@@ -978,7 +998,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->Image($p6CompanyLogoPath, $p6CompanyLogoX, ($p6HeaderH - $lh) / 2, $lw, $lh);
             }
         }
-        $mpdf->SetFont('dejavusans', '', 17);
+        $mpdf->SetFont($pdfFontFamily, '', 17);
         $mpdf->SetXY($wMm - $p6Pad - 36, ($p6HeaderH - 8) / 2);
         $mpdf->Cell(32, 8, 'Página ' . sprintf('%02d', $prodIntroPageNum), 0, 0, 'R');
         $p6LineH = 0.5;
@@ -1060,11 +1080,11 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $p6TitleGap = 6;
         $p6TitleLineH = 18;
         $mpdf->SetTextColor(141, 188, 220);
-        $mpdf->SetFont('dejavusans', 'B', 52);
+        $mpdf->SetFont($pdfFontFamily, 'B', 52);
         $mpdf->SetXY($p6TitleLeft, $p6TextRowY);
         $mpdf->Cell($p6TitleW, $p6TitleLineH, 'PRODUCTOS Y SERVICIOS', 0, 1, 'L');
         $mpdf->SetTextColor(255, 255, 255);
-        $mpdf->SetFont('dejavusans', 'B', 52);
+        $mpdf->SetFont($pdfFontFamily, 'B', 52);
         $mpdf->SetXY($p6TitleLeft, $p6TextRowY + $p6TitleLineH + $p6TitleGap);
         $mpdf->Cell($p6TitleW, $p6TitleLineH, 'EXPORTABLES', 0, 1, 'L');
         // Un producto por slide: header como p6; izq. imagen grande; der. NOMBRE / PRODUCTO (nombre en azul), número + línea + descripción, etiquetas
@@ -1161,7 +1181,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                     $mpdf->Image($p7CompanyLogoPath, $p7CompanyLogoX, ($p7HeaderH - $lh) / 2, $lw, $lh);
                 }
             }
-            $mpdf->SetFont('dejavusans', '', 17);
+            $mpdf->SetFont($pdfFontFamily, '', 17);
             $mpdf->SetXY($wMm - $p7Pad - 36, ($p7HeaderH - 8) / 2);
             $mpdf->Cell(32, 8, 'Página ' . sprintf('%02d', $prodPageNum), 0, 0, 'R');
             $p7LineH = 0.5;
@@ -1192,11 +1212,11 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $p7RightW = $wMm - $p7RightX - $p7Pad;
             $p7TextY = $p7ContentY + 38;
             $mpdf->SetTextColor(255, 255, 255);
-            $mpdf->SetFont('dejavusans', 'B', 42);
+            $mpdf->SetFont($pdfFontFamily, 'B', 42);
             $mpdf->SetXY($p7RightX, $p7TextY);
             $mpdf->Cell($p7RightW, 16, 'NOMBRE', 0, 1, 'L');
             $mpdf->SetTextColor(141, 188, 220);
-            $mpdf->SetFont('dejavusans', 'B', 42);
+            $mpdf->SetFont($pdfFontFamily, 'B', 42);
             $nameStr = $prod['name'] ?? '';
             $mpdf->SetXY($p7RightX, $p7TextY + 18);
             $mpdf->Cell($p7RightW, 16, $nameStr, 0, 1, 'L');
@@ -1204,19 +1224,19 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $p7NumW = 16;
             $p7NumX = $p7RightX;
             $mpdf->SetTextColor(141, 188, 220);
-            $mpdf->SetFont('dejavusans', 'B', 22);
+            $mpdf->SetFont($pdfFontFamily, 'B', 22);
             $mpdf->SetXY($p7NumX, $p7TextY);
             $mpdf->Cell($p7NumW, 12, sprintf('%02d', $prodIdx + 1), 0, 0, 'L');
             $p7LineX = $p7NumX + $p7NumW + 8;
             $p7DescX = $p7LineX + 12;
             $p7DescW = $p7RightW - ($p7DescX - $p7RightX);
             $mpdf->SetTextColor(255, 255, 255);
-            $mpdf->SetFont('dejavusans', '', 16);
+            $mpdf->SetFont($pdfFontFamily, '', 16);
             $mpdf->SetXY($p7DescX, $p7TextY);
             $descStr = trim($prod['description'] ?? '') ?: 'Breve descripción del producto';
             $mpdf->MultiCell($p7DescW, 7, $descStr, 0, 'L');
             $p7TextY += 32;
-            $p7LabelFont = 'dejavusans';
+            $p7LabelFont = $pdfFontFamily;
             $p7LabelSize = 14;
             $p7LabelH = 9;
             $p7LineBottom = $p7TextY + 4 * $p7LabelH + 10;
@@ -1231,10 +1251,42 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->Cell($p7DescW, $p7LabelH, 'Certificaciones: ' . (trim($prod['certifications'] ?? '') ?: '-'), 0, 1, 'L');
             $mpdf->SetX($p7DescX);
             $mpdf->Cell($p7DescW, $p7LabelH, 'Código Arancelario (NCM/HS): ' . (trim($prod['tariff_code'] ?? '') ?: '-'), 0, 1, 'L');
+            $p7CurrentMarketsStr = '-';
+            if (!empty($prod['current_markets'])) {
+                $raw = $prod['current_markets'];
+                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
+                if (is_array($dec)) {
+                    $list = [];
+                    foreach ($dec as $m) {
+                        $list[] = is_array($m) ? ($m['nombre'] ?? $m['name'] ?? '') : (string)$m;
+                    }
+                    $p7CurrentMarketsStr = implode(', ', array_filter($list));
+                } else {
+                    $p7CurrentMarketsStr = is_string($raw) ? trim($raw) : (string)$raw;
+                }
+                if ($p7CurrentMarketsStr === '') $p7CurrentMarketsStr = '-';
+            }
+            $p7TargetMarketsStr = '-';
+            if (!empty($prod['target_markets'])) {
+                $raw = $prod['target_markets'];
+                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
+                if (is_array($dec)) {
+                    $list = [];
+                    foreach ($dec as $m) {
+                        $list[] = is_array($m) ? ($m['nombre'] ?? $m['name'] ?? '') : (string)$m;
+                    }
+                    $p7TargetMarketsStr = implode(', ', array_filter($list));
+                } else {
+                    $p7TargetMarketsStr = is_string($raw) ? trim($raw) : (string)$raw;
+                }
+                if ($p7TargetMarketsStr === '') $p7TargetMarketsStr = '-';
+            }
+            if (mb_strlen($p7CurrentMarketsStr) > 45) $p7CurrentMarketsStr = mb_substr($p7CurrentMarketsStr, 0, 44) . '…';
+            if (mb_strlen($p7TargetMarketsStr) > 45) $p7TargetMarketsStr = mb_substr($p7TargetMarketsStr, 0, 44) . '…';
             $mpdf->SetX($p7DescX);
-            $mpdf->Cell($p7DescW, $p7LabelH, 'Mercados actuales: -', 0, 1, 'L');
+            $mpdf->Cell($p7DescW, $p7LabelH, 'Mercados actuales: ' . $p7CurrentMarketsStr, 0, 1, 'L');
             $mpdf->SetX($p7DescX);
-            $mpdf->Cell($p7DescW, $p7LabelH, 'Mercados de interés: -', 0, 1, 'L');
+            $mpdf->Cell($p7DescW, $p7LabelH, 'Mercados de interés: ' . $p7TargetMarketsStr, 0, 1, 'L');
             $mpdf->SetDrawColor(0, 0, 0);
             $prodPageNum++;
         }
@@ -1286,7 +1338,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->Image($histCompanyLogoPath, $histCompanyLogoX, ($histHeaderH - $lh) / 2, $lw, $lh);
             }
         }
-        $mpdf->SetFont('dejavusans', '', 17);
+        $mpdf->SetFont($pdfFontFamily, '', 17);
         $mpdf->SetXY($wMm - $histPad - 36, ($histHeaderH - 8) / 2);
         $mpdf->Cell(32, 8, 'Página ' . sprintf('%02d', $histPageNum), 0, 0, 'R');
         $histLineH = 0.5;
@@ -1313,14 +1365,14 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetRightMargin($histLeftW);
         $mpdf->SetXY($histTextLeft, $histTextTop);
         $mpdf->SetTextColor(255, 255, 255);
-        $mpdf->SetFont('dejavusans', 'B', 36);
+        $mpdf->SetFont($pdfFontFamily, 'B', 36);
         $mpdf->Cell($histTextW, 14, 'NUESTRA', 0, 1, 'L');
         $mpdf->SetTextColor(141, 188, 220);
-        $mpdf->SetFont('dejavusans', 'B', 40);
+        $mpdf->SetFont($pdfFontFamily, 'B', 40);
         $mpdf->SetXY($histTextLeft, $histTextTop + 16);
         $mpdf->Cell($histTextW, 16, 'HISTORIA', 0, 1, 'L');
         $mpdf->SetTextColor(255, 255, 255);
-        $mpdf->SetFont('dejavusans', '', $histFontSize);
+        $mpdf->SetFont($pdfFontFamily, '', $histFontSize);
         $mpdf->Ln(8);
         $histPara = 'Nisi justo faucibus lectus blandit donec gravida proin natoque, malesuada a facilisis dictumst rhoncus pulvinar aliquet feugiat ultrices, mollis phasellus varius tortor habitasse purus enim. Nunc lacus sociis tortor volutpat egestas vel duis erat, eleifend dapibus praesent vehicula fringilla ac suscipit conubia, nibh pulvinar elementum faucibus urna nullam luctus. Augue senectus rutrum suscipit habitasse felis aptent phasellus, nec hendrerit mattis enim congue tempor auctor magnis, mollis neque libero sagittis urna orci.';
         $mpdf->MultiCell($histTextW, $histLineHeight, $histPara, 0, 'L');
@@ -1419,7 +1471,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->Image($cCompanyLogoPath, $cCompanyLogoX, ($cHeaderH - $lh) / 2, $lw, $lh);
             }
         }
-        $mpdf->SetFont('dejavusans', '', 17);
+        $mpdf->SetFont($pdfFontFamily, '', 17);
         $mpdf->SetXY($wMm - $cPad - 36, ($cHeaderH - 8) / 2);
         $mpdf->Cell(32, 8, 'Página ' . sprintf('%02d', $compPageNum), 0, 0, 'R');
         $cLineH = 0.5;
@@ -1507,11 +1559,11 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $cTitleGap = 6;
         $cTitleLineH = 18;
         $mpdf->SetTextColor(141, 188, 220);
-        $mpdf->SetFont('dejavusans', 'B', 52);
+        $mpdf->SetFont($pdfFontFamily, 'B', 52);
         $mpdf->SetXY($cTitleLeft, $cTextRowY);
         $mpdf->Cell($cTitleW, $cTitleLineH, 'COMPETITIVIDAD Y', 0, 1, 'L');
         $mpdf->SetTextColor(255, 255, 255);
-        $mpdf->SetFont('dejavusans', 'B', 52);
+        $mpdf->SetFont($pdfFontFamily, 'B', 52);
         $mpdf->SetXY($cTitleLeft, $cTextRowY + $cTitleLineH + $cTitleGap);
         $mpdf->Cell($cTitleW, $cTitleLineH, 'DIFERENCIACIÓN', 0, 1, 'L');
 
@@ -1561,7 +1613,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->Image($logCompanyLogoPath, $logCompanyLogoX, ($logHeaderH - $lh) / 2, $lw, $lh);
             }
         }
-        $mpdf->SetFont('dejavusans', '', 17);
+        $mpdf->SetFont($pdfFontFamily, '', 17);
         $mpdf->SetXY($wMm - $logPad - 36, ($logHeaderH - 8) / 2);
         $mpdf->Cell(32, 8, 'Página ' . sprintf('%02d', $logrosPageNum), 0, 0, 'R');
         $logLineH = 0.5;
@@ -1681,9 +1733,9 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             }
             $mpdf->SetXY($logTextLeft, $sy + 1);
             $mpdf->SetTextColor(255, 255, 255);
-            $mpdf->SetFont('dejavusans', 'B', $logTitleFontSize);
+            $mpdf->SetFont($pdfFontFamily, 'B', $logTitleFontSize);
             $mpdf->Cell($logTextW, $logTitleH, $logSectionTitles[$s], 0, 1, 'L');
-            $mpdf->SetFont('dejavusans', '', $logDescFontSize);
+            $mpdf->SetFont($pdfFontFamily, '', $logDescFontSize);
             $mpdf->MultiCell($logTextW, $logDescLineH, $logSectionDesc, 0, 'L');
         }
         $mpdf->SetLeftMargin(0);
@@ -1699,7 +1751,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->Rect(0, 0, $s7FullW, $s7FullH, 'F');
         $s7TitleY = $s7Pad;
         $mpdf->SetTextColor(255, 255, 255);
-        $mpdf->SetFont('dejavusans', 'B', 36);
+        $mpdf->SetFont($pdfFontFamily, 'B', 36);
         $mpdf->SetXY($s7Pad, $s7TitleY);
         $mpdf->Cell($s7FullW - 2 * $s7Pad, 14, 'CONTACTO', 0, 1, 'L');
         $s7LineY = $s7TitleY + 14 + 6;
@@ -1801,7 +1853,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $s7RowCenter = $s7TextTop + $s7TextLineH / 2;
         $s7IconY = $s7RowCenter - $s7IconSize / 2;
         $mpdf->SetTextColor(255, 255, 255);
-        $mpdf->SetFont('dejavusans', '', 11);
+        $mpdf->SetFont($pdfFontFamily, '', 11);
         // Localidad — слева, отступ как у белой линии (s7Pad)
         if (file_exists($iconTelefonoPath)) {
             $mpdf->Image($iconTelefonoPath, $s7Pad, $s7IconY, $s7IconSize, $s7IconSize);

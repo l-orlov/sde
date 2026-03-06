@@ -81,7 +81,7 @@ if ($link) {
 <!-- HEADER -->
 <div class="hero-section">
     <div class="hero-bg-video" aria-hidden="true">
-        <video class="hero-bg-video-file" autoplay muted loop playsinline>
+        <video class="hero-bg-video-file" autoplay muted playsinline id="hero-bg-video">
             <source src="video/video11.mp4" type="video/mp4">
         </video>
     </div>
@@ -422,6 +422,14 @@ function toggleLangMenu() {
 }
 document.addEventListener('DOMContentLoaded', () => {
   initLang('landing');
+  // После окончания фонового видео показываем статичную картинку
+  const heroVideo = document.getElementById('hero-bg-video');
+  const heroSection = document.querySelector('.hero-section');
+  if (heroVideo && heroSection) {
+    heroVideo.addEventListener('ended', function() {
+      heroSection.classList.add('hero-video-ended');
+    });
+  }
   // Oferta exportable dropdown
   const ofertaDropdown = document.getElementById('oferta-dropdown');
   const ofertaBtn = document.getElementById('oferta-dropdown-btn');

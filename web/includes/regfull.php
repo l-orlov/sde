@@ -4240,20 +4240,38 @@ document.addEventListener('DOMContentLoaded', initRadioGroups);
             const urlInput = row.querySelector('input[name="social_url[]"]');
             const hiddenInput = row.querySelector('input.net');
             const finalInput = row.querySelector('input.net-final');
-            
+            const otherInput = row.querySelector('input.net-other');
+            const predefinedNetworks = ['', 'Instagram', 'Facebook', 'LinkedIn', 'X (Twitter)', 'TikTok', 'YouTube', 'Otra'];
+            const isPredefined = predefinedNetworks.indexOf(social.network_type) !== -1;
+
             if (urlInput && social.url) urlInput.value = social.url;
             if (hiddenInput && social.network_type) {
-              hiddenInput.value = social.network_type;
               const dropdown = hiddenInput.closest('.custom-dropdown');
-              if (dropdown) {
-                const options = dropdown.querySelectorAll('.dropdown-option');
+              const options = dropdown ? dropdown.querySelectorAll('.dropdown-option') : [];
+              const selectedText = dropdown ? dropdown.querySelector('.selected-text') : null;
+
+              if (isPredefined) {
+                hiddenInput.value = social.network_type;
                 for (let option of options) {
-                  if (option.dataset.value === social.network_type) {
-                    const selectedText = dropdown.querySelector('.selected-text');
+                  if ((option.dataset.value || '') === social.network_type) {
                     if (selectedText) selectedText.textContent = option.textContent;
                     option.classList.add('selected');
+                    options.forEach(opt => { if (opt !== option) opt.classList.remove('selected'); });
                     break;
                   }
+                }
+              } else {
+                hiddenInput.value = 'Otra';
+                const otraOpt = Array.from(options).find(opt => (opt.dataset.value || '') === 'Otra');
+                if (otraOpt) {
+                  if (selectedText) selectedText.textContent = otraOpt.textContent;
+                  otraOpt.classList.add('selected');
+                  options.forEach(opt => { if (opt !== otraOpt) opt.classList.remove('selected'); });
+                }
+                if (otherInput) {
+                  otherInput.value = social.network_type;
+                  otherInput.hidden = false;
+                  otherInput.required = true;
                 }
               }
             }

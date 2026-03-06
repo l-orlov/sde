@@ -1,11 +1,15 @@
 <?
-session_start();
-set_time_limit (0);
-error_reporting(E_ALL);
-ob_implicit_flush();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+set_time_limit(0);
 
-include __DIR__ . '/functions.php';
-DBconnect();
+if (!function_exists('DBconnect')) {
+    include_once __DIR__ . '/functions.php';
+    DBconnect();
+}
+
+header('Content-Type: application/json; charset=utf-8');
 
 $return = ['res' => '', 'ok' => 0, 'err' => ''];
 
@@ -52,5 +56,4 @@ $_SESSION['tax_id'] = $row['tax_id'] ?? '';
 $_SESSION['phone'] = $row['phone'];
 
 $return['ok'] = 1;
-echo json_encode( $return );
-?>
+echo json_encode($return);

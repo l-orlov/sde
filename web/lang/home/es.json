@@ -16,6 +16,7 @@
   "logout_confirm": "¿Está seguro de que desea cerrar sesión?",
   "home_section_title": "Información sobre Productos y Servicios",
   "home_search_placeholder": "Buscar productos...",
+  "home_search_no_results": "No se encontraron productos.",
   "home_search_placeholder_presentations": "Buscar...",
   "btn_show_more": "Mostrar más",
   "btn_hide": "Ocultar",

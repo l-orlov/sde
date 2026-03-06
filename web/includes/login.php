@@ -122,7 +122,7 @@ function login() {
 		tax_id: tax_idDigits,
 		pass: pass
 	};
-	fetch('includes/login_js.php', { method: 'POST', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify( senddata )})
+	fetch('index.php?page=login_submit', { method: 'POST', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify( senddata )})
 	.then(response => response.json())
 	.then(data => {
 		console.log(data);

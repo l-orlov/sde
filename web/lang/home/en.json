@@ -16,6 +16,7 @@
   "logout_confirm": "Are you sure you want to log out?",
   "home_section_title": "Product and Service Information",
   "home_search_placeholder": "Search products...",
+  "home_search_no_results": "No products found.",
   "home_search_placeholder_presentations": "Search...",
   "btn_show_more": "Show more",
   "btn_hide": "Hide",

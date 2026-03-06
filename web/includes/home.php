@@ -54,7 +54,8 @@ if ($stmt) {
 // Проверка статуса модерации и наличия данных компании
 $hasCompanyData = false;
 $moderationStatus = null;
-$query = "SELECT moderation_status FROM companies WHERE user_id = ? LIMIT 1";
+$companyId = null;
+$query = "SELECT id, moderation_status FROM companies WHERE user_id = ? LIMIT 1";
 $stmt = mysqli_prepare($link, $query);
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'i', $userId);
@@ -64,11 +65,12 @@ if ($stmt) {
         $moderationData = mysqli_fetch_assoc($result);
         $hasCompanyData = true;
         $moderationStatus = $moderationData['moderation_status'] ?? 'pending';
+        $companyId = isset($moderationData['id']) ? (int) $moderationData['id'] : null;
     }
     mysqli_stmt_close($stmt);
 }
 
-// Загрузка товаров и услуг пользователя
+// Загрузка товаров и услуг пользователя: один запрос (user_id и при наличии company_id — или company_id)
 require_once __DIR__ . '/FileManager.php';
 require_once __DIR__ . '/storage/StorageFactory.php';
 
@@ -76,34 +78,65 @@ $products = [];
 $productPhotos = [];
 
 try {
-    // Загружаем и продукты, и услуги
+    $checkDeleted = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'deleted_at'");
+    $hasDeletedAt = $checkDeleted && mysqli_num_rows($checkDeleted) > 0;
+    $deletedCond = $hasDeletedAt ? " AND (deleted_at IS NULL OR deleted_at = 0)" : "";
+
+    $where = "(user_id = ? " . ($companyId !== null ? "OR company_id = ?" : "") . ")" . $deletedCond;
     $query = "SELECT id, is_main, type, name, description 
               FROM products 
-              WHERE user_id = ? 
+              WHERE $where
               ORDER BY is_main DESC, id ASC";
     $stmt = mysqli_prepare($link, $query);
-    mysqli_stmt_bind_param($stmt, 'i', $userId);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    
-    while ($row = mysqli_fetch_assoc($result)) {
-        // Определяем тип продукта/услуги
-        $itemType = $row['type'] ?? null;
-        // Если type пустой, NULL или не равен 'service', считаем продуктом
-        if (empty($itemType) || $itemType === '' || $itemType !== 'service') {
-            $itemType = 'product';
+    if ($stmt) {
+        if ($companyId !== null) {
+            mysqli_stmt_bind_param($stmt, 'ii', $userId, $companyId);
+        } else {
+            mysqli_stmt_bind_param($stmt, 'i', $userId);
         }
-        
-        $products[] = [
-            'id' => intval($row['id']),
-            'is_main' => (bool)$row['is_main'],
-            'type' => $itemType,
-            'name' => htmlspecialchars($row['name'] ?? ''),
-            'description' => htmlspecialchars($row['description'] ?? '')
-        ];
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $itemType = isset($row['type']) && $row['type'] === 'service' ? 'service' : 'product';
+                $products[] = [
+                    'id' => (int) ($row['id'] ?? 0),
+                    'is_main' => !empty($row['is_main']),
+                    'type' => $itemType,
+                    'name' => isset($row['name']) ? htmlspecialchars((string) $row['name']) : '',
+                    'description' => isset($row['description']) ? htmlspecialchars((string) $row['description']) : ''
+                ];
+            }
+        }
+        mysqli_stmt_close($stmt);
     }
-    mysqli_stmt_close($stmt);
-    
+    // Fallback: если по user_id+company_id ничего не нашли — загружаем только по user_id
+    if (empty($products) && $companyId !== null) {
+        $query2 = "SELECT id, is_main, type, name, description 
+                   FROM products 
+                   WHERE user_id = ? $deletedCond
+                   ORDER BY is_main DESC, id ASC";
+        $stmt2 = mysqli_prepare($link, $query2);
+        if ($stmt2) {
+            mysqli_stmt_bind_param($stmt2, 'i', $userId);
+            mysqli_stmt_execute($stmt2);
+            $result2 = mysqli_stmt_get_result($stmt2);
+            if ($result2) {
+                while ($row = mysqli_fetch_assoc($result2)) {
+                    $itemType = isset($row['type']) && $row['type'] === 'service' ? 'service' : 'product';
+                    $products[] = [
+                        'id' => (int) ($row['id'] ?? 0),
+                        'is_main' => !empty($row['is_main']),
+                        'type' => $itemType,
+                        'name' => isset($row['name']) ? htmlspecialchars((string) $row['name']) : '',
+                        'description' => isset($row['description']) ? htmlspecialchars((string) $row['description']) : ''
+                    ];
+                }
+            }
+            mysqli_stmt_close($stmt2);
+        }
+    }
+
     // Загрузка изображений товаров и услуг
     if (!empty($products)) {
         $productIds = array_column($products, 'id');
@@ -121,14 +154,14 @@ try {
             // Загружаем и product_photo, и service_photo
             $query = "SELECT f.id, f.product_id, f.file_path, f.file_type, f.storage_type, p.is_main, p.type, p.id as product_id_from_table
                       FROM files f
-                      LEFT JOIN products p ON f.product_id = p.id AND p.user_id = ?
+                      LEFT JOIN products p ON f.product_id = p.id
                       WHERE f.user_id = ? AND (f.file_type = 'product_photo' OR f.file_type = 'service_photo')
                       AND f.is_temporary = 0 
                       AND (f.product_id IN ($placeholders) OR (f.product_id IS NULL OR f.product_id = 0))
                       ORDER BY p.is_main DESC, f.product_id, f.created_at";
             $stmt = mysqli_prepare($link, $query);
-            $types = 'ii' . str_repeat('i', count($productIds));
-            $params = array_merge([$userId, $userId], $productIds);
+            $types = 'i' . str_repeat('i', count($productIds));
+            $params = array_merge([$userId], $productIds);
             mysqli_stmt_bind_param($stmt, $types, ...$params);
             mysqli_stmt_execute($stmt);
             $result = mysqli_stmt_get_result($stmt);
@@ -268,7 +301,7 @@ $visibleProducts = min(4, $totalProducts);
             <label data-i18n="home_form_password" class="home-form-label">Contraseña:</label>
             <div class="home-form-password">
               <input type="password" class="home-form-input" id="profile-password" data-i18n-placeholder="home_form_password_placeholder">
-              <button data-i18n="btn_change_password" class="home-form-change-btn">Cambiar</button>
+              <button type="button" data-i18n="btn_change_password" class="home-form-change-btn">Cambiar</button>
             </div>
           </div>
         </div>
@@ -307,60 +340,52 @@ $visibleProducts = min(4, $totalProducts);
         </div>
         
         <?php if (!$hasCompanyData): ?>
-          <!-- Состояние 1: Пользователь не заполнял форму -->
           <div style="text-align: center; padding: 60px 20px;">
-            <div style="font-size: 18px; color: #666; margin-bottom: 30px;">
-              <p data-i18n="home_no_products_message">Aún no has agregado productos. ¡Comienza agregando tu primer producto!</p>
-            </div>
-            <button onclick="location.href='?page=regfull'" class="btn btn-show-more" style="cursor: pointer;">
-              <span data-i18n="home_add_products_button">Agregar Productos</span>
-            </button>
+            <p data-i18n="home_no_products_message" style="font-size: 18px; color: #666; margin-bottom: 30px;">Aún no has agregado productos. ¡Comienza agregando tu primer producto!</p>
+            <button onclick="location.href='?page=regfull'" class="btn btn-show-more" style="cursor: pointer;"><span data-i18n="home_add_products_button">Agregar Productos</span></button>
           </div>
         <?php elseif ($moderationStatus === 'pending'): ?>
-          <!-- Состояние 2: Данные на модерации -->
           <div style="text-align: center; padding: 60px 20px;">
-            <div style="font-size: 18px; color: #666; margin-bottom: 30px;">
-              <p data-i18n="home_moderation_message">Sus datos están en moderación. Por favor, espere la confirmación del administrador.</p>
-            </div>
-          </div>
-        <?php elseif (empty($products)): ?>
-          <!-- Состояние 3: Данные подтверждены, но товаров нет -->
-          <div style="text-align: center; padding: 60px 20px;">
-            <div style="font-size: 18px; color: #666; margin-bottom: 30px;">
-              <p data-i18n="home_no_products_message">Aún no has agregado productos. ¡Comienza agregando tu primer producto!</p>
-            </div>
-            <button onclick="location.href='?page=regfull'" class="btn btn-show-more" style="cursor: pointer;">
-              <span data-i18n="home_add_products_button">Agregar Productos</span>
-            </button>
+            <p data-i18n="home_moderation_message" style="font-size: 18px; color: #666;">Sus datos están en moderación. Por favor, espere la confirmación del administrador.</p>
           </div>
         <?php else: ?>
-          <div class="home-products-grid">
-            <?php foreach ($products as $index => $product): 
-              $isVisible = $index < 4;
-              $productImage = isset($productPhotos[$product['id']]) ? $productPhotos[$product['id']] : null;
-              $imageSrc = $productImage ? $productImage : 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#f0f0f0"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="Arial" font-size="14" fill="#999">No img</text></svg>');
-              $imageAlt = htmlspecialchars($product['name']);
-              $productName = htmlspecialchars($product['name']);
+          <?php
+          $productsCount = count($products);
+          $placeholderImg = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#f0f0f0"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="Arial" font-size="14" fill="#999">No img</text></svg>');
+          ?>
+          <div class="home-products-grid" data-products-count="<?php echo (int) $productsCount; ?>">
+            <?php
+            if ($productsCount > 0) {
+                foreach ($products as $index => $product) {
+                    $isVisible = $index < 4;
+                    $pid = isset($product['id']) ? (int) $product['id'] : 0;
+                    $productImage = isset($productPhotos[$pid]) ? $productPhotos[$pid] : null;
+                    $imageSrc = $productImage ?: $placeholderImg;
+                    $productName = isset($product['name']) ? htmlspecialchars((string) $product['name']) : '';
+                    $productDesc = isset($product['description']) ? htmlspecialchars((string) $product['description'], ENT_QUOTES, 'UTF-8') : '';
+                    $isService = isset($product['type']) && $product['type'] === 'service';
+                    $cardClass = ($totalProducts <= 4 || $isVisible) ? 'home-product-visible' : 'home-product-hidden';
+                    ?>
+            <div class="home-product-card <?php echo $cardClass; ?>" data-description="<?php echo $productDesc; ?>">
+              <div class="home-product-badge <?php echo $isService ? 'home-service-badge' : 'home-product-badge-type'; ?>"><?php echo $isService ? 'Servicio' : 'Producto'; ?></div>
+              <div class="home-product-image"><img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="<?php echo $productName; ?>"></div>
+              <div class="home-product-info"><div class="home-product-name"><?php echo $productName; ?></div></div>
+            </div>
+            <?php
+                }
+            } else {
+                ?>
+            <p class="home-products-empty-msg" style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;" data-i18n="home_no_products_message">Aún no has agregado productos. ¡Comienza agregando tu primer producto!</p>
+            <?php
+            }
             ?>
-            <div class="home-product-card <?php echo $isVisible ? 'home-product-visible' : 'home-product-hidden'; ?>">
-              <div class="home-product-badge <?php echo ($product['type'] === 'service') ? 'home-service-badge' : 'home-product-badge-type'; ?>">
-                <?php echo ($product['type'] === 'service') ? 'Servicio' : 'Producto'; ?>
-              </div>
-              <div class="home-product-image">
-                <img src="<?php echo $imageSrc; ?>" alt="<?php echo $imageAlt; ?>">
-              </div>
-              <div class="home-product-info">
-                <div class="home-product-name"><?php echo $productName; ?></div>
-              </div>
-            </div>
-            <?php endforeach; ?>
           </div>
-          
+          <p class="home-search-no-results" style="display: none; text-align: center; padding: 20px; color: #666;" data-i18n="home_search_no_results">No se encontraron productos.</p>
           <?php if ($totalProducts > 4): ?>
-            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-              <button data-i18n="btn_show_more" class="btn btn-show-more" id="showMoreProducts">Mostrar más</button>
-              <button data-i18n="btn_hide" class="btn btn-show-less" id="showLessProducts" style="display: none;">Ocultar</button>
-            </div>
+          <div class="home-products-actions" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <button data-i18n="btn_show_more" class="btn btn-show-more" id="showMoreProducts">Mostrar más</button>
+            <button data-i18n="btn_hide" class="btn btn-show-less" id="showLessProducts" style="display: none;">Ocultar</button>
+          </div>
           <?php endif; ?>
         <?php endif; ?>
       </section>
@@ -441,27 +466,106 @@ $visibleProducts = min(4, $totalProducts);
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  try {
   const productsGrid = document.querySelector('.home-products-grid');
   const countElement = document.querySelector('.home-products-section .home-section-count');
+  const searchInput = document.querySelector('.home-products-section .home-search-input');
+  const noResultsEl = document.querySelector('.home-search-no-results');
+  const productsActionsEl = document.querySelector('.home-products-actions');
   
   if (!productsGrid || !countElement) return;
   
   const showMoreBtn = document.getElementById('showMoreProducts');
   const showLessBtn = document.getElementById('showLessProducts');
-  
-  if (!showMoreBtn || !showLessBtn) {
-    return;
-  }
-  
   const totalProducts = parseInt(countElement.getAttribute('data-total')) || 25;
   let visibleCount = 0;
   
+  function normalizeSearch(s) {
+    return (s || '').trim().toLowerCase();
+  }
+  
+  function applySearchFilter(query) {
+    const q = normalizeSearch(query);
+    const cards = productsGrid.querySelectorAll('.home-product-card');
+    if (!q) {
+      cards.forEach(function(card) {
+        card.classList.remove('home-search-no-match');
+      });
+      return null;
+    }
+    let matchCount = 0;
+    cards.forEach(function(card) {
+      const nameEl = card.querySelector('.home-product-name');
+      const name = (nameEl && nameEl.textContent) ? nameEl.textContent : '';
+      const desc = card.getAttribute('data-description') || '';
+      const text = normalizeSearch(name + ' ' + desc);
+      const match = text.indexOf(q) !== -1;
+      if (match) {
+        card.classList.remove('home-search-no-match');
+        matchCount++;
+      } else {
+        card.classList.add('home-search-no-match');
+      }
+    });
+    return matchCount;
+  }
+  
+  function runSearch() {
+    const query = searchInput ? searchInput.value : '';
+    const q = normalizeSearch(query);
+    if (!q) {
+      productsGrid.querySelectorAll('.home-product-card').forEach(function(card) {
+        card.classList.remove('home-search-no-match', 'home-product-hidden');
+      });
+      if (noResultsEl) noResultsEl.style.display = 'none';
+      if (productsActionsEl) productsActionsEl.style.display = '';
+      updateVisibleCards();
+      return;
+    }
+    const matchCount = applySearchFilter(query);
+    const cards = productsGrid.querySelectorAll('.home-product-card');
+    cards.forEach(function(card) {
+      if (card.classList.contains('home-search-no-match')) {
+        card.classList.add('home-product-hidden');
+      } else {
+        card.classList.remove('home-product-hidden');
+      }
+    });
+    visibleCount = matchCount;
+    countElement.textContent = matchCount + '/' + totalProducts;
+    countElement.setAttribute('data-visible', matchCount);
+    if (noResultsEl) {
+      noResultsEl.style.display = matchCount === 0 ? 'block' : 'none';
+    }
+    if (productsActionsEl) productsActionsEl.style.display = 'none';
+    if (showMoreBtn) showMoreBtn.style.display = 'none';
+    if (showLessBtn) showLessBtn.style.display = 'none';
+  }
+  
+  // Сброс поиска и начальное отображение карточек (вызывается до подписки на поиск и по таймауту)
+  function initProductsView() {
+    if (searchInput) searchInput.value = '';
+    productsGrid.querySelectorAll('.home-product-card').forEach(function(card) {
+      card.classList.remove('home-search-no-match');
+      card.classList.remove('home-product-hidden');
+    });
+    updateVisibleCards();
+  }
+  
+  // Сначала показываем все карточки, потом вешаем поиск — иначе автозаполнение/события могут всё скрыть
+  initProductsView();
+  
+  if (searchInput) {
+    searchInput.addEventListener('input', runSearch);
+    searchInput.addEventListener('search', runSearch);
+  }
+  
   // Функция для определения количества карточек в ряду
   function getProductsPerRow() {
-    const width = window.innerWidth;
+    const width = window.innerWidth || 1200;
     
     // Определяем количество колонок на основе ширины экрана
-    // Соответствует CSS медиа-запросам
+    // Соответствует CSS медиа-запросам; минимум 1, чтобы не скрыть все карточки
     if (width >= 1200) {
       return 4; // 4 карточки на больших экранах (≥1200px)
     } else if (width >= 900) {
@@ -479,13 +583,22 @@ document.addEventListener('DOMContentLoaded', function() {
     countElement.setAttribute('data-visible', visibleCount);
   }
   
-  // Функция для скрытия всех карточек кроме первых N
+  // Функция для скрытия всех карточек кроме первых N (учитываем только карточки без home-search-no-match)
   function hideExtraCards(maxVisible) {
-    const allCards = productsGrid.querySelectorAll('.home-product-card');
-    allCards.forEach((card, index) => {
+    if (totalProducts <= 4) return; // никогда не скрывать карточки при 4 или менее продуктах
+    const matchCards = Array.from(productsGrid.querySelectorAll('.home-product-card')).filter(function(card) {
+      return !card.classList.contains('home-search-no-match');
+    });
+    if (matchCards.length > 0 && maxVisible < 1) maxVisible = 1;
+    matchCards.forEach(function(card, index) {
       if (index < maxVisible) {
         card.classList.remove('home-product-hidden');
       } else {
+        card.classList.add('home-product-hidden');
+      }
+    });
+    productsGrid.querySelectorAll('.home-product-card').forEach(function(card) {
+      if (card.classList.contains('home-search-no-match')) {
         card.classList.add('home-product-hidden');
       }
     });
@@ -493,43 +606,49 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Функция для обновления видимости кнопок
   function updateButtonsVisibility() {
+    if (!showMoreBtn && !showLessBtn) return;
     const productsPerRow = getProductsPerRow();
     
-    // Кнопка "Свернуть" показывается только если открыто больше одного ряда
-    if (visibleCount > productsPerRow) {
-      showLessBtn.style.display = 'block';
-    } else {
-      showLessBtn.style.display = 'none';
+    if (showLessBtn) {
+      showLessBtn.style.display = (visibleCount > productsPerRow) ? 'block' : 'none';
     }
-    
-    // Кнопка "Показать больше" скрывается если все продукты показаны
-    if (visibleCount >= totalProducts) {
-      showMoreBtn.style.display = 'none';
-    } else {
-      showMoreBtn.style.display = 'block';
+    if (showMoreBtn) {
+      showMoreBtn.style.display = (visibleCount >= totalProducts) ? 'none' : 'block';
     }
   }
   
   // Функция для инициализации и обновления видимых карточек
   function updateVisibleCards() {
     const productsPerRow = getProductsPerRow();
-    hideExtraCards(productsPerRow);
-    visibleCount = productsPerRow;
+    const matchCount = productsGrid.querySelectorAll('.home-product-card:not(.home-search-no-match)').length;
+    // Когда продуктов не больше чем в одном ряду — показываем все, не скрываем
+    if (matchCount <= productsPerRow || totalProducts <= productsPerRow) {
+      productsGrid.querySelectorAll('.home-product-card').forEach(function(card) {
+        if (!card.classList.contains('home-search-no-match')) {
+          card.classList.remove('home-product-hidden');
+        }
+      });
+    } else {
+      hideExtraCards(productsPerRow);
+    }
+    visibleCount = productsGrid.querySelectorAll('.home-product-card:not(.home-product-hidden)').length;
     updateCounter();
     updateButtonsVisibility();
   }
   
-  // Инициализация - ждем немного, чтобы сетка успела отрендериться
+  // Повторная инициализация через 100 ms (на случай отложенного autocomplete/restore)
   setTimeout(function() {
-    updateVisibleCards();
+    initProductsView();
   }, 100);
   
   // Функция для показа следующего ряда продуктов
   function showNextRow() {
-    const hiddenProducts = productsGrid.querySelectorAll('.home-product-hidden');
+    const hiddenProducts = Array.from(productsGrid.querySelectorAll('.home-product-card')).filter(function(card) {
+      return card.classList.contains('home-product-hidden') && !card.classList.contains('home-search-no-match');
+    });
     
     if (hiddenProducts.length === 0) {
-      showMoreBtn.style.display = 'none';
+      if (showMoreBtn) showMoreBtn.style.display = 'none';
       return;
     }
     
@@ -554,9 +673,9 @@ document.addEventListener('DOMContentLoaded', function() {
     updateButtonsVisibility();
   }
   
-  // Обработчики кликов на кнопки
-  showMoreBtn.addEventListener('click', showNextRow);
-  showLessBtn.addEventListener('click', collapseToFirstRow);
+  // Обработчики кликов на кнопки (кнопки есть только при totalProducts > 4)
+  if (showMoreBtn) showMoreBtn.addEventListener('click', showNextRow);
+  if (showLessBtn) showLessBtn.addEventListener('click', collapseToFirstRow);
   
   // Обновление при изменении размера окна
   let resizeTimeout;
@@ -566,16 +685,14 @@ document.addEventListener('DOMContentLoaded', function() {
       const productsPerRow = getProductsPerRow();
       const currentVisible = Array.from(productsGrid.querySelectorAll('.home-product-card:not(.home-product-hidden)')).length;
       
+      if (totalProducts <= 4) return;
       // Если количество видимых карточек не соответствует текущему размеру ряда
-      // Пересчитываем, чтобы показывать только полные ряды
       if (currentVisible > productsPerRow && currentVisible % productsPerRow !== 0) {
-        // Округляем вниз до полного ряда
         visibleCount = Math.floor(currentVisible / productsPerRow) * productsPerRow;
         if (visibleCount < productsPerRow) visibleCount = productsPerRow;
         hideExtraCards(visibleCount);
         updateCounter();
       } else if (currentVisible < productsPerRow) {
-        // Если видимых меньше, чем нужно для ряда, показываем первый ряд
         visibleCount = productsPerRow;
         hideExtraCards(visibleCount);
         updateCounter();
@@ -585,6 +702,14 @@ document.addEventListener('DOMContentLoaded', function() {
       updateButtonsVisibility();
     }, 250);
   });
+  } catch (e) {
+    console.error('Home products script error:', e);
+    if (productsGrid) {
+      productsGrid.querySelectorAll('.home-product-card').forEach(function(card) {
+        card.classList.remove('home-product-hidden');
+      });
+    }
+  }
 });
 
 // Установка изображения как background для карточек презентаций
@@ -660,7 +785,7 @@ document.addEventListener('DOMContentLoaded', function() {
           data.password = password;
         }
         
-        const response = await fetch('includes/home_update_profile_js.php', {
+        const response = await fetch('index.php?page=home_update_profile', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -699,6 +824,21 @@ document.addEventListener('DOMContentLoaded', function() {
         saveProfileBtn.disabled = false;
         saveProfileBtn.textContent = saveBtnInitialText;
       }
+    });
+  }
+
+  // Кнопка «Cambiar» рядом с полем пароля — сохраняет профиль с новой contraseña (то же, что Guardar)
+  const changePasswordBtn = document.querySelector('.home-form-change-btn');
+  if (changePasswordBtn && saveProfileBtn) {
+    changePasswordBtn.addEventListener('click', function() {
+      const passwordInput = document.getElementById('profile-password');
+      const pwd = passwordInput ? passwordInput.value.trim() : '';
+      if (!pwd) {
+        showProfileMessage('Ingrese la nueva contraseña', 'error');
+        if (passwordInput) passwordInput.focus();
+        return;
+      }
+      saveProfileBtn.click();
     });
   }
   

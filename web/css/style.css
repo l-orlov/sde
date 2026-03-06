@@ -1740,7 +1740,18 @@ div.label span .req,
   .hero-bg-video {
     display: block;
   }
-  /* Do not set background-image: none — same image shows behind/under video and when video does not load */
+  .hero-section::before {
+    background-image: none;
+  }
+  .hero-section.hero-video-ended .hero-bg-video {
+    display: none;
+  }
+  .hero-section.hero-video-ended::before {
+    background-image: url('../img/bg_image.jpg');
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+  }
 }
 .hero-header {
   position: fixed;

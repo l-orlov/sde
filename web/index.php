@@ -9,7 +9,7 @@ include "includes/functions.php";
 // Если запрос к статическому файлу (css, js, img и т.д.) попал в index.php — отдать файл и выйти (чтобы не возвращать HTML gate)
 $requestUri = $_SERVER['REQUEST_URI'] ?? '';
 $requestPath = parse_url($requestUri, PHP_URL_PATH);
-if ($requestPath !== '' && $requestPath !== false && preg_match('/\.(css|js|ico|png|jpe?g|gif|svg|woff2?|ttf|eot)(\?|$)/i', $requestPath)) {
+if ($requestPath !== '' && $requestPath !== false && preg_match('/\.(css|js|json|ico|png|jpe?g|gif|svg|woff2?|ttf|eot)(\?|$)/i', $requestPath)) {
     $config = file_exists(__DIR__ . '/includes/config/config.php') ? (require __DIR__ . '/includes/config/config.php') : [];
     $web_base = rtrim($config['web_base'] ?? '', '/');
     $basePath = $requestPath;
@@ -19,7 +19,7 @@ if ($requestPath !== '' && $requestPath !== false && preg_match('/\.(css|js|ico|
     $basePath = '/' . trim($basePath, '/');
     $localFile = __DIR__ . str_replace(['../', '..\\'], '', $basePath);
     $ext = strtolower(pathinfo($localFile, PATHINFO_EXTENSION));
-    $mimes = ['css' => 'text/css', 'js' => 'application/javascript', 'ico' => 'image/x-icon', 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif', 'svg' => 'image/svg+xml', 'woff' => 'font/woff', 'woff2' => 'font/woff2', 'ttf' => 'font/ttf', 'eot' => 'application/vnd.ms-fontobject'];
+    $mimes = ['css' => 'text/css', 'js' => 'application/javascript', 'json' => 'application/json', 'ico' => 'image/x-icon', 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif', 'svg' => 'image/svg+xml', 'woff' => 'font/woff', 'woff2' => 'font/woff2', 'ttf' => 'font/ttf', 'eot' => 'application/vnd.ms-fontobject'];
     if (is_file($localFile) && isset($mimes[$ext])) {
         header('Content-Type: ' . $mimes[$ext] . '; charset=utf-8');
         header('Content-Length: ' . filesize($localFile));
@@ -46,6 +46,16 @@ if ($page === 'gate_logout' && !isset($_SESSION['uid'])) {
 // Recomendaciones de mercados con IA (JSON)
 if ($page === 'gemini_markets') {
     require __DIR__ . '/includes/gemini_markets_js.php';
+    exit;
+}
+// Логин (JSON) — чтобы запрос шёл через index.php и возвращал JSON, а не HTML
+if ($page === 'login_submit') {
+    require __DIR__ . '/includes/login_js.php';
+    exit;
+}
+// Обновление профиля (JSON)
+if ($page === 'home_update_profile') {
+    require __DIR__ . '/includes/home_update_profile_js.php';
     exit;
 }
 

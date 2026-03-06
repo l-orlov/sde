@@ -1,14 +1,17 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
 ob_start();
 
-include "functions.php";
-
-DBconnect();
+if (!function_exists('DBconnect')) {
+    include_once __DIR__ . '/functions.php';
+    DBconnect();
+}
 
 $return = ['res' => '', 'ok' => 0, 'err' => ''];
 
