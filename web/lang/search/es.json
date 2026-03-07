@@ -6,7 +6,7 @@
     "login_register": "REGISTRAR NUEVO",
     "login_forgot": "ME OLVIDÉ LA CONTRASEÑA",
     "search_title": "BUSCADOR DE PRODUCTOS Y SERVICIOS",
-    "search_placeholder": "Buscar por código arancelario o nombre",
+    "search_placeholder": "Buscar por producto, descripción, empresa, sector o industria",
     "search_no_results": "No se encontraron resultados.",
     "search_back": "Volver",
     "pdf_name_clasico": "Clásico",

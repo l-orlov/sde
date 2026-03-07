@@ -34,15 +34,15 @@ if ($suggest) {
         FROM products p
         INNER JOIN companies c ON c.id = p.company_id AND c.user_id = p.user_id
         WHERE c.moderation_status = 'approved'
-          AND (p.deleted_at IS NULL)
+          AND (p.deleted_at IS NULL OR p.deleted_at = 0)
           AND p.tariff_code IS NOT NULL AND p.tariff_code != ''
-          AND (p.tariff_code LIKE ? OR p.name LIKE ?)
+          AND (p.tariff_code LIKE ? OR p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ? OR c.organization_type LIKE ? OR c.main_activity LIKE ?)
         ORDER BY p.tariff_code
         LIMIT 10");
     if (!$stmt) {
         $out([]);
     }
-    mysqli_stmt_bind_param($stmt, 'ss', $likeArg, $likeArg);
+    mysqli_stmt_bind_param($stmt, 'ssssss', $likeArg, $likeArg, $likeArg, $likeArg, $likeArg, $likeArg);
     if (!mysqli_stmt_execute($stmt)) {
         mysqli_stmt_close($stmt);
         $out([]);
@@ -61,19 +61,26 @@ if ($suggest) {
     $out($suggestions);
 }
 
-// Full search: products with company, contact, address, image (by name or tariff_code)
+// Full search: producto, descripción, empresa, sector (organization_type), industria (main_activity), tariff_code
 $stmt = @mysqli_prepare($link, "SELECT p.id, p.name, p.tariff_code, p.company_id, p.type, c.name AS company_name, c.website
     FROM products p
     INNER JOIN companies c ON c.id = p.company_id AND c.user_id = p.user_id
     WHERE c.moderation_status = 'approved'
-      AND (p.deleted_at IS NULL)
-      AND (p.tariff_code LIKE ? OR p.name LIKE ?)
+      AND (p.deleted_at IS NULL OR p.deleted_at = 0)
+      AND (
+        p.tariff_code LIKE ?
+        OR p.name LIKE ?
+        OR p.description LIKE ?
+        OR c.name LIKE ?
+        OR c.organization_type LIKE ?
+        OR c.main_activity LIKE ?
+      )
     ORDER BY p.tariff_code, p.id
     LIMIT 50");
 if (!$stmt) {
     $out(null, []);
 }
-mysqli_stmt_bind_param($stmt, 'ss', $likeArg, $likeArg);
+mysqli_stmt_bind_param($stmt, 'ssssss', $likeArg, $likeArg, $likeArg, $likeArg, $likeArg, $likeArg);
 if (!mysqli_stmt_execute($stmt)) {
     mysqli_stmt_close($stmt);
     $out(null, []);

@@ -1,8 +1,11 @@
 <?php
 $__landing_config = file_exists(__DIR__ . '/config/config.php') ? (require __DIR__ . '/config/config.php') : [];
 $__web_base = rtrim($__landing_config['web_base'] ?? '', '/');
-$__pdf_es = $__web_base . '/index.php?page=download_oferta_pdf&lang=es';
-$__pdf_en = $__web_base . '/index.php?page=download_oferta_pdf&lang=en';
+$__scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$__host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$__base_url = $__scheme . '://' . $__host . ($__web_base ?: '');
+$__pdf_es = $__base_url . '/index.php?page=download_oferta_pdf&lang=es';
+$__pdf_en = $__base_url . '/index.php?page=download_oferta_pdf&lang=en';
 $__pdf_oferta_urls = [
     'clasico'      => $__web_base . '/index.php?page=clasico_pdf_es',
     'clasico_es'   => $__web_base . '/index.php?page=clasico_pdf_es',
@@ -87,8 +90,13 @@ if ($link) {
     </div>
     <div class="hero-header">
         <div class="hero-header-container">
-            <div class="logo">
-                <img src="img/logo.svg" alt="Santiago del Estero" class="logo-image">
+            <div class="hero-header-logos">
+                <div class="logo logo-sde">
+                    <img src="img/logo.svg" alt="Santiago del Estero" class="logo-image">
+                </div>
+                <div class="logo logo-cfi">
+                    <img src="img/logo_cfi.svg" alt="CFI" class="logo-image">
+                </div>
             </div>
             <div class="nav-container">
                 <nav class="hero-nav">
@@ -109,7 +117,7 @@ if ($link) {
                     <span class="hero-nav-sep" aria-hidden="true">|</span>
                     <a data-i18n="nav_search" onclick="location.href='?page=search';" class="nav-link">Buscar</a>
                     <span class="hero-nav-sep" aria-hidden="true">|</span>
-                    <a data-i18n="nav_turismo" href="#turismo" class="nav-link">Turismo</a>
+                    <a data-i18n="nav_turismo" href="https://turismosantiago.gob.ar/" target="_blank" rel="noopener" class="nav-link">Turismo</a>
                     <span class="hero-nav-sep" aria-hidden="true">|</span>
                     <a data-i18n="nav_contact" href="#contactos" class="nav-link">Contactos</a>
                     <a href="https://wa.me/" class="nav-whatsapp" target="_blank">
@@ -257,92 +265,104 @@ if ($link) {
 <div class="gallery-section">
     <div class="gallery-container">
         <div class="gallery-row gallery-row-1">
-            <div class="gallery-item" data-modal-id="1">
+            <div class="gallery-item" data-modal-id="1" data-map-url="https://maps.app.goo.gl/iS7U5LmQjgv7DkJBA">
                 <img src="img/landing/parque_ashpa_kausay.png" alt="COMPLEJO ASHPA KAUSAY (PARQUE ECOLÓGICO)" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                    <a href="https://maps.app.goo.gl/iS7U5LmQjgv7DkJBA" class="gallery-item-map-link" target="_blank" rel="noopener" aria-label="Ver en mapa"><img src="img/icons/map_icon.png" alt="" class="gallery-item-map-icon"></a>
                 </div>
             </div>
-            <div class="gallery-item" data-modal-id="2">
+            <div class="gallery-item" data-modal-id="2" data-map-url="https://maps.app.goo.gl/DTnFZimEtd5xyTEM8">
                 <img src="img/landing/parque_aguirre.png" alt="EL PARQUE AGUIRRE (UN LUGAR PARA RESPIRAR PAZ)" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                    <a href="https://maps.app.goo.gl/DTnFZimEtd5xyTEM8" class="gallery-item-map-link" target="_blank" rel="noopener" aria-label="Ver en mapa"><img src="img/icons/map_icon.png" alt="" class="gallery-item-map-icon"></a>
                 </div>
             </div>
-            <div class="gallery-item" data-modal-id="3">
+            <div class="gallery-item" data-modal-id="3" data-map-url="https://maps.app.goo.gl/NLQWxGaEPUqW2giw7">
                 <img src="img/landing/costanera.png" alt="COSTANERA" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                    <a href="https://maps.app.goo.gl/NLQWxGaEPUqW2giw7" class="gallery-item-map-link" target="_blank" rel="noopener" aria-label="Ver en mapa"><img src="img/icons/map_icon.png" alt="" class="gallery-item-map-icon"></a>
                 </div>
             </div>
-            <div class="gallery-item" data-modal-id="4">
+            <div class="gallery-item" data-modal-id="4" data-map-url="https://maps.app.goo.gl/jGn6mc8M4A3AyeMt6">
                 <img src="img/landing/monumento_francisco_aguirre.png" alt="MONUMENTO A FRANCISCO DE AGUIRRE" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                    <a href="https://maps.app.goo.gl/jGn6mc8M4A3AyeMt6" class="gallery-item-map-link" target="_blank" rel="noopener" aria-label="Ver en mapa"><img src="img/icons/map_icon.png" alt="" class="gallery-item-map-icon"></a>
                 </div>
             </div>
         </div>
         <div class="gallery-row gallery-row-2">
-            <div class="gallery-item" data-modal-id="5">
+            <div class="gallery-item" data-modal-id="5" data-map-url="https://maps.app.goo.gl/EbTxmJrsHu9aWH2D6">
                 <img src="img/landing/plaza_libertad.png" alt="LA PLAZA LIBERTAD" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                    <a href="https://maps.app.goo.gl/EbTxmJrsHu9aWH2D6" class="gallery-item-map-link" target="_blank" rel="noopener" aria-label="Ver en mapa"><img src="img/icons/map_icon.png" alt="" class="gallery-item-map-icon"></a>
                 </div>
             </div>
-            <div class="gallery-item" data-modal-id="6">
+            <div class="gallery-item" data-modal-id="6" data-map-url="https://maps.app.goo.gl/WzGr46GufNGkyGRh6">
                 <img src="img/landing/jardin_botanico.png" alt="JARDIN BOTANICO" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                    <a href="https://maps.app.goo.gl/WzGr46GufNGkyGRh6" class="gallery-item-map-link" target="_blank" rel="noopener" aria-label="Ver en mapa"><img src="img/icons/map_icon.png" alt="" class="gallery-item-map-icon"></a>
                 </div>
             </div>
-            <div class="gallery-item" data-modal-id="7">
+            <div class="gallery-item" data-modal-id="7" data-map-url="https://maps.app.goo.gl/2Pjd4fPX1ufqcYYx7">
                 <img src="img/landing/estadio_hockey.png" alt="ESTADIO DE HOCKEY" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                    <a href="https://maps.app.goo.gl/2Pjd4fPX1ufqcYYx7" class="gallery-item-map-link" target="_blank" rel="noopener" aria-label="Ver en mapa"><img src="img/icons/map_icon.png" alt="" class="gallery-item-map-icon"></a>
                 </div>
             </div>
-            <div class="gallery-item" data-modal-id="11">
+            <div class="gallery-item" data-modal-id="11" data-map-url="https://maps.app.goo.gl/STFUxjopFBHAWJ5U7">
                 <img src="img/landing/parque_santo.png" alt="UN PARQUE CASI SANTO" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                    <a href="https://maps.app.goo.gl/STFUxjopFBHAWJ5U7" class="gallery-item-map-link" target="_blank" rel="noopener" aria-label="Ver en mapa"><img src="img/icons/map_icon.png" alt="" class="gallery-item-map-icon"></a>
                 </div>
             </div>
         </div>
         <div class="gallery-row gallery-row-3">
-            <div class="gallery-item" data-modal-id="9">
+            <div class="gallery-item" data-modal-id="9" data-map-url="https://maps.app.goo.gl/XXSRaBF56LJP5Ax68">
                 <img src="img/landing/parque_sur.png" alt="OVALO PARQUE SUR" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                    <a href="https://maps.app.goo.gl/XXSRaBF56LJP5Ax68" class="gallery-item-map-link" target="_blank" rel="noopener" aria-label="Ver en mapa"><img src="img/icons/map_icon.png" alt="" class="gallery-item-map-icon"></a>
                 </div>
             </div>
-            <div class="gallery-item" data-modal-id="10">
+            <div class="gallery-item" data-modal-id="10" data-map-url="https://maps.app.goo.gl/zMCaRAyf4c5wxKhH9">
                 <img src="img/landing/complejo_casa_taboada.png" alt="COMPLEJO CASA TABOADA" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                    <a href="https://maps.app.goo.gl/zMCaRAyf4c5wxKhH9" class="gallery-item-map-link" target="_blank" rel="noopener" aria-label="Ver en mapa"><img src="img/icons/map_icon.png" alt="" class="gallery-item-map-icon"></a>
                 </div>
             </div>
-            <div class="gallery-item" data-modal-id="8">
+            <div class="gallery-item" data-modal-id="8" data-map-url="https://maps.app.goo.gl/G2vMm39bbMAdohbQ7">
                 <img src="img/landing/parque_norte.png" alt="PARQUE NORTE" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                    <a href="https://maps.app.goo.gl/G2vMm39bbMAdohbQ7" class="gallery-item-map-link" target="_blank" rel="noopener" aria-label="Ver en mapa"><img src="img/icons/map_icon.png" alt="" class="gallery-item-map-icon"></a>
                 </div>
             </div>
-            <div class="gallery-item" data-modal-id="12">
+            <div class="gallery-item" data-modal-id="12" data-map-url="https://maps.app.goo.gl/VWXvXmiw75PTnYuC6">
                 <img src="img/landing/domo_parque_encuentro.png" alt="DOMO EN PARQUE DEL ENCUENTRO" class="gallery-image">
                 <div class="gallery-item-overlay" aria-hidden="true">
                     <span class="gallery-item-title"></span>
                     <span class="gallery-item-cta" data-i18n="gallery_ver_mas">ver mas</span>
+                    <a href="https://maps.app.goo.gl/VWXvXmiw75PTnYuC6" class="gallery-item-map-link" target="_blank" rel="noopener" aria-label="Ver en mapa"><img src="img/icons/map_icon.png" alt="" class="gallery-item-map-icon"></a>
                 </div>
             </div>
         </div>
@@ -375,8 +395,7 @@ if ($link) {
                 <ul class="landing-footer-links">
                     <li><a href="#nosotros" data-i18n="footer_nosotros">Nosotros</a></li>
                     <li><a href="<?= htmlspecialchars($__pdf_es) ?>" class="js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_es) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_en) ?>" data-i18n="footer_oferta">Oferta exportable</a></li>
-                    <li><a href="#turismo" data-i18n="nav_turismo">Turismo</a></li>
-                    <li><a href="#noticias" data-i18n="nav_news">Noticias</a></li>
+                    <li><a href="https://turismosantiago.gob.ar/" target="_blank" rel="noopener" data-i18n="nav_turismo">Turismo</a></li>
                     <li><a href="#contactos" data-i18n="footer_contacto">Contacto</a></li>
                 </ul>
             </div>
@@ -385,8 +404,6 @@ if ($link) {
                 <ul class="landing-footer-links">
                     <li><a href="?page=regnew" data-i18n="footer_registro">Cómo registrarse</a></li>
                     <li><a href="#empresas_cargar" data-i18n="footer_cargar">Cómo cargar productos/servicios</a></li>
-                    <li><a href="#faq" data-i18n="footer_faq">Preguntas frecuentes</a></li>
-                    <li><a href="#soporte" data-i18n="footer_soporte">Soporte técnico / Mesa de ayuda</a></li>
                 </ul>
             </div>
             <div class="landing-footer-column landing-footer-redes">
@@ -405,8 +422,16 @@ if ($link) {
             </div>
         </div>
         <div class="landing-footer-bottom">
-            <div class="landing-footer-logo">
-                <img src="img/logo_white.png" alt="Santiago del Estero" class="landing-footer-logo-image">
+            <div class="landing-footer-bottom-row">
+                <div class="landing-footer-logos">
+                    <div class="landing-footer-logo">
+                        <img src="img/logo_white.png" alt="Santiago del Estero" class="landing-footer-logo-image">
+                    </div>
+                    <div class="landing-footer-logo landing-footer-logo-cfi">
+                        <img src="img/logo_cfi.svg" alt="CFI" class="landing-footer-logo-image">
+                    </div>
+                </div>
+                <a href="index.php?page=clasico_pdf_es" class="btn btn-footer-pdf js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="index.php?page=clasico_pdf_es" data-pdf-url-en="index.php?page=clasico_pdf_en"></a>
             </div>
             <p class="landing-footer-copyright" data-i18n="footer_copyright">Copyright © 2026. Santiago del Estero. Todos los derechos reservados.</p>
         </div>
@@ -513,9 +538,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (img && titleEl) titleEl.textContent = img.getAttribute('alt') || '';
   });
 
-  // Open modal on gallery item click
+  // Open modal on gallery item click (not when clicking map link)
   galleryItems.forEach(item => {
-    item.addEventListener('click', () => {
+    item.addEventListener('click', (e) => {
+      if (e.target.closest('.gallery-item-map-link')) return;
       const modalId = parseInt(item.getAttribute('data-modal-id'));
       openModal(modalId);
     });

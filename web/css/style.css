@@ -1788,11 +1788,31 @@ div.label span .req,
   padding: 10px 20px;
   flex-shrink: 0;
   min-width: 0;
+  border-radius: 6px;
 }
 .logo-image {
   height: 40px;
   width: auto;
   max-width: 100%;
+  object-fit: contain;
+}
+
+/* Лендинг: два логотипа (SDE + CFI) в хидере, оба уменьшены */
+.hero-header-logos {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.hero-header-logos .logo {
+  padding: 6px 12px;
+}
+.hero-header-logos .logo-cfi {
+  background: #000;
+}
+.hero-header-logos .logo-image {
+  height: 28px;
+  width: auto;
   object-fit: contain;
 }
 .nav-container {
@@ -2395,6 +2415,12 @@ div.label span .req,
   .logo-image {
     height: 40px;
   }
+  .hero-header-logos .logo {
+    padding: 6px 10px;
+  }
+  .hero-header-logos .logo-image {
+    height: 26px;
+  }
   .nav-container {
     padding: 8px 15px;
   }
@@ -2422,6 +2448,12 @@ div.label span .req,
   }
   .logo-image {
     height: 40px;
+  }
+  .hero-header-logos .logo {
+    padding: 5px 10px;
+  }
+  .hero-header-logos .logo-image {
+    height: 24px;
   }
   .nav-container {
     padding: 6px 12px;
@@ -2456,6 +2488,10 @@ div.label span .req,
         gap: 15px;
         padding: 20px 30px;
   }
+  .hero-header-logos {
+    width: 100%;
+    justify-content: center;
+  }
   .logo {
     width: 100%;
     display: flex;
@@ -2463,6 +2499,14 @@ div.label span .req,
     background: rgba(255, 255, 255, 0.95);
     padding: 15px;
     border-radius: 8px;
+  }
+  .hero-header-logos .logo {
+    width: auto;
+    padding: 6px 12px;
+    border-radius: 8px;
+  }
+  .hero-header-logos .logo-image {
+    height: 26px;
   }
   .nav-container {
     width: 100%;
@@ -2517,6 +2561,18 @@ div.label span .req,
         gap: 15px;
         padding: 20px 30px;
         align-items: center;
+    }
+    .hero-header-logos {
+        width: 100%;
+        justify-content: center;
+    }
+    .hero-header-logos .logo {
+        padding: 6px 12px;
+        border-radius: 8px;
+    }
+    .hero-header-logos .logo-image {
+        height: 24px;
+        max-width: 100%;
     }
     .logo {
         background: rgba(255, 255, 255, 0.95);
@@ -2612,6 +2668,16 @@ div.label span .req,
     padding: 15px 20px;
     gap: 12px;
     align-items: center;
+  }
+  .hero-header-logos {
+    width: 100%;
+    justify-content: center;
+  }
+  .hero-header-logos .logo {
+    padding: 5px 10px;
+  }
+  .hero-header-logos .logo-image {
+    height: 22px;
   }
   .logo {
     background: none;
@@ -3224,11 +3290,30 @@ div.label span .req,
   justify-content: center;
   align-items: center;
   padding: 20px;
-  pointer-events: none;
+  pointer-events: auto;
   opacity: 0;
   transition: opacity 0.3s ease;
   text-align: center;
   gap: 12px;
+}
+.gallery-item-map-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  padding: 4px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.25);
+  transition: background-color 0.2s ease;
+}
+.gallery-item-map-link:hover {
+  background-color: rgba(255, 255, 255, 0.45);
+}
+.gallery-item-map-icon {
+  width: 28px;
+  height: 28px;
+  display: block;
+  object-fit: contain;
 }
 .gallery-item-title {
   color: #fff;
@@ -3529,16 +3614,52 @@ div.label span .req,
   flex-direction: column;
   gap: 20px;
 }
+.landing-footer-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.btn-footer-pdf {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #1A3F87;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-footer-pdf:hover {
+  background: #fff;
+  color: #0d2560;
+}
+.landing-footer-logos {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 .landing-footer-logo {
   background-color: #1A3F87;
   display: inline-flex;
   align-items: center;
   padding: 10px 18px;
   max-width: fit-content;
+  border-radius: 6px;
+}
+.landing-footer-logo-cfi {
+  background: #000;
 }
 .landing-footer-logo-image {
   height: 22px;
   width: auto;
+  object-fit: contain;
 }
 .landing-footer-copyright {
   font-size: 14px;
@@ -3579,6 +3700,9 @@ div.label span .req,
   }
   .landing-footer-bottom {
     align-items: center;
+  }
+  .landing-footer-bottom-row {
+    justify-content: center;
   }
   .landing-footer-copyright {
     text-align: center;

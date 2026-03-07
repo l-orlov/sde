@@ -17,9 +17,14 @@ $__pdf_oferta_urls = [
 <div class="search-page-wrap">
     <div class="hero-header hero-header-search">
         <div class="hero-header-search-container">
-        <a href="?page=landing" class="logo logo-link">
-        <img src="img/logo.svg" alt="Santiago del Estero" class="logo-image">
-        </a>
+        <div class="hero-header-logos">
+            <a href="?page=landing" class="logo logo-link logo-sde">
+                <img src="img/logo.svg" alt="Santiago del Estero" class="logo-image">
+            </a>
+            <div class="logo logo-cfi">
+                <img src="img/logo_cfi.svg" alt="CFI" class="logo-image">
+            </div>
+        </div>
         <div class="nav-container">
         <nav class="hero-nav">
             <div class="oferta-dropdown" id="oferta-dropdown">
@@ -39,7 +44,7 @@ $__pdf_oferta_urls = [
             <span class="hero-nav-sep hero-nav-sep-search" aria-hidden="true">|</span>
             <a data-i18n="nav_search" href="?page=search" class="nav-link nav-link-search">Buscar</a>
             <span class="hero-nav-sep hero-nav-sep-search" aria-hidden="true">|</span>
-            <a data-i18n="nav_turismo" href="?page=landing#turismo" class="nav-link nav-link-search">Turismo</a>
+            <a data-i18n="nav_turismo" href="https://turismosantiago.gob.ar/" target="_blank" rel="noopener" class="nav-link nav-link-search">Turismo</a>
             <span class="hero-nav-sep hero-nav-sep-search" aria-hidden="true">|</span>
             <a data-i18n="nav_contact" href="?page=landing#contactos" class="nav-link nav-link-search">Contacto</a>
             <a href="https://wa.me/" class="nav-whatsapp" target="_blank" rel="noopener">
@@ -72,7 +77,7 @@ $__pdf_oferta_urls = [
             <span class="search-box-icon" aria-hidden="true">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             </span>
-            <input type="text" id="search-input" class="search-box-input" placeholder="Buscar por código arancelario o nombre" data-i18n-placeholder="search_placeholder" autocomplete="off">
+            <input type="text" id="search-input" class="search-box-input" placeholder="Buscar por producto, descripción, empresa, sector o industria" data-i18n-placeholder="search_placeholder" autocomplete="off">
             <button type="button" class="search-box-clear" id="search-clear" aria-label="Limpiar" title="Limpiar" style="display: none;">&times;</button>
         </div>
 
@@ -89,8 +94,7 @@ $__pdf_oferta_urls = [
                     <ul class="landing-footer-links">
                         <li><a href="?page=landing#nosotros" data-i18n="footer_nosotros">Nosotros</a></li>
                         <li><a href="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" class="js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" data-i18n="footer_oferta">Oferta exportable</a></li>
-                        <li><a href="?page=landing#turismo" data-i18n="nav_turismo">Turismo</a></li>
-                        <li><a href="?page=landing#noticias" data-i18n="nav_news">Noticias</a></li>
+                        <li><a href="https://turismosantiago.gob.ar/" target="_blank" rel="noopener" data-i18n="nav_turismo">Turismo</a></li>
                         <li><a href="?page=landing#contactos" data-i18n="footer_contacto">Contacto</a></li>
                     </ul>
                 </div>
@@ -99,8 +103,6 @@ $__pdf_oferta_urls = [
                     <ul class="landing-footer-links">
                         <li><a href="?page=regnew" data-i18n="footer_registro">Cómo registrarse</a></li>
                         <li><a href="?page=landing#empresas_cargar" data-i18n="footer_cargar">Cómo cargar productos/servicios</a></li>
-                        <li><a href="?page=landing#faq" data-i18n="footer_faq">Preguntas frecuentes</a></li>
-                        <li><a href="?page=landing#soporte" data-i18n="footer_soporte">Soporte técnico / Mesa de ayuda</a></li>
                     </ul>
                 </div>
                 <div class="landing-footer-column landing-footer-redes">
@@ -119,8 +121,16 @@ $__pdf_oferta_urls = [
                 </div>
             </div>
             <div class="landing-footer-bottom">
-                <div class="landing-footer-logo">
-                    <img src="img/logo_white.png" alt="Santiago del Estero" class="landing-footer-logo-image">
+                <div class="landing-footer-bottom-row">
+                    <div class="landing-footer-logos">
+                        <div class="landing-footer-logo">
+                            <img src="img/logo_white.png" alt="Santiago del Estero" class="landing-footer-logo-image">
+                        </div>
+                        <div class="landing-footer-logo landing-footer-logo-cfi">
+                            <img src="img/logo_cfi.svg" alt="CFI" class="landing-footer-logo-image">
+                        </div>
+                    </div>
+                    <a href="index.php?page=clasico_pdf_es" class="btn btn-footer-pdf js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="index.php?page=clasico_pdf_es" data-pdf-url-en="index.php?page=clasico_pdf_en"></a>
                 </div>
                 <p class="landing-footer-copyright" data-i18n="footer_copyright">Copyright © 2026. Santiago del Estero. Todos los derechos reservados.</p>
             </div>
