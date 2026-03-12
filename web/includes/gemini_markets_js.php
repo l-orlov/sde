@@ -74,7 +74,7 @@ if ($stmt) {
 
 $companyData = [];
 if ($companyId) {
-    $stmt = mysqli_prepare($link, "SELECT current_markets, target_markets, differentiation_factors FROM company_data WHERE company_id = ? LIMIT 1");
+    $stmt = mysqli_prepare($link, "SELECT current_markets, target_markets, differentiation_factors, needs, competitiveness, logistics, expectations FROM company_data WHERE company_id = ? LIMIT 1");
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'i', $companyId);
         mysqli_stmt_execute($stmt);
@@ -106,10 +106,9 @@ if (empty($products)) {
     exit;
 }
 
+// Build {{DATOS_EMPRESA_INPUT}} per requirements (Fuente de datos)
 $parts = [];
-
-$parts[] = 'EMPRESA:';
-$parts[] = 'Nombre: ' . (isset($company['name']) && $company['name'] !== '' ? $company['name'] : '(no indicado)');
+$parts[] = 'Nombre de la empresa: ' . (isset($company['name']) && $company['name'] !== '' ? $company['name'] : '(no indicado)');
 if (!empty($company['main_activity'])) {
     $parts[] = 'Actividad principal: ' . $company['main_activity'];
 }
@@ -120,10 +119,18 @@ if (!empty($company['website'])) {
     $parts[] = 'Sitio web: ' . $company['website'];
 }
 if (!empty($company['nuestra_historia'])) {
-    $parts[] = 'Historia / descripción: ' . mb_substr($company['nuestra_historia'], 0, 600);
+    $parts[] = 'Historia / diferencial: ' . mb_substr($company['nuestra_historia'], 0, 600);
 }
 
-$jsonFields = ['current_markets' => 'Mercados actuales', 'target_markets' => 'Mercados objetivo', 'differentiation_factors' => 'Factores de diferenciación'];
+$jsonFields = [
+    'current_markets' => 'Mercados actuales',
+    'target_markets' => 'Mercados de interés',
+    'differentiation_factors' => 'Factores de diferenciación',
+    'needs' => 'Necesidades',
+    'competitiveness' => 'Competitividad',
+    'logistics' => 'Logística',
+    'expectations' => 'Expectativas',
+];
 foreach ($jsonFields as $key => $label) {
     if (!empty($companyData[$key])) {
         $dec = json_decode($companyData[$key], true);
@@ -135,8 +142,18 @@ foreach ($jsonFields as $key => $label) {
     }
 }
 
+$exportExperience = [];
+foreach ($products as $p) {
+    if (!empty($p['annual_export'])) {
+        $exportExperience[] = $p['annual_export'];
+    }
+}
+if (!empty($exportExperience)) {
+    $parts[] = 'Experiencia exportadora: ' . implode('; ', array_slice(array_unique($exportExperience), 0, 5));
+}
+
 $parts[] = '';
-$parts[] = 'PRODUCTOS Y SERVICIOS:';
+$parts[] = 'Productos o servicios:';
 foreach ($products as $i => $p) {
     $type = (isset($p['type']) && $p['type'] === 'service') ? 'Servicio' : 'Producto';
     $parts[] = ($i + 1) . '. [' . $type . '] ' . (isset($p['name']) ? $p['name'] : '');
@@ -150,19 +167,31 @@ foreach ($products as $i => $p) {
         $parts[] = '   Código arancelario: ' . $p['tariff_code'];
     }
     if (!empty($p['annual_export'])) {
-        $parts[] = '   Exportación anual: ' . $p['annual_export'];
+        $parts[] = '   Exportación anual / experiencia: ' . $p['annual_export'];
     }
     if (!empty($p['certifications'])) {
         $parts[] = '   Certificaciones: ' . mb_substr($p['certifications'], 0, 200);
     }
 }
 
-$context = implode("\n", $parts);
+$datosEmpresaInput = implode("\n", $parts);
 
-$prompt = "Con base únicamente en los siguientes datos de una empresa y sus productos/servicios, responde en el mismo idioma (español o inglés según el usuario).\n\n"
-. "IMPORTANTE: Responde solo en TEXTO PLANO. No uses Markdown: sin asteriscos (**), sin almohadillas (#), sin guiones para líneas (---). Usa solo saltos de línea y, si quieres destacar títulos, escríbelos en mayúsculas seguidos de dos puntos.\n\n"
-. "Pregunta: ¿En qué países del mundo sería más conveniente exportar o vender estos productos o servicios, y qué recomendaciones concretas darías (canales, requisitos, mercados prioritarios)? Responde de forma clara y estructurada: países recomendados, breve justificación y 2-4 consejos prácticos.\n\n"
-. "Datos:\n" . $context;
+$prompt = "Actúa como un Consultor Senior de Comercio Exterior especializado en la oferta productiva y exportable de Santiago del Estero, Argentina.\n\n"
+. "Tu misión es analizar la ficha de empresa proporcionada y generar una estrategia de internacionalización coherente, específica y accionable, orientada a identificar oportunidades reales de inserción en mercados externos.\n\n"
+. "Reglas de ejecución:\n"
+. "- Identifica el sector de la empresa analizada (agroindustria, alimentos, industria manufacturera, servicios, tecnología, turismo u otro) y adapta completamente el vocabulario técnico y las recomendaciones a esa actividad. No utilices conceptos, analogías ni sugerencias de sectores ajenos al de la empresa.\n"
+. "- Basa el análisis exclusivamente en los datos incluidos a continuación. No inventes productos, certificaciones, capacidades exportadoras, mercados actuales, ventajas competitivas, experiencia internacional ni canales comerciales no sustentados por la ficha. Cuando falte información clave, indícalo de forma explícita.\n"
+. "- Si la empresa comercializa bienes físicos, puedes incluir sugerencias sobre empaque, etiquetado, certificaciones, requisitos sanitarios o técnicos y logística. Si la empresa presta servicios, no menciones empaque ni logística física; enfoca en compliance, capacidades técnicas, localización idiomática, documentación comercial, certificaciones y modalidad de exportación del servicio.\n"
+. "- Puedes incorporar ventajas competitivas de Santiago del Estero (clima, suelo, ubicación, perfil agroindustrial, sostenibilidad) sólo cuando sean pertinentes para el producto o servicio analizado.\n\n"
+. "Formato de respuesta: Responde solo en TEXTO PLANO. No uses Markdown (sin **, #, ---). Usa saltos de línea y títulos en MAYÚSCULAS seguidos de dos puntos para estructurar.\n\n"
+. "Estructura obligatoria de tu respuesta (incluye todas las secciones):\n\n"
+. "1. PERFIL EXPORTABLE DE LA EMPRESA\nBreve síntesis de la empresa, su oferta principal y su potencial de internacionalización según los datos cargados.\n\n"
+. "2. ANÁLISIS DE MERCADOS RECOMENDADOS\nSugiere exactamente 3 países o regiones con potencial comercial real. Para cada uno indica: Mercado recomendado; Nivel de prioridad; Oportunidad detectada; Justificación estratégica; Canal o modalidad de ingreso sugerida.\n\n"
+. "3. JUSTIFICACIÓN ESTRATÉGICA GENERAL\nExplicación global de por qué esos mercados resultan convenientes para la empresa analizada.\n\n"
+. "4. SUGERENCIAS DE ADAPTACIÓN\nRequisitos o ajustes recomendados según corresponda al tipo de oferta: empaque, etiquetado, idioma, certificaciones, habilitaciones, documentación comercial, compliance, presentación comercial (solo los pertinentes al sector).\n\n"
+. "5. RECOMENDACIONES PARA LA VENTA EN MERCADOS EXTERNOS\nPor qué mercado conviene comenzar; pasos iniciales sugeridos; tipo de cliente objetivo a buscar; materiales, validaciones o requisitos a preparar previamente.\n\n"
+. "Ficha de empresa (datos exclusivos para el análisis):\n\n"
+. $datosEmpresaInput;
 
 $payload = [
     'contents' => [
@@ -173,7 +202,7 @@ $payload = [
     ],
     'generationConfig' => [
         'temperature' => 0.7,
-        'maxOutputTokens' => 2048,
+        'maxOutputTokens' => 4096,
     ]
 ];
 
