@@ -778,9 +778,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="item-badge item-badge-product">Producto</div>
         <div class="producto_grid">
           <label class="label_span" data-i18n="regfull_main_product">Producto <span class="req">*</span></label>
-          <input type="search" name="product_name[]" class="span_right">
+          <input type="search" name="product_name[]" class="span_right" maxlength="55">
           <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
-          <input type="search" name="product_description[]">
+          <input type="search" name="product_description[]" maxlength="105">
           <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario (NCM/HS)</label>
           <div class="span_right tariff-code-row">
             <input type="text" name="product_tariff_code[]" class="tariff-code-input" data-i18n-placeholder="regfull_tariff_code_placeholder" placeholder="ej: 0602.90.90.100X" maxlength="20">
@@ -902,9 +902,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
           <!-- Servicio -->
           <label class="label_span" data-i18n="regfull_service">Servicio <span class="req">*</span></label>
-          <input type="search" name="service_name[]" class="span_right">
+          <input type="search" name="service_name[]" class="span_right" maxlength="55">
           <label class="label_span" data-i18n="regfull_description">Descripción <span class="req">*</span></label>
-          <input type="search" name="service_description[]">
+          <input type="search" name="service_description[]" maxlength="105">
           <label class="label_span" data-i18n="regfull_tariff_code">Código Arancelario (NCM/HS)</label>
           <div class="span_right tariff-code-row">
             <input type="text" name="service_tariff_code[]" class="tariff-code-input" data-i18n-placeholder="regfull_tariff_code_placeholder" placeholder="ej: 0602.90.90.100X" maxlength="20">

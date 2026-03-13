@@ -25,6 +25,19 @@ $__pdf_oferta_urls = [
                 <img src="img/logo_cfi.svg" alt="CFI" class="logo-image">
             </div>
         </div>
+        <div class="landing_header_lang" onclick="toggleLangMenu()">
+        <img src="img/icons/lang.png" alt="">
+        <span id="current-lang">ES</span>
+        <ul id="landing_header_lang_menu" class="landing_header_lang_menu hidden">
+            <li onclick="setLang('search', 'es')">Español</li>
+            <li onclick="setLang('search', 'en')">English</li>
+        </ul>
+        </div>
+        <button type="button" class="hero-burger" aria-label="Menú" aria-expanded="false" id="hero-burger-btn-search">
+            <span class="hero-burger-line"></span>
+            <span class="hero-burger-line"></span>
+            <span class="hero-burger-line"></span>
+        </button>
         <div class="nav-container">
         <nav class="hero-nav">
             <div class="oferta-dropdown" id="oferta-dropdown">
@@ -46,23 +59,17 @@ $__pdf_oferta_urls = [
             <span class="hero-nav-sep hero-nav-sep-search" aria-hidden="true">|</span>
             <a data-i18n="nav_turismo" href="https://turismosantiago.gob.ar/" target="_blank" rel="noopener" class="nav-link nav-link-search">Turismo</a>
             <span class="hero-nav-sep hero-nav-sep-search" aria-hidden="true">|</span>
-            <a data-i18n="nav_contact" href="?page=landing#contactos" class="nav-link nav-link-search">Contacto</a>
-            <a href="https://wa.me/" class="nav-whatsapp" target="_blank" rel="noopener">
-                <img src="img/icono_whatsapp.png" alt="WhatsApp" class="whatsapp-icon">
-            </a>
+            <span class="hero-nav-contact-wrap">
+                <a data-i18n="nav_contact" href="?page=landing#contactos" class="nav-link nav-link-search">Contacto</a>
+                <a href="https://wa.me/" class="nav-whatsapp" target="_blank" rel="noopener" aria-label="WhatsApp">
+                    <img src="img/icono_whatsapp.png" alt="" class="whatsapp-icon">
+                </a>
+            </span>
         </nav>
         </div>
         <div class="hero-buttons">
         <a data-i18n="btn_register" href="?page=regnew" class="btn btn-register">Registrarse</a>
         <a data-i18n="btn_login" href="?page=login" class="btn btn-login">Entrar</a>
-        </div>
-        <div class="landing_header_lang" onclick="toggleLangMenu()">
-        <img src="img/icons/lang.png" alt="">
-        <span id="current-lang">ES</span>
-        <ul id="landing_header_lang_menu" class="landing_header_lang_menu hidden">
-            <li onclick="setLang('search', 'es')">Español</li>
-            <li onclick="setLang('search', 'en')">English</li>
-        </ul>
         </div>
         </div>
     </div>
@@ -101,8 +108,8 @@ $__pdf_oferta_urls = [
                 <div class="landing-footer-column landing-footer-empresas">
                     <h3 class="landing-footer-title" data-i18n="footer_empresas">EMPRESAS</h3>
                     <ul class="landing-footer-links">
-                        <li><a href="?page=regnew" data-i18n="footer_registro">Cómo registrarse</a></li>
-                        <li><a href="?page=landing#empresas_cargar" data-i18n="footer_cargar">Cómo cargar productos/servicios</a></li>
+                        <li><a href="https://drive.google.com/file/d/1AIABKb8UhAcMzyNn-1A3F3gkD7ig854_/view" target="_blank" rel="noopener" data-i18n="footer_registro">Cómo registrarse</a></li>
+                        <li><a href="https://drive.google.com/file/d/1AIABKb8UhAcMzyNn-1A3F3gkD7ig854_/view" target="_blank" rel="noopener" data-i18n="footer_cargar">Cómo cargar productos/servicios</a></li>
                     </ul>
                 </div>
                 <div class="landing-footer-column landing-footer-redes">
@@ -130,7 +137,11 @@ $__pdf_oferta_urls = [
                             <img src="img/logo_cfi.svg" alt="CFI" class="landing-footer-logo-image">
                         </div>
                     </div>
-                    <a href="index.php?page=clasico_pdf_es" class="btn btn-footer-pdf js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="index.php?page=clasico_pdf_es" data-pdf-url-en="index.php?page=clasico_pdf_en"></a>
+                    <div class="footer-pdf-group">
+                        <a href="index.php?page=clasico_pdf_es" class="btn btn-footer-pdf js-pdf-link" target="_blank" rel="noopener" aria-label="PDF Clásico" data-pdf-url-es="index.php?page=clasico_pdf_es" data-pdf-url-en="index.php?page=clasico_pdf_en"></a>
+                        <a href="index.php?page=corporativo_pdf_es" class="btn btn-footer-pdf js-pdf-link" target="_blank" rel="noopener" aria-label="PDF Corporativo" data-pdf-url-es="index.php?page=corporativo_pdf_es" data-pdf-url-en="index.php?page=corporativo_pdf_en"></a>
+                        <a href="index.php?page=moderno_pdf_es" class="btn btn-footer-pdf js-pdf-link" target="_blank" rel="noopener" aria-label="PDF Moderno" data-pdf-url-es="index.php?page=moderno_pdf_es" data-pdf-url-en="index.php?page=moderno_pdf_en"></a>
+                    </div>
                 </div>
                 <p class="landing-footer-copyright" data-i18n="footer_copyright">Copyright © 2026. Santiago del Estero. Todos los derechos reservados.</p>
             </div>
@@ -270,6 +281,23 @@ function toggleLangMenu() {
 }
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof initLang === 'function') initLang('search', 'es');
+  var burgerBtnSearch = document.getElementById('hero-burger-btn-search');
+  var heroHeaderSearch = document.querySelector('.hero-header-search');
+  if (burgerBtnSearch && heroHeaderSearch) {
+    burgerBtnSearch.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      heroHeaderSearch.classList.toggle('nav-open');
+      burgerBtnSearch.setAttribute('aria-expanded', heroHeaderSearch.classList.contains('nav-open'));
+    });
+    var navLinks = heroHeaderSearch.querySelectorAll('.nav-container .nav-link:not(.oferta-dropdown-trigger), .nav-container .nav-whatsapp');
+    for (var i = 0; i < navLinks.length; i++) {
+      navLinks[i].addEventListener('click', function() {
+        heroHeaderSearch.classList.remove('nav-open');
+        burgerBtnSearch.setAttribute('aria-expanded', 'false');
+      });
+    }
+  }
   var ofertaBtn = document.getElementById('oferta-dropdown-btn');
   var ofertaMenu = document.getElementById('oferta-dropdown-menu');
   var ofertaDropdown = document.getElementById('oferta-dropdown');

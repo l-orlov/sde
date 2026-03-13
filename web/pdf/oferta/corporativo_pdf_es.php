@@ -369,6 +369,7 @@ if (!empty($companyIds)) {
                 $t = trim($row['network_type'] ?? '');
                 $u = trim($row['url'] ?? '');
                 if ($u !== '') {
+                    $u = preg_replace('#^https?://#i', '', $u);
                     if (!isset($redesPorEmpresa[$cid])) {
                         $redesPorEmpresa[$cid] = [];
                     }
@@ -1147,39 +1148,55 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $s5PanelX = $s5ImgX + $s5ImgW + $s5ColGap;
             $s5ContentInnerH = $s5ContentH - $s5TopPad - $s5ContentPad;
             $s5TitleY = $s5ContentY + $s5ContentPad + round($s5ContentH * 0.28);
-            $mpdf->SetTextColor(255, 255, 255);
-            $mpdf->SetFont('dejavusans', 'B', 32);
-            $mpdf->SetXY($s5LeftX, $s5TitleY);
-            $mpdf->Cell($s5LeftColW, 11, 'NOMBRE DE LA', 0, 1, 'L');
-            $s5TitleGap = 6;
             $mpdf->SetTextColor(141, 188, 220);
             $mpdf->SetFont('dejavusans', 'B', 44);
+            $mpdf->SetXY($s5LeftX, $s5TitleY);
             $nombreEmpresa = function_exists('mb_strtoupper') ? mb_strtoupper($emp['name'] ?? '') : strtoupper($emp['name'] ?? '');
-            $mpdf->SetXY($s5LeftX, $s5TitleY + 11 + $s5TitleGap);
-            $ellipsis = '…';
-            $maxW = $s5LeftColW - $mpdf->GetStringWidth($ellipsis);
-            $nameWidth = $mpdf->GetStringWidth($nombreEmpresa);
-            if ($nameWidth <= $s5LeftColW) {
-                $mpdf->Cell($s5LeftColW, 16, $nombreEmpresa, 0, 1, 'L');
-            } else {
-                $len = function_exists('mb_strlen') ? mb_strlen($nombreEmpresa) : strlen($nombreEmpresa);
-                $fit = 0;
-                for ($j = 1; $j <= $len; $j++) {
-                    $sub = function_exists('mb_substr') ? mb_substr($nombreEmpresa, 0, $j) : substr($nombreEmpresa, 0, $j);
-                    if ($mpdf->GetStringWidth($sub) <= $maxW) {
-                        $fit = $j;
-                    } else {
-                        break;
-                    }
-                }
-                $displayName = ($fit > 0 ? (function_exists('mb_substr') ? mb_substr($nombreEmpresa, 0, $fit) : substr($nombreEmpresa, 0, $fit)) : '') . $ellipsis;
-                $mpdf->Cell($s5LeftColW, 16, $displayName, 0, 1, 'L');
-            }
+            $mpdf->MultiCell($s5LeftColW, 16, $nombreEmpresa, 0, 'L');
             $s5ImgH = round($s5ContentInnerH * 0.82);
             $s5ImgY = $s5ContentY + $s5TopPad + ($s5ContentInnerH - $s5ImgH) / 2;
             $compImgPath = $imagenesPorEmpresa[$cid] ?? $logosPorEmpresa[$cid] ?? null;
             if ($compImgPath && file_exists($compImgPath)) {
-                $mpdf->Image($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
+                $compImgOutPath = null;
+                if (extension_loaded('gd')) {
+                    $info = @getimagesize($compImgPath);
+                    $ext = strtolower(pathinfo($compImgPath, PATHINFO_EXTENSION));
+                    $src = false;
+                    if ($info && $info[2] === IMAGETYPE_JPEG) {
+                        $src = @imagecreatefromjpeg($compImgPath);
+                    } elseif ($info && $info[2] === IMAGETYPE_PNG) {
+                        $src = @imagecreatefrompng($compImgPath);
+                    } elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) {
+                        $src = @imagecreatefromwebp($compImgPath);
+                    }
+                    if ($src && !empty($info[0]) && !empty($info[1])) {
+                        $sw = imagesx($src);
+                        $sh = imagesy($src);
+                        $pxPerMm = 96 / 25.4;
+                        $tw = (int) round($s5ImgW * $pxPerMm);
+                        $th = (int) round($s5ImgH * $pxPerMm);
+                        $scale = max($tw / $sw, $th / $sh);
+                        $srcCropW = (int) round($tw / $scale);
+                        $srcCropH = (int) round($th / $scale);
+                        $srcX = (int) max(0, ($sw - $srcCropW) / 2);
+                        $srcY = (int) max(0, ($sh - $srcCropH) / 2);
+                        $dst = @imagecreatetruecolor($tw, $th);
+                        if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $tw, $th, $srcCropW, $srcCropH)) {
+                            $tmp = sys_get_temp_dir() . '/corp_comp_img_' . uniqid() . '.png';
+                            if (imagepng($dst, $tmp)) {
+                                $compImgOutPath = $tmp;
+                            }
+                            imagedestroy($dst);
+                        }
+                        imagedestroy($src);
+                    }
+                }
+                if ($compImgOutPath && file_exists($compImgOutPath)) {
+                    $mpdf->Image($compImgOutPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
+                    @unlink($compImgOutPath);
+                } else {
+                    $mpdf->Image($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
+                }
             } else {
                 $mpdf->SetFillColor(50, 50, 50);
                 $mpdf->Rect($s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH, 'F');
@@ -1198,7 +1215,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 ['Actividad principal', $emp['main_activity'] ?? '-'],
                 ['Localidad', $localidadPorEmpresa[$cid] ?? '-'],
                 ['Sitio Web', $emp['website'] ?? '-'],
-                ['Redes sociales', isset($redesPorEmpresa[$cid]) ? implode(' ', $redesPorEmpresa[$cid]) : '-'],
+                ['Redes sociales', isset($redesPorEmpresa[$cid]) ? implode("\n", $redesPorEmpresa[$cid]) : '-'],
                 ['Año de Inicio de actividades', !empty($emp['start_date']) ? date('Y', (int)$emp['start_date']) : '-'],
             ];
             foreach ($s5Rows as $idx => $row) {
