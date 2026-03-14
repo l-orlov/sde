@@ -342,8 +342,52 @@ if (!empty($companyIds)) {
     }
 }
 
-// Redes sociales por empresa (para slide de datos de empresa)
+// Redes sociales por empresa (para slide de datos de empresa) — extraer solo handle (ej. instagram.com/frre → frre)
 $redesPorEmpresa = [];
+$formatSocialUrlToHandle = function ($url) {
+    $u = trim($url);
+    if ($u === '') return '';
+    $u = preg_replace('#^https?://#i', '', $u);
+    $u = preg_replace('#[?#].*$#', '', $u);
+    $u = trim($u);
+    $u = preg_replace('#^www\.#i', '', $u);
+    $parts = array_values(array_filter(explode('/', $u), function ($p) { return $p !== ''; }));
+    if (count($parts) === 0) return $u;
+    $host = strtolower(preg_replace('/:\d+$/', '', $parts[0]));
+    $pathSegments = array_slice($parts, 1);
+    $socialHosts = ['instagram.com', 'facebook.com', 'fb.com', 'fb.me', 'linkedin.com', 'twitter.com', 'x.com', 'youtube.com', 'youtu.be', 'tiktok.com', 'wa.me', 'web.whatsapp.com', 't.me', 'telegram.me', 'vk.com', 'vkontakte.ru', 'vkontakte.com', 'reddit.com'];
+    $skipSegments = ['p', 'reel', 'reels', 'stories', 'share', 'watch', 'pages', 'photo', 'video', 'in', 'company', 'sharing'];
+    if (in_array($host, $socialHosts) && count($pathSegments) > 0) {
+        while (count($pathSegments) > 0 && in_array(strtolower($pathSegments[0]), $skipSegments)) {
+            array_shift($pathSegments);
+        }
+        if (count($pathSegments) > 0) {
+            $handle = $pathSegments[0];
+            $handle = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $handle);
+            return trim($handle) !== '' ? trim($handle) : $u;
+        }
+        return $parts[1] ?? $u;
+    }
+    $prefixesToStrip = ['www.instagram.com/', 'instagram.com/', 'www.facebook.com/', 'facebook.com/', 'www.fb.com/', 'fb.com/', 'www.vk.com/', 'vk.com/', 'www.vkontakte.ru/', 'vkontakte.ru/', 'www.vkontakte.com/', 'vkontakte.com/', 'www.linkedin.com/in/', 'linkedin.com/in/', 'www.linkedin.com/', 'linkedin.com/', 'www.twitter.com/', 'twitter.com/', 'www.x.com/', 'x.com/', 'www.tiktok.com/@', 'tiktok.com/@', 'www.tiktok.com/', 'tiktok.com/', 'www.youtube.com/', 'youtube.com/', 'www.youtu.be/', 'youtu.be/', 't.me/', 'www.t.me/', 'telegram.me/', 'www.telegram.me/', 'www.reddit.com/r/', 'reddit.com/r/', 'www.reddit.com/user/', 'reddit.com/user/', 'www.reddit.com/u/', 'reddit.com/u/', 'www.reddit.com/', 'reddit.com/'];
+    foreach ($prefixesToStrip as $prefix) {
+        if (stripos($u, $prefix) === 0) {
+            $rest = substr($u, strlen($prefix));
+            $rest = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $rest);
+            $first = strpos($rest, '/') !== false ? substr($rest, 0, strpos($rest, '/')) : $rest;
+            return trim($first) !== '' ? trim($first) : $u;
+        }
+    }
+    foreach (['www.instagram.com/', 'instagram.com/', 'www.facebook.com/', 'facebook.com/', 'www.fb.com/', 'fb.com/', 'www.vk.com/', 'vk.com/', 'www.vkontakte.com/', 'vkontakte.com/', 'www.vkontakte.ru/', 'vkontakte.ru/', 'vkontakte.com', 'www.youtube.com/', 'youtube.com/', 'www.youtu.be/', 'youtu.be/', 'www.tiktok.com/@', 'tiktok.com/@', 'www.tiktok.com/', 'tiktok.com/', 't.me/', 'telegram.me/', 'www.linkedin.com/in/', 'linkedin.com/in/', 'www.linkedin.com/', 'linkedin.com/', 'www.reddit.com/r/', 'reddit.com/r/', 'www.reddit.com/user/', 'reddit.com/user/', 'www.reddit.com/', 'reddit.com/', 'www.x.com/', 'x.com/', 'www.twitter.com/', 'twitter.com/'] as $dom) {
+        $pos = stripos($u, $dom);
+        if ($pos !== false) {
+            $after = substr($u, $pos + strlen($dom));
+            $after = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $after);
+            $first = strpos($after, '/') !== false ? substr($after, 0, strpos($after, '/')) : $after;
+            if (trim($first) !== '') return trim($first);
+        }
+    }
+    return $u;
+};
 if (!empty($companyIds)) {
     $check = @mysqli_query($link, "SHOW TABLES LIKE 'company_social_networks'");
     if ($check && mysqli_num_rows($check) > 0) {
@@ -356,11 +400,23 @@ if (!empty($companyIds)) {
                 $t = trim($row['network_type'] ?? '');
                 $u = trim($row['url'] ?? '');
                 if ($u !== '') {
-                    $u = preg_replace('#^https?://#i', '', $u);
-                    if (!isset($redesPorEmpresa[$cid])) {
-                        $redesPorEmpresa[$cid] = [];
+                    $display = $formatSocialUrlToHandle($u);
+                    $display = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $display);
+                    // seguridad extra: если вдруг осталось "www.instagram.com/frre" и т.п. — режем домен ещё раз
+                    if ($display !== '') {
+                        $display = preg_replace('~^/?(?:www\.)?(instagram\.com|facebook\.com|fb\.com|vk\.com|vkontakte\.ru|vkontakte\.com|youtube\.com|youtu\.be|tiktok\.com|t\.me|telegram\.me|linkedin\.com|reddit\.com|x\.com|twitter\.com)(?:/@?|$)~i', '', $display);
                     }
-                    $redesPorEmpresa[$cid][] = ($t !== '' ? $t . ': ' : '') . $u;
+                    if ($display === '') {
+                        $display = preg_replace('#^https?://#i', '', $u);
+                        $display = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $display);
+                        $display = preg_replace('~^/?(?:www\.)?(instagram\.com|facebook\.com|fb\.com|vk\.com|vkontakte\.ru|vkontakte\.com|youtube\.com|youtu\.be|tiktok\.com|t\.me|telegram\.me|linkedin\.com|reddit\.com|x\.com|twitter\.com)(?:/@?|$)~i', '', $display);
+                    }
+                    if ($display !== '') {
+                        if (!isset($redesPorEmpresa[$cid])) {
+                            $redesPorEmpresa[$cid] = [];
+                        }
+                        $redesPorEmpresa[$cid][] = ($t !== '' ? $t . ': /' : '/') . $display;
+                    }
                 }
             }
         }
@@ -1170,8 +1226,8 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 ['REDES', 'SOCIALES', isset($redesPorEmpresa[$cid]) ? implode("\n", $redesPorEmpresa[$cid]) : '-'],
                 ['AÑO DE', 'INICIO', !empty($emp['start_date']) ? date('Y', (int)$emp['start_date']) : '-'],
             ];
-            $s5LabelW = $s5TextW * 0.38;
-            $s5ValW = $s5TextW * 0.62;
+            $s5LabelW = $s5TextW * 0.32;
+            $s5ValW = $s5TextW * 0.68;
             $s5ValX = $s5Pad + $s5LabelW;
             $s5GapAfterText = 2;
             // Y после названия: резерв под несколько строк названия (4 строки × 13) + отступ
@@ -1195,13 +1251,13 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->SetTextColor(0, 0, 0);
                 $valStr = is_string($value) ? $value : (string)$value;
                 $rowH = ($line2 !== null) ? $s5LabelH * 2 : $s5LineH;
-                if (mb_strlen($valStr) > 45) {
+                $isRedes = ($line1 === 'REDES' && $line2 === 'SOCIALES');
+                if ($isRedes || mb_strlen($valStr) > 45) {
                     $mpdf->MultiCell($s5ValW, 5, $valStr, 0, 'R');
-                    $rowH = max($rowH, 15);
                 } else {
                     $mpdf->Cell($s5ValW, $rowH, $valStr, 0, 1, 'R');
                 }
-                $s5Y += $rowH + $s5GapAfterText;
+                $s5Y = $mpdf->y + $s5GapAfterText;
                 $mpdf->SetDrawColor($s5LineColor[0], $s5LineColor[1], $s5LineColor[2]);
                 $mpdf->SetLineWidth(0.4);
                 $mpdf->Line($s5Pad, $s5Y, $s5Pad + $s5TextW, $s5Y);
