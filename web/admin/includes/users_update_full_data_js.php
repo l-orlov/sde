@@ -440,9 +440,13 @@ try {
     }
     
     mysqli_commit($link);
+
+    require_once getIncludesFilePath('gemini_translate_en.php');
+    refresh_company_products_en($link, $companyId);
+
     $return['ok'] = 1;
     $return['res'] = 'Datos guardados correctamente';
-    
+
 } catch (Exception $e) {
     mysqli_rollback($link);
     $return['err'] = $e->getMessage();

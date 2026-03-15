@@ -1380,11 +1380,16 @@ try {
     }
     
     mysqli_commit($link);
-    
+
+    if ($companyId) {
+        require_once __DIR__ . '/gemini_translate_en.php';
+        refresh_company_products_en($link, $companyId);
+    }
+
     $return['ok'] = 1;
     $return['res'] = 'Datos guardados correctamente';
     $return['company_id'] = $companyId;
-    
+
 } catch (Exception $e) {
     mysqli_rollback($link);
     $return['err'] = 'Error al guardar: ' . $e->getMessage();

@@ -176,7 +176,7 @@ if ($currentUserId <= 0) {
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.main_activity, c.website, c.start_date
+$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.name_en, c.main_activity, c.main_activity_en, c.website, c.start_date
       FROM companies c
       WHERE c.user_id = ? AND c.moderation_status = 'approved'
       LIMIT 1");
@@ -232,7 +232,7 @@ $empresasDestacadas = array_slice($companies, 0, 3);
 $productosMuestra = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.company_id, p.type
+    $q = "SELECT p.id, p.name, p.name_en, p.activity, p.description, p.description_en, p.company_id, p.type
           FROM products p
           WHERE p.company_id IN ($ids)
           ORDER BY p.id ASC
@@ -254,7 +254,7 @@ if (!empty($companyIds)) {
     $chk = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'target_markets'");
     $hasTargetMarkets = ($chk && mysqli_num_rows($chk) > 0);
     $marketsCols = ($hasCurrentMarkets ? ', p.current_markets' : '') . ($hasTargetMarkets ? ', p.target_markets' : '');
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code" . $marketsCols . "
+    $q = "SELECT p.id, p.name, p.name_en, p.activity, p.description, p.description_en, p.annual_export, p.annual_export_en, p.certifications, p.certifications_en, p.company_id, p.type, p.tariff_code" . $marketsCols . "
           FROM products p
           WHERE p.company_id IN ($ids)
           ORDER BY p.is_main DESC, p.id ASC
@@ -347,14 +347,15 @@ if (!empty($companyIds)) {
             }
         }
     }
-    $q = "SELECT company_id, description FROM products WHERE company_id IN ($ids) AND description IS NOT NULL AND description != '' ORDER BY company_id, id ASC";
+    $q = "SELECT company_id, description, description_en FROM products WHERE company_id IN ($ids) AND (description IS NOT NULL AND description != '' OR description_en IS NOT NULL AND description_en != '') ORDER BY company_id, id ASC";
     $r = mysqli_query($link, $q);
     if ($r) {
         while ($row = mysqli_fetch_assoc($r)) {
             $cid = (int) $row['company_id'];
             if (!isset($descripcionPorEmpresa[$cid])) {
-                $descripcionPorEmpresa[$cid] = mb_substr(trim($row['description']), 0, 120);
-                if (mb_strlen(trim($row['description'])) > 120) {
+                $d = !empty(trim((string)($row['description_en'] ?? ''))) ? trim($row['description_en']) : trim($row['description'] ?? '');
+                $descripcionPorEmpresa[$cid] = mb_substr($d, 0, 120);
+                if (mb_strlen($d) > 120) {
                     $descripcionPorEmpresa[$cid] .= '…';
                 }
             }
@@ -660,7 +661,7 @@ for ($i = 0; $i < 5; $i++) {
         $mpdf->SetFont($pdfFontFamily, 'B', 59);
         $mpdf->Cell($s1TextW, 21, 'COMPANY / BUSINESS', 0, 1, 'L');
         $mpdf->SetFont($pdfFontFamily, 'B', 59);
-        $actividad = !empty($companies[0]['main_activity']) ? $companies[0]['main_activity'] : 'Foreign Trade';
+        $actividad = !empty(trim((string)($companies[0]['main_activity_en'] ?? ''))) ? $companies[0]['main_activity_en'] : (!empty($companies[0]['main_activity']) ? $companies[0]['main_activity'] : 'Foreign Trade');
         $localidad = !empty($configInstitucional['localidad_direccion']) ? $configInstitucional['localidad_direccion'] : $configInstitucional['nombre_provincia'];
         $s1Subtitle = (function_exists('mb_strtoupper') ? mb_strtoupper($actividad) : strtoupper($actividad)) . ' · ' . (function_exists('mb_strtoupper') ? mb_strtoupper($localidad) : strtoupper($localidad));
         $mpdf->SetTextColor(255, 255, 255);
@@ -821,7 +822,7 @@ for ($i = 0; $i < 5; $i++) {
             'CONTACT' => ['Position:', 'Email:', 'Phone:'],
         ];
         $pfValues = [
-            'PROFILE' => ['Company', $perfilEmp['main_activity'] ?? '-'],
+            'PROFILE' => ['Company', !empty(trim((string)($perfilEmp['main_activity_en'] ?? ''))) ? ($perfilEmp['main_activity_en'] ?? '-') : ($perfilEmp['main_activity'] ?? '-')],
             'LOCATION' => [$localidadPorEmpresa[$perfilCid] ?? '-', $perfilDepartamento ?: '-', $perfilDomicilio ?: '-'],
             'CHANNELS' => [
                 isset($perfilEmp['website']) && (string)$perfilEmp['website'] !== '' ? preg_replace('#^https?://#i', '', $perfilEmp['website']) : '-',
@@ -1098,7 +1099,7 @@ for ($i = 0; $i < 5; $i++) {
         $productoSlidesChunks = array_chunk($productosParaSlides, 1);
         $prodCompanyNameById = [];
         foreach ($companies as $c) {
-            $prodCompanyNameById[(int)($c['id'] ?? 0)] = $c['name'] ?? '';
+            $prodCompanyNameById[(int)($c['id'] ?? 0)] = !empty(trim((string)($c['name_en'] ?? ''))) ? ($c['name_en'] ?? '') : ($c['name'] ?? '');
         }
         $prodLeftW = round($wMm * 0.70);
         $prodRightW = $wMm - $prodLeftW;
@@ -1271,7 +1272,8 @@ for ($i = 0; $i < 5; $i++) {
             $mpdf->SetXY($prodPad, $prodTitleY);
             $mpdf->SetTextColor(0, 0, 0);
             $mpdf->SetFont($pdfFontFamily, 'B', 52);
-            $mpdf->Cell($prodTextW, 18, mb_strlen($prod['name'] ?? '') > 28 ? (mb_substr($prod['name'], 0, 27) . '…') : ($prod['name'] ?? 'PRODUCT/SERVICE'), 0, 1, 'L');
+            $prodNameD = !empty(trim((string)($prod['name_en'] ?? ''))) ? ($prod['name_en'] ?? '') : ($prod['name'] ?? '');
+                        $mpdf->Cell($prodTextW, 18, (function_exists('mb_strlen') ? mb_strlen($prodNameD) : strlen($prodNameD)) > 28 ? ((function_exists('mb_substr') ? mb_substr($prodNameD, 0, 27) : substr($prodNameD, 0, 27)) . '…') : ($prodNameD ?: 'PRODUCT/SERVICE'), 0, 1, 'L');
             $mpdf->Ln(10);
             $prodContentX = $prodPad;
             $prodContentW = $prodTextW;
@@ -1281,7 +1283,7 @@ for ($i = 0; $i < 5; $i++) {
             $mpdf->SetTextColor(0, 0, 0);
             $mpdf->Cell($prodContentW, 8, 'Product description:', 0, 1, 'L');
             $mpdf->SetFont($pdfFontFamily, '', 14);
-            $descStr = trim($prod['description'] ?? '') ?: 'Nisi justo faucibus lectus blandit donec gravida proin natoque, malesuada a facilisis dictumst rhoncus pulvinar aliquet feugiat ultrices, mollis phasellus varius tortor habitasse purus enim.';
+            $descStr = !empty(trim((string)($prod['description_en'] ?? ''))) ? trim($prod['description_en']) : (trim($prod['description'] ?? '') ?: 'Nisi justo faucibus lectus blandit donec gravida proin natoque, malesuada a facilisis dictumst rhoncus pulvinar aliquet feugiat ultrices, mollis phasellus varius tortor habitasse purus enim.');
             $descStr = mb_strlen($descStr) > 200 ? mb_substr($descStr, 0, 199) . '…' : $descStr;
             $mpdf->MultiCell($prodContentW, 7, $descStr, 0, 'L');
             $mpdf->Ln(7);
@@ -1305,7 +1307,7 @@ for ($i = 0; $i < 5; $i++) {
                 $mpdf->Cell($mpdf->GetStringWidth($lbl) + 2, $prodRowLineH, $lbl, 0, 0, 'L');
                 $mpdf->Cell($prodDataGap, $prodRowLineH, '', 0, 0, 'L');
                 $mpdf->SetFont($pdfFontFamily, '', 15);
-                $mpdf->Cell(0, $prodRowLineH, trim($prod['annual_export'] ?? '-') ?: '-', 0, 1, 'L');
+                $mpdf->Cell(0, $prodRowLineH, !empty(trim((string)($prod['annual_export_en'] ?? ''))) ? trim($prod['annual_export_en']) : (trim($prod['annual_export'] ?? '-') ?: '-'), 0, 1, 'L');
                 $prodRowY += $prodRowH;
                 $mpdf->Image($iconYesPath, $prodContentX, $prodRowY + $prodIconOffsetY, $prodIconW, $prodIconH);
                 $mpdf->SetXY($prodContentX + $prodIconW + $prodLabelGap, $prodRowY + $prodTextOffsetY);
@@ -1314,7 +1316,7 @@ for ($i = 0; $i < 5; $i++) {
                 $mpdf->Cell($mpdf->GetStringWidth($lbl) + 2, $prodRowLineH, $lbl, 0, 0, 'L');
                 $mpdf->Cell($prodDataGap, $prodRowLineH, '', 0, 0, 'L');
                 $mpdf->SetFont($pdfFontFamily, '', 15);
-                $certStr = trim($prod['certifications'] ?? '-') ?: '-';
+                $certStr = !empty(trim((string)($prod['certifications_en'] ?? ''))) ? trim($prod['certifications_en']) : (trim($prod['certifications'] ?? '-') ?: '-');
                 $mpdf->Cell(0, $prodRowLineH, (mb_strlen($certStr) > 30 ? mb_substr($certStr, 0, 29) . '…' : $certStr), 0, 1, 'L');
                 $prodRowY += $prodRowH;
                 $mpdf->Image($iconYesPath, $prodContentX, $prodRowY + $prodIconOffsetY, $prodIconW, $prodIconH);
@@ -1354,7 +1356,7 @@ for ($i = 0; $i < 5; $i++) {
                 $mpdf->Cell($mpdf->GetStringWidth($lbl) + 2, $prodRowLineH, $lbl, 0, 0, 'L');
                 $mpdf->Cell($prodDataGap, $prodRowLineH, '', 0, 0, 'L');
                 $mpdf->SetFont($pdfFontFamily, '', 15);
-                $mpdf->Cell(0, $prodRowLineH, trim($prod['annual_export'] ?? '-') ?: '-', 0, 1, 'L');
+                $mpdf->Cell(0, $prodRowLineH, !empty(trim((string)($prod['annual_export_en'] ?? ''))) ? trim($prod['annual_export_en']) : (trim($prod['annual_export'] ?? '-') ?: '-'), 0, 1, 'L');
                 $prodRowY += $prodRowH;
                 $mpdf->SetXY($prodContentX + $prodIconW + $prodLabelGap, $prodRowY + $prodTextOffsetY);
                 $mpdf->SetFont($pdfFontFamily, 'B', 17);
@@ -1365,7 +1367,7 @@ for ($i = 0; $i < 5; $i++) {
                 $mpdf->Cell($mpdf->GetStringWidth($lbl) + 2, $prodRowLineH, $lbl, 0, 0, 'L');
                 $mpdf->Cell($prodDataGap, $prodRowLineH, '', 0, 0, 'L');
                 $mpdf->SetFont($pdfFontFamily, '', 15);
-                $certStr = trim($prod['certifications'] ?? '-') ?: '-';
+                $certStr = !empty(trim((string)($prod['certifications_en'] ?? ''))) ? trim($prod['certifications_en']) : (trim($prod['certifications'] ?? '-') ?: '-');
                 $mpdf->Cell(0, $prodRowLineH, (mb_strlen($certStr) > 30 ? mb_substr($certStr, 0, 29) . '…' : $certStr), 0, 1, 'L');
                 $prodRowY += $prodRowH;
                 $mpdf->SetXY($prodContentX + $prodIconW + $prodLabelGap, $prodRowY + $prodTextOffsetY);
@@ -2078,7 +2080,9 @@ function buildOfertaPdfHtml($data) {
     $bloquesEmpresa = '';
     foreach (array_slice($empresas, 0, 3) as $i => $emp) {
         $cid = (int)($emp['id'] ?? 0);
-        $bloquesEmpresa .= '<div style="margin-bottom:16px;"><span class="acento1" style="font-weight:700;">' . htmlspecialchars($emp['name'] ?? '') . '</span><br><span style="color:#000066;">' . htmlspecialchars($emp['main_activity'] ?? '') . '</span></div>';
+        $empName = !empty(trim((string)($emp['name_en'] ?? ''))) ? ($emp['name_en'] ?? '') : ($emp['name'] ?? '');
+        $empMainAct = !empty(trim((string)($emp['main_activity_en'] ?? ''))) ? ($emp['main_activity_en'] ?? '') : ($emp['main_activity'] ?? '');
+        $bloquesEmpresa .= '<div style="margin-bottom:16px;"><span class="acento1" style="font-weight:700;">' . htmlspecialchars($empName) . '</span><br><span style="color:#000066;">' . htmlspecialchars($empMainAct) . '</span></div>';
     }
     $s4Imgs = '';
     foreach (array_slice($empresas, 0, 3) as $emp) {
@@ -2115,9 +2119,9 @@ function buildOfertaPdfHtml($data) {
         }
         $cards .= '<div style="background:#fff;border-radius:8px;overflow:hidden;padding:12px;text-align:center;">
             <div style="height:100px;background:#eee;border-radius:6px;overflow:hidden;">' . ($src ? '<img src="' . $src . '" alt="" style="width:100%;height:100%;object-fit:cover;" />' : '') . '</div>
-            <p style="margin:8px 0 4px;font-weight:700;color:#000;">' . htmlspecialchars($p['name'] ?? '') . '</p>
+            <p style="margin:8px 0 4px;font-weight:700;color:#000;">' . htmlspecialchars(!empty(trim((string)($p['name_en'] ?? ''))) ? ($p['name_en'] ?? '') : ($p['name'] ?? '')) . '</p>
             <p style="margin:0;font-size:14px;color:#003399;">' . htmlspecialchars($p['activity'] ?? '') . '</p>
-            <p style="margin:4px 0 0;font-size:12px;">' . htmlspecialchars(mb_substr($p['description'] ?? '', 0, 80)) . '</p>
+            <p style="margin:4px 0 0;font-size:12px;">' . htmlspecialchars(mb_substr(!empty(trim((string)($p['description_en'] ?? ''))) ? ($p['description_en'] ?? '') : ($p['description'] ?? ''), 0, 80)) . '</p>
         </div>';
     }
     $s5 = '

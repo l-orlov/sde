@@ -169,6 +169,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_stmt_bind_param($stmt, 'iss', $userId, $companyName, $taxId);
             }
             mysqli_stmt_execute($stmt);
+            if (!$companyId) {
+                $companyId = mysqli_insert_id($link);
+            }
             mysqli_stmt_close($stmt);
         } else if ($companyId) {
             $query = "UPDATE companies SET name = '', tax_id = '', updated_at = UNIX_TIMESTAMP() WHERE id = ?";
@@ -177,7 +180,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
         }
-        
+
+        if ($companyId) {
+            require_once __DIR__ . '/gemini_translate_en.php';
+            refresh_company_products_en($link, $companyId);
+        }
+
         $return['ok'] = 1;
         $return['res'] = 'Perfil actualizado correctamente';
         
