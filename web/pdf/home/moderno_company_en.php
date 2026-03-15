@@ -33,7 +33,7 @@ require_once $vendorAutoload;
 
 require_once $webRoot . '/includes/functions.php';
 DBconnect();
-require_once __DIR__ . '/../includes/markets_display_en.php';
+require_once __DIR__ . '/../helpers/markets_display_en.php';
 
 global $link;
 
