@@ -303,19 +303,13 @@ function refresh_company_products_en($link, $companyId) {
             if (is_array($dec)) {
                 foreach ($dec as $m) {
                     $name = is_array($m) ? trim((string)($m['nombre'] ?? $m['name'] ?? '')) : trim((string)$m);
-                    $en = isset($marketMap[$name]) ? $marketMap[$name] : $name;
-                    if (is_array($m)) {
-                        $items[] = array_key_exists('nombre', $m) ? ['nombre' => $en] : ['name' => $en];
-                    } else {
-                        $items[] = $en;
-                    }
+                    if ($name === '') continue;
+                    $items[] = isset($marketMap[$name]) ? $marketMap[$name] : $name;
                 }
             } else {
-                // current_markets stored as plain string (e.g. "América del Sur")
                 $one = trim((string) $raw);
                 if ($one !== '') {
-                    $en = isset($marketMap[$one]) ? $marketMap[$one] : $one;
-                    $items[] = ['name' => $en];
+                    $items[] = isset($marketMap[$one]) ? $marketMap[$one] : $one;
                 }
             }
             return json_encode($items);

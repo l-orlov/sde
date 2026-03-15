@@ -1267,6 +1267,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                     }
                     $p6CurrentStr = implode(', ', array_filter($list));
                 } else {
+                    // Compat: DB may store plain string ("América del Sur") or JSON array
                     $p6CurrentStr = is_string($raw) ? trim($raw) : (string)$raw;
                 }
                 if ($p6CurrentStr === '') $p6CurrentStr = '-';
@@ -1282,6 +1283,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                     }
                     $p6TargetStr = implode(', ', array_filter(array_slice($list, 0, 5)));
                 } else {
+                    // Compat: DB may store plain string or JSON array
                     $p6TargetStr = is_string($raw) ? trim($raw) : (string)$raw;
                 }
                 if ($p6TargetStr === '') $p6TargetStr = '-';

@@ -164,7 +164,14 @@ try {
             $itemAnnualExport = isset($item['annual_export']) ? htmlspecialchars(trim($item['annual_export'])) : '';
             $itemActivity = isset($item['activity']) ? htmlspecialchars(trim($item['activity'])) : null;
             $itemCertifications = isset($item['certifications']) ? htmlspecialchars(trim($item['certifications'])) : '';
-            $itemCurrentMarkets = isset($item['current_markets']) ? htmlspecialchars(trim($item['current_markets'])) : '';
+            $itemCurrentMarketsRaw = isset($item['current_markets']) ? $item['current_markets'] : '';
+            if (is_array($itemCurrentMarketsRaw)) {
+                $itemCurrentMarketsJson = json_encode(array_map('trim', array_filter($itemCurrentMarketsRaw)), JSON_UNESCAPED_UNICODE);
+                if ($itemCurrentMarketsJson === '[]' || $itemCurrentMarketsJson === 'null') $itemCurrentMarketsJson = '[]';
+            } else {
+                $one = htmlspecialchars(trim((string)$itemCurrentMarketsRaw));
+                $itemCurrentMarketsJson = ($one !== '') ? json_encode([$one], JSON_UNESCAPED_UNICODE) : '[]';
+            }
             
             // Определяем is_main: первый продукт или первая услуга
             $isMain = 0;
@@ -181,12 +188,12 @@ try {
                         $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, current_markets = ?, is_main = ?, updated_at = UNIX_TIMESTAMP()
                                   WHERE id = ?";
                         $stmt = mysqli_prepare($link, $query);
-                        mysqli_stmt_bind_param($stmt, 'sssssssii', $itemType, $itemActivity, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $itemCurrentMarkets, $isMain, $itemId);
+                        mysqli_stmt_bind_param($stmt, 'sssssssii', $itemType, $itemActivity, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $itemCurrentMarketsJson, $isMain, $itemId);
                     } else {
                         $query = "UPDATE products SET type = ?, name = ?, description = ?, annual_export = ?, certifications = ?, current_markets = ?, is_main = ?, updated_at = UNIX_TIMESTAMP()
                                   WHERE id = ?";
                         $stmt = mysqli_prepare($link, $query);
-                        mysqli_stmt_bind_param($stmt, 'ssssssii', $itemType, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $itemCurrentMarkets, $isMain, $itemId);
+                        mysqli_stmt_bind_param($stmt, 'ssssssii', $itemType, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $itemCurrentMarketsJson, $isMain, $itemId);
                     }
                 } else {
                     if ($itemType === 'service') {
@@ -215,12 +222,12 @@ try {
                         $query = "INSERT INTO products (company_id, user_id, type, activity, is_main, name, description, annual_export, certifications, current_markets) 
                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = mysqli_prepare($link, $query);
-                        mysqli_stmt_bind_param($stmt, 'iississsss', $companyId, $userId, $itemType, $itemActivity, $isMain, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $itemCurrentMarkets);
+                        mysqli_stmt_bind_param($stmt, 'iississsss', $companyId, $userId, $itemType, $itemActivity, $isMain, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $itemCurrentMarketsJson);
                     } else {
                         $query = "INSERT INTO products (company_id, user_id, type, is_main, name, description, annual_export, certifications, current_markets) 
                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                         $stmt = mysqli_prepare($link, $query);
-                        mysqli_stmt_bind_param($stmt, 'iisisssss', $companyId, $userId, $itemType, $isMain, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $itemCurrentMarkets);
+                        mysqli_stmt_bind_param($stmt, 'iisisssss', $companyId, $userId, $itemType, $isMain, $itemName, $itemDescription, $itemAnnualExport, $itemCertifications, $itemCurrentMarketsJson);
                     }
                 } else {
                     if ($itemType === 'service') {

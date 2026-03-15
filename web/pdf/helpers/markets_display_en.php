@@ -2,6 +2,7 @@
 /**
  * Helper for English PDF: format current_markets / target_markets for display.
  * Uses _en JSON when present, else translates known Spanish names to English, else original.
+ * Backward compatible: raw (ES) can be JSON array ["América del Sur"] or plain string "América del Sur".
  * Include once in each *_en PDF before building market strings.
  */
 
@@ -149,7 +150,8 @@ if (!function_exists('pdf_en_markets_display_string')) {
 
     /**
      * Build display string for current_markets or target_markets in English PDF.
-     * @param string|array|null $raw Original JSON string or decoded array
+     * Backward compatible: $raw can be JSON array (["América del Sur"]) or plain string ("América del Sur").
+     * @param string|array|null $raw Original JSON string, plain string, or decoded array
      * @param string|array|null $rawEn Optional _en JSON string or decoded array
      * @return string Comma-separated for display; '-' if empty
      */
@@ -183,6 +185,7 @@ if (!function_exists('pdf_en_markets_display_string')) {
                     $list[] = isset($map[$name]) ? $map[$name] : $name;
                 }
             } else {
+                // Backward compat: DB may still store plain string (e.g. "América del Sur")
                 $list[] = is_string($raw) ? trim($raw) : (string)$raw;
             }
         }

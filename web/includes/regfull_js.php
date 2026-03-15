@@ -382,8 +382,9 @@ try {
             $type = 'product'; // Устанавливаем тип продукта
             
             // Получаем current_markets и target_markets для продукта
-            $currentMarkets = isset($input['product_current_markets'][$index]) && is_array($input['product_current_markets'])
+            $currentMarketsRaw = isset($input['product_current_markets'][$index]) && is_array($input['product_current_markets'])
                 ? htmlspecialchars(trim($input['product_current_markets'][$index])) : '';
+            $currentMarketsJson = ($currentMarketsRaw !== '') ? json_encode([$currentMarketsRaw], JSON_UNESCAPED_UNICODE) : '[]';
             $targetMarkets = [];
             // Собираем target_markets для конкретного продукта по индексу
             if (isset($input['product_target_markets']) && is_array($input['product_target_markets'])) {
@@ -434,7 +435,7 @@ try {
                     }
                     $productIdForUpdate = (int) $existingProduct['id'];
                     $companyIdForUpdate = (int) $companyId;
-                    mysqli_stmt_bind_param($stmt, 'ssssssissii', $type, $activity, $productName, $description, $annualExport, $certifications, $isMain, $currentMarkets, $targetMarketsJson, $productIdForUpdate, $companyIdForUpdate);
+                    mysqli_stmt_bind_param($stmt, 'ssssssissii', $type, $activity, $productName, $description, $annualExport, $certifications, $isMain, $currentMarketsJson, $targetMarketsJson, $productIdForUpdate, $companyIdForUpdate);
                 } else {
                     $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?
                               WHERE id = ? AND company_id = ?";
@@ -474,7 +475,7 @@ try {
                         error_log("Failed to prepare INSERT statement: " . mysqli_error($link));
                         continue;
                     }
-                    mysqli_stmt_bind_param($stmt, 'iiissssssss', $companyId, $userId, $isMain, $type, $activity, $productName, $description, $annualExport, $certifications, $currentMarkets, $targetMarketsJson);
+                    mysqli_stmt_bind_param($stmt, 'iiissssssss', $companyId, $userId, $isMain, $type, $activity, $productName, $description, $annualExport, $certifications, $currentMarketsJson, $targetMarketsJson);
                 } else {
                     $query = "INSERT INTO products (company_id, user_id, is_main, type, activity, name, description, annual_export, certifications) 
                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -696,9 +697,10 @@ try {
                 ? htmlspecialchars(trim($input['service_activity'][$index])) : null;
             $type = 'service'; // Устанавливаем тип услуги
             
-            // Получаем current_markets и target_markets для услуги
-            $currentMarkets = isset($input['service_current_markets'][$index]) && is_array($input['service_current_markets'])
+            // Получаем current_markets и target_markets для услуги (current_markets в БД — всегда JSON-массив)
+            $currentMarketsRaw = isset($input['service_current_markets'][$index]) && is_array($input['service_current_markets'])
                 ? htmlspecialchars(trim($input['service_current_markets'][$index])) : '';
+            $currentMarketsJson = ($currentMarketsRaw !== '') ? json_encode([$currentMarketsRaw], JSON_UNESCAPED_UNICODE) : '[]';
             $targetMarkets = [];
             // Собираем target_markets для конкретной услуги по индексу
             if (isset($input['service_target_markets']) && is_array($input['service_target_markets'])) {
@@ -748,7 +750,7 @@ try {
                     }
                     $serviceIdForUpdate = (int) $existingService['id'];
                     $companyIdForUpdate = (int) $companyId;
-                    mysqli_stmt_bind_param($stmt, 'ssssssissii', $type, $activity, $serviceName, $description, $annualExport, $certifications, $isMain, $currentMarkets, $targetMarketsJson, $serviceIdForUpdate, $companyIdForUpdate);
+                    mysqli_stmt_bind_param($stmt, 'ssssssissii', $type, $activity, $serviceName, $description, $annualExport, $certifications, $isMain, $currentMarketsJson, $targetMarketsJson, $serviceIdForUpdate, $companyIdForUpdate);
                 } else {
                     $query = "UPDATE products SET type = ?, activity = ?, name = ?, description = ?, annual_export = ?, certifications = ?, is_main = ?
                               WHERE id = ? AND company_id = ?";
@@ -788,7 +790,7 @@ try {
                         error_log("Failed to prepare INSERT statement for service: " . mysqli_error($link));
                         continue;
                     }
-                    mysqli_stmt_bind_param($stmt, 'iiissssssss', $companyId, $userId, $isMain, $type, $activity, $serviceName, $description, $annualExport, $certifications, $currentMarkets, $targetMarketsJson);
+                    mysqli_stmt_bind_param($stmt, 'iiissssssss', $companyId, $userId, $isMain, $type, $activity, $serviceName, $description, $annualExport, $certifications, $currentMarketsJson, $targetMarketsJson);
                 } else {
                     $query = "INSERT INTO products (company_id, user_id, is_main, type, activity, name, description, annual_export, certifications) 
                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
