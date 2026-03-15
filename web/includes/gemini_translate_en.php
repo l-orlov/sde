@@ -23,9 +23,13 @@ function gemini_translate_to_en(array $texts, $apiKey) {
     }
 
     $inputLines = implode("\n", $texts);
-    $prompt = "Translate each of the following lines to English. "
-        . "Reply with ONLY the translations, one per line, in the exact same order. "
-        . "Do not number the lines. If a line is already in English, return it unchanged.\n\n"
+    $prompt = "You are a translator from Spanish to English. Translate each of the following lines to English.\n\n"
+        . "Rules:\n"
+        . "- Translate ALL Spanish words and phrases to English, including text in parentheses (e.g. \"(la capital)\" → \"(the capital)\", \"A completar\" → \"To be completed\").\n"
+        . "- Keep proper nouns (place names, company names) but use standard English spelling where applicable (e.g. México → Mexico, Perú → Peru).\n"
+        . "- Translate common abbreviations: PyME → SME, EE. UU. → United States.\n"
+        . "- If a line is already in English, return it unchanged.\n"
+        . "- Reply with ONLY the translated lines, one per line, in the exact same order. Do not number or add any other text.\n\n"
         . $inputLines;
 
     $payload = [
