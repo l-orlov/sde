@@ -171,12 +171,17 @@ function refresh_company_products_en($link, $companyId) {
 
     $extractMarketNames = function ($raw) {
         $names = [];
-        if (empty($raw)) return $names;
+        if ($raw === null || $raw === '') return $names;
         $dec = is_string($raw) ? json_decode($raw, true) : $raw;
-        if (!is_array($dec)) return $names;
-        foreach ($dec as $m) {
-            $n = is_array($m) ? trim((string)($m['nombre'] ?? $m['name'] ?? '')) : trim((string)$m);
-            if ($n !== '') $names[] = $n;
+        if (is_array($dec)) {
+            foreach ($dec as $m) {
+                $n = is_array($m) ? trim((string)($m['nombre'] ?? $m['name'] ?? '')) : trim((string)$m);
+                if ($n !== '') $names[] = $n;
+            }
+        } else {
+            // current_markets can be stored as plain string (e.g. "América del Sur") from the form
+            $one = trim((string) $raw);
+            if ($one !== '') $names[] = $one;
         }
         return $names;
     };
@@ -286,48 +291,43 @@ function refresh_company_products_en($link, $companyId) {
             $pCertEn = null;
         }
 
-        $currentMarketsEnJson = null;
-        $targetMarketsEnJson = null;
         $marketsStartIdx = 2 + count($products) * 4;
-        if (isset($p['current_markets'], $p['target_markets'])) {
-            $marketMap = [];
-            foreach ($uniqueMarketsOrdered as $i => $m) {
-                $marketMap[$m] = isset($translated[$marketsStartIdx + $i]) ? trim($translated[$marketsStartIdx + $i]) : $m;
-            }
-            $buildEnJson = function ($raw) use ($extractMarketNames, $marketMap) {
-                if (empty($raw)) return null;
-                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
-                if (!is_array($dec)) return null;
-                $out = [];
+        $marketMap = [];
+        foreach ($uniqueMarketsOrdered as $i => $m) {
+            $marketMap[$m] = isset($translated[$marketsStartIdx + $i]) ? trim($translated[$marketsStartIdx + $i]) : $m;
+        }
+        $buildEnJson = function ($raw) use ($marketMap) {
+            if ($raw === null || $raw === '') return '[]';
+            $dec = is_string($raw) ? json_decode($raw, true) : $raw;
+            $items = [];
+            if (is_array($dec)) {
                 foreach ($dec as $m) {
                     $name = is_array($m) ? trim((string)($m['nombre'] ?? $m['name'] ?? '')) : trim((string)$m);
                     $en = isset($marketMap[$name]) ? $marketMap[$name] : $name;
                     if (is_array($m)) {
-                        $out[] = array_key_exists('nombre', $m) ? ['nombre' => $en] : ['name' => $en];
+                        $items[] = array_key_exists('nombre', $m) ? ['nombre' => $en] : ['name' => $en];
                     } else {
-                        $out[] = $en;
+                        $items[] = $en;
                     }
                 }
-                return json_encode($out);
-            };
-            $currentMarketsEnJson = $buildEnJson($p['current_markets']);
-            $targetMarketsEnJson = $buildEnJson($p['target_markets']);
-        }
+            } else {
+                // current_markets stored as plain string (e.g. "América del Sur")
+                $one = trim((string) $raw);
+                if ($one !== '') {
+                    $en = isset($marketMap[$one]) ? $marketMap[$one] : $one;
+                    $items[] = ['name' => $en];
+                }
+            }
+            return json_encode($items);
+        };
+        $currentMarketsEnJson = $buildEnJson($p['current_markets'] ?? null);
+        $targetMarketsEnJson = $buildEnJson($p['target_markets'] ?? null);
 
-        if ($currentMarketsEnJson !== null && $targetMarketsEnJson !== null) {
-            $st = mysqli_prepare($link, "UPDATE products SET name_en = ?, description_en = ?, annual_export_en = ?, certifications_en = ?, current_markets_en = ?, target_markets_en = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?");
-            if ($st) {
-                mysqli_stmt_bind_param($st, 'ssssssi', $pNameEn, $pDescEn, $pAnnualEn, $pCertEn, $currentMarketsEnJson, $targetMarketsEnJson, $pid);
-                mysqli_stmt_execute($st);
-                mysqli_stmt_close($st);
-            }
-        } else {
-            $st = mysqli_prepare($link, "UPDATE products SET name_en = ?, description_en = ?, annual_export_en = ?, certifications_en = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?");
-            if ($st) {
-                mysqli_stmt_bind_param($st, 'ssssi', $pNameEn, $pDescEn, $pAnnualEn, $pCertEn, $pid);
-                mysqli_stmt_execute($st);
-                mysqli_stmt_close($st);
-            }
+        $st = mysqli_prepare($link, "UPDATE products SET name_en = ?, description_en = ?, annual_export_en = ?, certifications_en = ?, current_markets_en = ?, target_markets_en = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?");
+        if ($st) {
+            mysqli_stmt_bind_param($st, 'ssssssi', $pNameEn, $pDescEn, $pAnnualEn, $pCertEn, $currentMarketsEnJson, $targetMarketsEnJson, $pid);
+            mysqli_stmt_execute($st);
+            mysqli_stmt_close($st);
         }
     }
 }
