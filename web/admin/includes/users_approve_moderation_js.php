@@ -110,6 +110,22 @@ try {
         mysqli_stmt_bind_param($stmt, 'iii', $adminId, $userId, $userId);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
+        $companyId = null;
+        $q = mysqli_prepare($link, "SELECT id FROM companies WHERE user_id = ? LIMIT 1");
+        if ($q) {
+            mysqli_stmt_bind_param($q, 'i', $userId);
+            mysqli_stmt_execute($q);
+            $res = mysqli_stmt_get_result($q);
+            if ($res && mysqli_num_rows($res) > 0) {
+                $row = mysqli_fetch_assoc($res);
+                $companyId = (int) $row['id'];
+            }
+            mysqli_stmt_close($q);
+        }
+        if ($companyId) {
+            require_once getIncludesFilePath('gemini_translate_en.php');
+            refresh_company_products_en($link, $companyId);
+        }
     }
     
     if (ob_get_level() > 0) ob_clean();

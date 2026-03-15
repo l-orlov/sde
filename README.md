@@ -1,5 +1,7 @@
 # sde
 
+Запуск из папки **web/** (корень документа: `cd web` затем команда выше). Открыть в браузере: http://localhost:8888
+
 ### Команда для запуска локально
 ```
 php -d short_open_tag=On -S localhost:8888
@@ -9,3 +11,12 @@ php -d short_open_tag=On -S localhost:8888
 ```
 php -d short_open_tag=On -d post_max_size=200M -d upload_max_filesize=200M -d max_file_uploads=50 -d memory_limit=512M -d max_execution_time=600 -d max_input_time=600 -S localhost:8888
 ```
+
+### Вход на сайт (заглушка gate)
+
+Если при заходе на публичные страницы показывается форма входа (gate):
+
+- **Логин:** `adminsantiago`
+- **Пароль:** `sde12345`
+
+После ввода доступ к сайту открыт до конца сессии.

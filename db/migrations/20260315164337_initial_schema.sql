@@ -1,4 +1,8 @@
-CREATE TABLE users (
+-- Initial application schema (single source of truth for new installs).
+-- Do not modify; add new migrations for changes.
+
+-- +migrate Up
+CREATE TABLE IF NOT EXISTS users (
     id         INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     company_name VARCHAR(255)  NOT NULL,
     tax_id     VARCHAR(50)     NOT NULL,
@@ -14,8 +18,7 @@ CREATE TABLE users (
     UNIQUE KEY `users_email_uidx` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Password reset tokens (separate table)
-CREATE TABLE password_reset_tokens (
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     user_id     INT UNSIGNED    NOT NULL,
     token       VARCHAR(64)     NOT NULL,
@@ -27,11 +30,11 @@ CREATE TABLE password_reset_tokens (
     KEY `password_reset_tokens_user_expires_idx` (`user_id`, `expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Companies table
-CREATE TABLE companies (
+CREATE TABLE IF NOT EXISTS companies (
     id                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     user_id             INT UNSIGNED    NOT NULL,
     name                VARCHAR(255)    NOT NULL,
+    name_en             VARCHAR(255)    NULL     DEFAULT NULL,
     tax_id              VARCHAR(50),
     legal_name          VARCHAR(255),
     start_date          DATE,
@@ -39,6 +42,7 @@ CREATE TABLE companies (
     nuestra_historia    VARCHAR(700),
     organization_type   VARCHAR(100),
     main_activity       VARCHAR(100),
+    main_activity_en    VARCHAR(255)    NULL     DEFAULT NULL,
     moderation_status   ENUM('pending', 'approved') NOT NULL DEFAULT 'pending',
     moderation_date     INT UNSIGNED    NULL,
     moderated_by        INT UNSIGNED    NULL,
@@ -49,8 +53,7 @@ CREATE TABLE companies (
     UNIQUE KEY `companies_user_uidx` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Company addresses
-CREATE TABLE company_addresses (
+CREATE TABLE IF NOT EXISTS company_addresses (
     id              INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     company_id      INT UNSIGNED    NOT NULL,
     type            ENUM('legal', 'admin') NOT NULL,
@@ -67,8 +70,7 @@ CREATE TABLE company_addresses (
     KEY `company_addresses_company_idx` (`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Company contacts
-CREATE TABLE company_contacts (
+CREATE TABLE IF NOT EXISTS company_contacts (
     id              INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     company_id      INT UNSIGNED    NOT NULL,
     contact_person  VARCHAR(255),
@@ -82,8 +84,7 @@ CREATE TABLE company_contacts (
     KEY `company_contacts_company_idx` (`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Company social networks
-CREATE TABLE company_social_networks (
+CREATE TABLE IF NOT EXISTS company_social_networks (
     id              INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     company_id      INT UNSIGNED    NOT NULL,
     network_type    VARCHAR(100),
@@ -94,8 +95,7 @@ CREATE TABLE company_social_networks (
     KEY `company_social_company_idx` (`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Additional company data (JSON)
-CREATE TABLE company_data (
+CREATE TABLE IF NOT EXISTS company_data (
     id                      INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     company_id             INT UNSIGNED    NOT NULL,
     current_markets        JSON,
@@ -112,8 +112,8 @@ CREATE TABLE company_data (
     PRIMARY KEY (`id`),
     UNIQUE KEY `company_data_company_uidx` (`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
--- Products table
-CREATE TABLE products (
+
+CREATE TABLE IF NOT EXISTS products (
     id                  INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     company_id          INT UNSIGNED,
     user_id             INT UNSIGNED    NOT NULL,
@@ -121,6 +121,7 @@ CREATE TABLE products (
     type                ENUM('product', 'service') NOT NULL DEFAULT 'product',
     activity            VARCHAR(255)    NULL,
     name                VARCHAR(255)    NOT NULL,
+    name_en             VARCHAR(255)    NULL     DEFAULT NULL,
     description         TEXT,
     tariff_code         VARCHAR(20)     NULL COMMENT 'NCM/HS e.g. 0602.90.90.100X',
     annual_export       VARCHAR(100),
@@ -134,27 +135,17 @@ CREATE TABLE products (
     KEY `products_user_idx` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Files table (universal)
-CREATE TABLE files (
+CREATE TABLE IF NOT EXISTS files (
     id          INT UNSIGNED    NOT NULL AUTO_INCREMENT,
     product_id  INT UNSIGNED,
     user_id     INT UNSIGNED    NOT NULL,
-    
-    -- Universal path (works for both storage types)
     file_path   VARCHAR(500)    NOT NULL,
-    
-    -- Metadata
     file_name   VARCHAR(255)    NOT NULL,
     file_type   VARCHAR(50)     NOT NULL DEFAULT 'product_photo',
     mime_type   VARCHAR(100),
     file_size   INT UNSIGNED,
-    
-    -- Storage type (for compatibility)
     storage_type VARCHAR(20)    NOT NULL DEFAULT 'local',
-    
-    -- Temporary file (uploaded but not yet saved in form)
     is_temporary TINYINT(1)     NOT NULL DEFAULT 0,
-    
     created_at  INT UNSIGNED    NOT NULL DEFAULT UNIX_TIMESTAMP(),
 
     PRIMARY KEY (`id`),
@@ -163,3 +154,14 @@ CREATE TABLE files (
     KEY `files_type_idx` (`file_type`),
     KEY `files_path_idx` (`file_path`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- +migrate Down
+DROP TABLE IF EXISTS files;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS company_data;
+DROP TABLE IF EXISTS company_social_networks;
+DROP TABLE IF EXISTS company_contacts;
+DROP TABLE IF EXISTS company_addresses;
+DROP TABLE IF EXISTS companies;
+DROP TABLE IF EXISTS password_reset_tokens;
+DROP TABLE IF EXISTS users;

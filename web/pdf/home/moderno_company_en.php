@@ -185,7 +185,7 @@ if ($currentUserId <= 0) {
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.main_activity, c.website, c.start_date
+$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.name_en, c.main_activity, c.main_activity_en, c.website, c.start_date
       FROM companies c
       WHERE c.user_id = ? AND c.moderation_status = 'approved'
       LIMIT 1");
@@ -241,7 +241,7 @@ $empresasDestacadas = array_slice($companies, 0, 3);
 $productosMuestra = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.company_id, p.type
+    $q = "SELECT p.id, p.name, p.name_en, p.activity, p.description, p.description_en, p.company_id, p.type
           FROM products p
           WHERE p.company_id IN ($ids)
           ORDER BY p.id ASC
@@ -269,7 +269,7 @@ if ($currentMarketsCheck && mysqli_num_rows($currentMarketsCheck) > 0) {
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
     $marketsCols = ($hasCurrentMarkets ? ', p.current_markets' : '') . ($hasTargetMarkets ? ', p.target_markets' : '');
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code" . $marketsCols . "
+    $q = "SELECT p.id, p.name, p.name_en, p.activity, p.description, p.description_en, p.annual_export, p.annual_export_en, p.certifications, p.certifications_en, p.company_id, p.type, p.tariff_code" . $marketsCols . "
           FROM products p
           WHERE p.company_id IN ($ids)
           ORDER BY p.is_main DESC, p.id ASC
@@ -362,14 +362,15 @@ if (!empty($companyIds)) {
             }
         }
     }
-    $q = "SELECT company_id, description FROM products WHERE company_id IN ($ids) AND description IS NOT NULL AND description != '' ORDER BY company_id, id ASC";
+    $q = "SELECT company_id, description, description_en FROM products WHERE company_id IN ($ids) AND (description IS NOT NULL AND description != '' OR description_en IS NOT NULL AND description_en != '') ORDER BY company_id, id ASC";
     $r = mysqli_query($link, $q);
     if ($r) {
         while ($row = mysqli_fetch_assoc($r)) {
             $cid = (int) $row['company_id'];
             if (!isset($descripcionPorEmpresa[$cid])) {
-                $descripcionPorEmpresa[$cid] = mb_substr(trim($row['description']), 0, 120);
-                if (mb_strlen(trim($row['description'])) > 120) {
+                $d = !empty(trim((string)($row['description_en'] ?? ''))) ? trim($row['description_en']) : trim($row['description'] ?? '');
+                $descripcionPorEmpresa[$cid] = mb_substr($d, 0, 120);
+                if (mb_strlen($d) > 120) {
                     $descripcionPorEmpresa[$cid] .= '…';
                 }
             }
@@ -651,12 +652,12 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->Cell($s1TextW, 22, 'COMPANY / BUSINESS', 0, 1, 'L');
         $mpdf->SetX($s1TextLeft);
         $mpdf->SetFont($pdfFontFamily, 'B', 52);
-        $s1CompanyName = (!empty($companies[0]['name']) ? trim($companies[0]['name']) : null) ?: 'name';
+        $s1CompanyName = !empty(trim((string)($companies[0]['name_en'] ?? ''))) ? trim($companies[0]['name_en']) : ((!empty($companies[0]['name']) ? trim($companies[0]['name']) : null) ?: 'name');
         $mpdf->Cell($s1TextW, 20, $s1CompanyName, 0, 1, 'L');
         $s1BoxPad = 8;
         $s1BoxH = 14;
         $s1BoxY = $s1Ty + 48;
-        $s1MainActivity = !empty($companies[0]['main_activity']) ? trim($companies[0]['main_activity']) : '';
+        $s1MainActivity = !empty(trim((string)($companies[0]['main_activity_en'] ?? ''))) ? trim($companies[0]['main_activity_en']) : (!empty($companies[0]['main_activity']) ? trim($companies[0]['main_activity']) : '');
         $s1ProvText = $s1MainActivity !== '' ? (function_exists('mb_strtoupper') ? mb_strtoupper($s1MainActivity) : strtoupper($s1MainActivity)) : 'MAIN ACTIVITY';
         $mpdf->SetFont($pdfFontFamily, 'B', 16);
         $s1BoxTextW = $mpdf->GetStringWidth($s1ProvText);
@@ -1088,7 +1089,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         // Slides Productos: un producto por slide — header (nombre producto + logo empresa + SDE), dos imágenes (producto con borde rojo + contextual), tres columnas abajo
         $p6CompanyNameById = [];
         foreach ($companies as $c) {
-            $p6CompanyNameById[(int) $c['id']] = $c['name'] ?? '';
+            $p6CompanyNameById[(int) $c['id']] = !empty(trim((string)($c['name_en'] ?? ''))) ? ($c['name_en'] ?? '') : ($c['name'] ?? '');
         }
         $p6RedR = 196;
         $p6RedG = 52;
@@ -1253,8 +1254,8 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $p6N = 3;
             $p6ColW = ($wMm - 2 * $p6Pad - ($p6N - 1) * $p6ColGap) / $p6N;
             $p6ColTitles = ['01. ANNUAL EXPORT (USD):', '02. CERTIFICATIONS', '03. TARIFF CODE (NCM/HS):', '04. CURRENT / MARKETS OF INTEREST'];
-            $p6Annual = trim($prod['annual_export'] ?? '') ?: 'TEXTO';
-            $p6Cert = trim($prod['certifications'] ?? '') ?: 'TEXTO';
+            $p6Annual = !empty(trim((string)($prod['annual_export_en'] ?? ''))) ? trim($prod['annual_export_en']) : (trim($prod['annual_export'] ?? '') ?: 'TEXTO');
+            $p6Cert = !empty(trim((string)($prod['certifications_en'] ?? ''))) ? trim($prod['certifications_en']) : (trim($prod['certifications'] ?? '') ?: 'TEXTO');
             $p6Tariff = trim($prod['tariff_code'] ?? '') ?: '-';
             $p6CurrentStr = '-';
             if (!empty($prod['current_markets'])) {
@@ -2022,7 +2023,9 @@ function buildOfertaPdfHtml($data) {
     $bloquesEmpresa = '';
     foreach (array_slice($empresas, 0, 3) as $i => $emp) {
         $cid = (int)($emp['id'] ?? 0);
-        $bloquesEmpresa .= '<div style="margin-bottom:16px;"><span class="acento1" style="font-weight:700;">' . htmlspecialchars($emp['name'] ?? '') . '</span><br><span style="color:#000066;">' . htmlspecialchars($emp['main_activity'] ?? '') . '</span></div>';
+        $empName = !empty(trim((string)($emp['name_en'] ?? ''))) ? ($emp['name_en'] ?? '') : ($emp['name'] ?? '');
+        $empMainAct = !empty(trim((string)($emp['main_activity_en'] ?? ''))) ? ($emp['main_activity_en'] ?? '') : ($emp['main_activity'] ?? '');
+        $bloquesEmpresa .= '<div style="margin-bottom:16px;"><span class="acento1" style="font-weight:700;">' . htmlspecialchars($empName) . '</span><br><span style="color:#000066;">' . htmlspecialchars($empMainAct) . '</span></div>';
     }
     $s4Imgs = '';
     foreach (array_slice($empresas, 0, 3) as $emp) {
@@ -2059,9 +2062,9 @@ function buildOfertaPdfHtml($data) {
         }
         $cards .= '<div style="background:#fff;border-radius:8px;overflow:hidden;padding:12px;text-align:center;">
             <div style="height:100px;background:#eee;border-radius:6px;overflow:hidden;">' . ($src ? '<img src="' . $src . '" alt="" style="width:100%;height:100%;object-fit:cover;" />' : '') . '</div>
-            <p style="margin:8px 0 4px;font-weight:700;color:#000;">' . htmlspecialchars($p['name'] ?? '') . '</p>
+            <p style="margin:8px 0 4px;font-weight:700;color:#000;">' . htmlspecialchars(!empty(trim((string)($p['name_en'] ?? ''))) ? ($p['name_en'] ?? '') : ($p['name'] ?? '')) . '</p>
             <p style="margin:0;font-size:14px;color:#003399;">' . htmlspecialchars($p['activity'] ?? '') . '</p>
-            <p style="margin:4px 0 0;font-size:12px;">' . htmlspecialchars(mb_substr($p['description'] ?? '', 0, 80)) . '</p>
+            <p style="margin:4px 0 0;font-size:12px;">' . htmlspecialchars(mb_substr(!empty(trim((string)($p['description_en'] ?? ''))) ? ($p['description_en'] ?? '') : ($p['description'] ?? ''), 0, 80)) . '</p>
         </div>';
     }
     $s5 = '

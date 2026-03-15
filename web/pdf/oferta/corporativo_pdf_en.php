@@ -176,7 +176,7 @@ $mercadosPorRegion = [];
 $contactoInstitucional = $configInstitucional;
 
 // Companies aprobadas (con start_date para año de inicio en slide empresa)
-$q = "SELECT c.id, c.name, c.main_activity, c.website, c.start_date
+$q = "SELECT c.id, c.name, c.name_en, c.main_activity, c.main_activity_en, c.website, c.start_date
       FROM companies c
       INNER JOIN users u ON u.id = c.user_id
       WHERE c.moderation_status = 'approved'
@@ -230,7 +230,7 @@ $empresasDestacadas = array_slice($companies, 0, 3);
 $productosMuestra = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.company_id, p.type
+    $q = "SELECT p.id, p.name, p.name_en, p.activity, p.description, p.description_en, p.company_id, p.type
           FROM products p
           WHERE p.company_id IN ($ids)
           ORDER BY p.id ASC
@@ -247,7 +247,7 @@ if (!empty($companyIds)) {
 $productosParaSlides = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code
+    $q = "SELECT p.id, p.name, p.name_en, p.activity, p.description, p.description_en, p.annual_export, p.annual_export_en, p.certifications, p.certifications_en, p.company_id, p.type, p.tariff_code
           FROM products p
           INNER JOIN (SELECT company_id, MIN(id) AS mid FROM products WHERE company_id IN ($ids) GROUP BY company_id) first
           ON p.company_id = first.company_id AND p.id = first.mid
@@ -340,14 +340,15 @@ if (!empty($companyIds)) {
             }
         }
     }
-    $q = "SELECT company_id, description FROM products WHERE company_id IN ($ids) AND description IS NOT NULL AND description != '' ORDER BY company_id, id ASC";
+    $q = "SELECT company_id, description, description_en FROM products WHERE company_id IN ($ids) AND (description IS NOT NULL AND description != '' OR description_en IS NOT NULL AND description_en != '') ORDER BY company_id, id ASC";
     $r = mysqli_query($link, $q);
     if ($r) {
         while ($row = mysqli_fetch_assoc($r)) {
             $cid = (int) $row['company_id'];
             if (!isset($descripcionPorEmpresa[$cid])) {
-                $descripcionPorEmpresa[$cid] = mb_substr(trim($row['description']), 0, 120);
-                if (mb_strlen(trim($row['description'])) > 120) {
+                $d = !empty(trim((string)($row['description_en'] ?? ''))) ? trim($row['description_en']) : trim($row['description'] ?? '');
+                $descripcionPorEmpresa[$cid] = mb_substr($d, 0, 120);
+                if (mb_strlen($d) > 120) {
                     $descripcionPorEmpresa[$cid] .= '…';
                 }
             }
@@ -502,7 +503,7 @@ $logoBlockConfig = [
 // ——— Construir HTML de las 7 slides (en partes para no superar pcre.backtrack_limit) ———
 $companyNameById = [];
 foreach ($companies as $c) {
-    $companyNameById[(int)($c['id'] ?? 0)] = $c['name'] ?? '';
+    $companyNameById[(int)($c['id'] ?? 0)] = !empty(trim((string)($c['name_en'] ?? ''))) ? ($c['name_en'] ?? '') : ($c['name'] ?? '');
 }
 $htmlChunks = buildOfertaPdfHtml([
     'config'              => $configInstitucional,
@@ -1191,7 +1192,8 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $s5ImgX = $s5Pad + $s5LeftColW + $s5ColGap;
             $s5PanelX = $s5ImgX + $s5ImgW + $s5ColGap;
             $s5ContentInnerH = $s5ContentH - $s5TopPad - $s5ContentPad;
-            $nombreEmpresa = function_exists('mb_strtoupper') ? mb_strtoupper($emp['name'] ?? '') : strtoupper($emp['name'] ?? '');
+            $empNameDisplay = !empty(trim((string)($emp['name_en'] ?? ''))) ? ($emp['name_en'] ?? '') : ($emp['name'] ?? '');
+            $nombreEmpresa = function_exists('mb_strtoupper') ? mb_strtoupper($empNameDisplay) : strtoupper($empNameDisplay);
             $mpdf->SetTextColor(141, 188, 220);
             $mpdf->SetFont('dejavusans', 'B', 44);
             // Titles: break first between complete words; if a word exceeds width, split it with hyphen
@@ -1365,7 +1367,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $s5RowGap = 6;
             $s5LineGapPanel = 5;
             $s5Rows = [
-                ['Main activity', $emp['main_activity'] ?? '-'],
+                ['Main activity', !empty(trim((string)($emp['main_activity_en'] ?? ''))) ? ($emp['main_activity_en'] ?? '-') : ($emp['main_activity'] ?? '-')],
                 ['Location', $localidadPorEmpresa[$cid] ?? '-'],
                 ['Website', $emp['website'] ?? '-'],
                 ['Social Media', isset($redesPorEmpresa[$cid]) ? implode("\n", $redesPorEmpresa[$cid]) : '-'],
@@ -1567,7 +1569,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         };
         $p7CompanyNameById = [];
         foreach ($companies as $c) {
-            $p7CompanyNameById[(int)($c['id'] ?? 0)] = $c['name'] ?? '';
+            $p7CompanyNameById[(int)($c['id'] ?? 0)] = !empty(trim((string)($c['name_en'] ?? ''))) ? ($c['name_en'] ?? '') : ($c['name'] ?? '');
         }
         foreach ($productoSlidesChunks as $idx => $chunk) {
             $mpdf->AddPage();
@@ -1673,9 +1675,9 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $p7textW = $p7ColW - 2 * $p7ColPad;
                 $p7EmpresaName = $p7CompanyNameById[(int)($prod['company_id'] ?? 0)] ?? '-';
                 $p7EmpresaDisplay = function_exists('mb_strtoupper') ? mb_strtoupper($p7EmpresaName) : strtoupper($p7EmpresaName);
-                $nameStr = $prod['name'] ?? '';
+                $nameStr = !empty(trim((string)($prod['name_en'] ?? ''))) ? ($prod['name_en'] ?? '') : ($prod['name'] ?? '');
                 $nameStrUpper = function_exists('mb_strtoupper') ? mb_strtoupper($nameStr) : strtoupper($nameStr);
-                $descStr = trim($prod['description'] ?? '') ?: 'Brief product description';
+                $descStr = !empty(trim((string)($prod['description_en'] ?? ''))) ? trim($prod['description_en']) : (trim($prod['description'] ?? '') ?: 'Brief product description');
                 $p7DescMaxLen = 120;
                 if (function_exists('mb_strlen') && mb_strlen($descStr) > $p7DescMaxLen) {
                     $descStr = (function_exists('mb_substr') ? mb_substr($descStr, 0, $p7DescMaxLen) : substr($descStr, 0, $p7DescMaxLen)) . '…';
@@ -1711,9 +1713,9 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $p7DataBlockY = $mpdf->y + 6;
                 $mpdf->SetXY($p7textX, $p7DataBlockY);
                 $mpdf->SetFont('dejavusans', '', 11);
-                $mpdf->MultiCell($p7textW, $p7DataLineH, 'Annual export: ' . (trim($prod['annual_export'] ?? '') ?: '-'), 0, $p7Align);
+                $mpdf->MultiCell($p7textW, $p7DataLineH, 'Annual export: ' . (!empty(trim((string)($prod['annual_export_en'] ?? ''))) ? trim($prod['annual_export_en']) : (trim($prod['annual_export'] ?? '') ?: '-')), 0, $p7Align);
                 $mpdf->SetX($p7textX);
-                $mpdf->MultiCell($p7textW, $p7DataLineH, 'Certifications: ' . (trim($prod['certifications'] ?? '') ?: '-'), 0, $p7Align);
+                $mpdf->MultiCell($p7textW, $p7DataLineH, 'Certifications: ' . (!empty(trim((string)($prod['certifications_en'] ?? ''))) ? trim($prod['certifications_en']) : (trim($prod['certifications'] ?? '') ?: '-')), 0, $p7Align);
                 $mpdf->SetX($p7textX);
                 $mpdf->MultiCell($p7textW, $p7DataLineH, 'Tariff code (NCM/HS): ' . (trim($prod['tariff_code'] ?? '') ?: '-'), 0, $p7Align);
             }
@@ -2019,7 +2021,9 @@ function buildOfertaPdfHtml($data) {
     $bloquesEmpresa = '';
     foreach (array_slice($empresas, 0, 3) as $i => $emp) {
         $cid = (int)($emp['id'] ?? 0);
-        $bloquesEmpresa .= '<div style="margin-bottom:16px;"><span class="acento1" style="font-weight:700;">' . htmlspecialchars($emp['name'] ?? '') . '</span><br><span style="color:#000066;">' . htmlspecialchars($emp['main_activity'] ?? '') . '</span></div>';
+        $empName = !empty(trim((string)($emp['name_en'] ?? ''))) ? ($emp['name_en'] ?? '') : ($emp['name'] ?? '');
+        $empMainAct = !empty(trim((string)($emp['main_activity_en'] ?? ''))) ? ($emp['main_activity_en'] ?? '') : ($emp['main_activity'] ?? '');
+        $bloquesEmpresa .= '<div style="margin-bottom:16px;"><span class="acento1" style="font-weight:700;">' . htmlspecialchars($empName) . '</span><br><span style="color:#000066;">' . htmlspecialchars($empMainAct) . '</span></div>';
     }
     $s4Imgs = '';
     foreach (array_slice($empresas, 0, 3) as $emp) {
@@ -2059,9 +2063,9 @@ function buildOfertaPdfHtml($data) {
         $cards .= '<div style="background:#fff;border-radius:8px;overflow:hidden;padding:12px;text-align:center;">
             <div style="height:100px;background:#eee;border-radius:6px;overflow:hidden;">' . ($src ? '<img src="' . $src . '" alt="" style="width:100%;height:100%;object-fit:cover;" />' : '') . '</div>
             <p style="margin:6px 0 2px;font-size:12px;color:#333;">COMPANY: <strong>' . htmlspecialchars($companyName) . '</strong></p>
-            <p style="margin:8px 0 4px;font-weight:700;color:#000;">' . htmlspecialchars($p['name'] ?? '') . '</p>
+            <p style="margin:8px 0 4px;font-weight:700;color:#000;">' . htmlspecialchars(!empty(trim((string)($p['name_en'] ?? ''))) ? ($p['name_en'] ?? '') : ($p['name'] ?? '')) . '</p>
             <p style="margin:0;font-size:14px;color:#003399;">' . htmlspecialchars($p['activity'] ?? '') . '</p>
-            <p style="margin:4px 0 0;font-size:12px;">' . htmlspecialchars(mb_substr($p['description'] ?? '', 0, 80)) . '</p>
+            <p style="margin:4px 0 0;font-size:12px;">' . htmlspecialchars(mb_substr(!empty(trim((string)($p['description_en'] ?? ''))) ? ($p['description_en'] ?? '') : ($p['description'] ?? ''), 0, 80)) . '</p>
         </div>';
     }
     $s5 = '
