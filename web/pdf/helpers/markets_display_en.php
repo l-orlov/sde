@@ -164,6 +164,10 @@ if (!function_exists('pdf_en_markets_display_string')) {
                     $list[] = is_array($m) ? trim((string)($m['name'] ?? $m['nombre'] ?? '')) : trim((string)$m);
                 }
                 $useEn = true;
+                // Apply map so any Spanish left in _en (e.g. from Gemini) is translated to English
+                $list = array_map(function ($item) use ($map) {
+                    return $item !== '' && isset($map[$item]) ? $map[$item] : $item;
+                }, $list);
             }
         }
         if (!empty($list) && $useEn) {

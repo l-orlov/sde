@@ -1461,11 +1461,11 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $c8ColGap = 14;
         $c8ItemH = 38;
         $c8Items = [
-            ['AWARDS', 'Información proveniente del input del formulario.'],
-            ['BUSINESS ROUNDS', 'Información proveniente del input del formulario.'],
-            ['COMMERCIAL REFERENCES', 'Información proveniente del input del formulario.'],
-            ['TRADE FAIRS', 'Información proveniente del input del formulario.'],
-            ['EXPORT EXPERIENCE', 'Información proveniente del input del formulario.'],
+            ['AWARDS', 'Information from the form input.'],
+            ['BUSINESS ROUNDS', 'Information from the form input.'],
+            ['COMMERCIAL REFERENCES', 'Information from the form input.'],
+            ['TRADE FAIRS', 'Information from the form input.'],
+            ['EXPORT EXPERIENCE', 'Information from the form input.'],
         ];
         foreach ($c8Items as $idx => $item) {
             if ($idx < 3) {

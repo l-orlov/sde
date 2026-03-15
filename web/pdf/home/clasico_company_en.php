@@ -1679,7 +1679,7 @@ for ($i = 0; $i < 5; $i++) {
             ['EXPORT', 'EXPERIENCE'],
             ['COMMERCIAL', 'REFERENCES'],
         ];
-        $s6ColDesc = 'Información proveniente del input del formulario';
+        $s6ColDesc = 'Information from the form input.';
         $s6ColCount = 5;
         $s6ColPad = 16;
         $s6ColW = ($wMm - 2 * $s6ColPad - ($s6ColCount - 1) * 8) / $s6ColCount;

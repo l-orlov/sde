@@ -1728,7 +1728,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetFillColor($logBlue[0], $logBlue[1], $logBlue[2]);
         $mpdf->Rect($logPanelX, $logPanelY, $logPanelW, $logPanelH, 'F');
         $logSectionTitles = ['AWARDS', 'TRADE FAIRS', 'BUSINESS ROUNDS', 'EXPORT EXPERIENCE', 'COMMERCIAL REFERENCES'];
-        $logSectionDesc = 'Información proveniente del input del formulario';
+        $logSectionDesc = 'Information from the form input.';
         $logSections = 5;
         $logInnerPad = 12;
         $logLineSepH = 0.4;
