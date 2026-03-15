@@ -67,6 +67,8 @@ migrate-down:
 schema-dump:
 	docker exec $(CONTAINER_NAME) mariadb-dump -h 127.0.0.1 -P 3306 -u $(DB_USER) -p$(DB_PASSWORD) --no-data --single-transaction --skip-comments $(DB_NAME) \
 	| sed -e '/^\s*\/\*!/d' -e '/^\s*\/\*M!/d' \
+	| awk 'BEGIN{p=0} /./{p=1} p{print}' \
+	| awk '{buf=buf $$0 "\n"} END{gsub(/\n+$$/,"\n",buf);printf "%s",buf}' \
 	> schema.sql
 	@echo "Schema written to schema.sql"
 

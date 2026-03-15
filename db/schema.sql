@@ -1,4 +1,3 @@
-
 DROP TABLE IF EXISTS `companies`;
 CREATE TABLE `companies` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -149,5 +148,3 @@ CREATE TABLE `users` (
   UNIQUE KEY `users_phone_uidx` (`phone`),
   UNIQUE KEY `users_email_uidx` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
-
