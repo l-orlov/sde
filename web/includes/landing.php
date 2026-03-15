@@ -98,6 +98,19 @@ if ($link) {
                     <img src="img/logo_cfi.svg" alt="CFI" class="logo-image">
                 </div>
             </div>
+            <div class="landing_header_lang" onclick="toggleLangMenu()">
+                <img src="img/icons/lang.png" />
+                <span id="current-lang">Es</span>
+                <ul id="landing_header_lang_menu" class="landing_header_lang_menu hidden">
+                    <li onclick="setLang('landing', 'es')">Español</li>
+                    <li onclick="setLang('landing', 'en')">English</li>
+                </ul>
+            </div>
+            <button type="button" class="hero-burger" aria-label="Menú" aria-expanded="false" id="hero-burger-btn">
+                <span class="hero-burger-line"></span>
+                <span class="hero-burger-line"></span>
+                <span class="hero-burger-line"></span>
+            </button>
             <div class="nav-container">
                 <nav class="hero-nav">
                     <div class="oferta-dropdown" id="oferta-dropdown">
@@ -119,24 +132,17 @@ if ($link) {
                     <span class="hero-nav-sep" aria-hidden="true">|</span>
                     <a data-i18n="nav_turismo" href="https://turismosantiago.gob.ar/" target="_blank" rel="noopener" class="nav-link">Turismo</a>
                     <span class="hero-nav-sep" aria-hidden="true">|</span>
-                    <a data-i18n="nav_contact" href="#contactos" class="nav-link">Contactos</a>
-                    <a href="https://wa.me/" class="nav-whatsapp" target="_blank">
-                        <img src="img/icono_whatsapp.png" alt="WhatsApp" class="whatsapp-icon">
-                    </a>
+                    <span class="hero-nav-contact-wrap">
+                        <a data-i18n="nav_contact" href="#contactos" class="nav-link">Contactos</a>
+                        <a href="https://wa.me/" class="nav-whatsapp" target="_blank" aria-label="WhatsApp">
+                            <img src="img/icono_whatsapp.png" alt="" class="whatsapp-icon">
+                        </a>
+                    </span>
                 </nav>
             </div>
             <div class="hero-buttons">
                 <a data-i18n="btn_register" onclick="location.href='?page=regnew';" class="btn btn-register">Registrarse</a>
                 <a data-i18n="btn_login" onclick="location.href='?page=login';" class="btn btn-login">Entrar</a>
-            </div>
-            <div class="landing_header_lang" onclick="toggleLangMenu()">
-                <img src="img/icons/lang.png" />
-                <span id="current-lang">Es</span>
-
-                <ul id="landing_header_lang_menu" class="landing_header_lang_menu hidden">
-                    <li onclick="setLang('landing', 'es')">Español</li>
-                    <li onclick="setLang('landing', 'en')">English</li>
-                </ul>
             </div>
         </div>
     </div>
@@ -402,8 +408,8 @@ if ($link) {
             <div class="landing-footer-column landing-footer-empresas">
                 <h3 class="landing-footer-title" data-i18n="footer_empresas">EMPRESAS</h3>
                 <ul class="landing-footer-links">
-                    <li><a href="?page=regnew" data-i18n="footer_registro">Cómo registrarse</a></li>
-                    <li><a href="#empresas_cargar" data-i18n="footer_cargar">Cómo cargar productos/servicios</a></li>
+                    <li><a href="https://drive.google.com/file/d/1AIABKb8UhAcMzyNn-1A3F3gkD7ig854_/view" target="_blank" rel="noopener" data-i18n="footer_registro">Cómo registrarse</a></li>
+                    <li><a href="https://drive.google.com/file/d/1AIABKb8UhAcMzyNn-1A3F3gkD7ig854_/view" target="_blank" rel="noopener" data-i18n="footer_cargar">Cómo cargar productos/servicios</a></li>
                 </ul>
             </div>
             <div class="landing-footer-column landing-footer-redes">
@@ -431,7 +437,11 @@ if ($link) {
                         <img src="img/logo_cfi.svg" alt="CFI" class="landing-footer-logo-image">
                     </div>
                 </div>
-                <a href="index.php?page=clasico_pdf_es" class="btn btn-footer-pdf js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="index.php?page=clasico_pdf_es" data-pdf-url-en="index.php?page=clasico_pdf_en"></a>
+                <div class="footer-pdf-group">
+                    <a href="index.php?page=clasico_pdf_es" class="btn btn-footer-pdf js-pdf-link" target="_blank" rel="noopener" aria-label="PDF Clásico" data-pdf-url-es="index.php?page=clasico_pdf_es" data-pdf-url-en="index.php?page=clasico_pdf_en"></a>
+                    <a href="index.php?page=corporativo_pdf_es" class="btn btn-footer-pdf js-pdf-link" target="_blank" rel="noopener" aria-label="PDF Corporativo" data-pdf-url-es="index.php?page=corporativo_pdf_es" data-pdf-url-en="index.php?page=corporativo_pdf_en"></a>
+                    <a href="index.php?page=moderno_pdf_es" class="btn btn-footer-pdf js-pdf-link" target="_blank" rel="noopener" aria-label="PDF Moderno" data-pdf-url-es="index.php?page=moderno_pdf_es" data-pdf-url-en="index.php?page=moderno_pdf_en"></a>
+                </div>
             </div>
             <p class="landing-footer-copyright" data-i18n="footer_copyright">Copyright © 2026. Santiago del Estero. Todos los derechos reservados.</p>
         </div>
@@ -447,6 +457,23 @@ function toggleLangMenu() {
 }
 document.addEventListener('DOMContentLoaded', () => {
   initLang('landing');
+  // Burger menu
+  const burgerBtn = document.getElementById('hero-burger-btn');
+  const heroHeader = document.querySelector('.hero-header');
+  if (burgerBtn && heroHeader) {
+    burgerBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      heroHeader.classList.toggle('nav-open');
+      burgerBtn.setAttribute('aria-expanded', heroHeader.classList.contains('nav-open'));
+    });
+    heroHeader.querySelectorAll('.nav-container .nav-link:not(.oferta-dropdown-trigger), .nav-container .nav-whatsapp').forEach(el => {
+      el.addEventListener('click', () => {
+        heroHeader.classList.remove('nav-open');
+        burgerBtn.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
   // После окончания фонового видео показываем статичную картинку
   const heroVideo = document.getElementById('hero-bg-video');
   const heroSection = document.querySelector('.hero-section');

@@ -347,8 +347,42 @@ if (!empty($companyIds)) {
     }
 }
 
-// Redes sociales por empresa (para slide de datos de empresa)
+// Redes sociales por empresa — solo nombre de red y enlace principal (ej. Instagram: /frre)
 $redesPorEmpresa = [];
+$formatSocialUrlToHandle = function ($url) {
+    $u = trim($url);
+    if ($u === '') return '';
+    $u = preg_replace('#^https?://#i', '', $u);
+    $u = preg_replace('#[?#].*$#', '', $u);
+    $u = trim($u);
+    $u = preg_replace('#^www\.#i', '', $u);
+    $parts = array_values(array_filter(explode('/', $u), function ($p) { return $p !== ''; }));
+    if (count($parts) === 0) return $u;
+    $host = strtolower(preg_replace('/:\d+$/', '', $parts[0]));
+    $pathSegments = array_slice($parts, 1);
+    $socialHosts = ['instagram.com', 'facebook.com', 'fb.com', 'fb.me', 'linkedin.com', 'twitter.com', 'x.com', 'youtube.com', 'youtu.be', 'tiktok.com', 'wa.me', 'web.whatsapp.com', 't.me', 'telegram.me', 'vk.com', 'vkontakte.ru', 'vkontakte.com'];
+    $skipSegments = ['p', 'reel', 'reels', 'stories', 'share', 'watch', 'pages', 'photo', 'video', 'in', 'company', 'sharing'];
+    if (in_array($host, $socialHosts) && count($pathSegments) > 0) {
+        while (count($pathSegments) > 0 && in_array(strtolower($pathSegments[0]), $skipSegments)) {
+            array_shift($pathSegments);
+        }
+        if (count($pathSegments) > 0) {
+            $handle = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $pathSegments[0]);
+            return trim($handle) !== '' ? trim($handle) : $u;
+        }
+        return $parts[1] ?? $u;
+    }
+    foreach (['www.instagram.com/', 'instagram.com/', 'www.facebook.com/', 'facebook.com/', 'www.fb.com/', 'fb.com/', 'www.vk.com/', 'vk.com/', 'www.vkontakte.com/', 'vkontakte.com/', 'www.vkontakte.ru/', 'vkontakte.ru/', 'vkontakte.com'] as $dom) {
+        $pos = stripos($u, $dom);
+        if ($pos !== false) {
+            $after = substr($u, $pos + strlen($dom));
+            $after = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $after);
+            $first = strpos($after, '/') !== false ? substr($after, 0, strpos($after, '/')) : $after;
+            if (trim($first) !== '') return trim($first);
+        }
+    }
+    return $u;
+};
 if (!empty($companyIds)) {
     $check = @mysqli_query($link, "SHOW TABLES LIKE 'company_social_networks'");
     if ($check && mysqli_num_rows($check) > 0) {
@@ -361,10 +395,22 @@ if (!empty($companyIds)) {
                 $t = trim($row['network_type'] ?? '');
                 $u = trim($row['url'] ?? '');
                 if ($u !== '') {
-                    if (!isset($redesPorEmpresa[$cid])) {
-                        $redesPorEmpresa[$cid] = [];
+                    $display = $formatSocialUrlToHandle($u);
+                    $display = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $display);
+                    if ($display !== '') {
+                        $display = preg_replace('~^/?(?:www\.)?(instagram\.com|facebook\.com|fb\.com|vk\.com|vkontakte\.ru|vkontakte\.com|youtube\.com|youtu\.be|tiktok\.com|t\.me|telegram\.me|linkedin\.com|reddit\.com|x\.com|twitter\.com)(?:/@?|$)~i', '', $display);
                     }
-                    $redesPorEmpresa[$cid][] = ($t !== '' ? $t . ': ' : '') . $u;
+                    if ($display === '') {
+                        $display = preg_replace('#^https?://#i', '', $u);
+                        $display = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $display);
+                        $display = preg_replace('~^/?(?:www\.)?(instagram\.com|facebook\.com|fb\.com|vk\.com|vkontakte\.ru|vkontakte\.com|youtube\.com|youtu\.be|tiktok\.com|t\.me|telegram\.me|linkedin\.com|reddit\.com|x\.com|twitter\.com)(?:/@?|$)~i', '', $display);
+                    }
+                    if ($display !== '') {
+                        if (!isset($redesPorEmpresa[$cid])) {
+                            $redesPorEmpresa[$cid] = [];
+                        }
+                        $redesPorEmpresa[$cid][] = ($t !== '' ? $t . ': /' : '/') . $display;
+                    }
                 }
             }
         }
@@ -736,10 +782,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $s2TextW = $s2RightW - $s2TextPad - $s2Pad;
         $s2TitleTop = $s2LogoY + $s2LogoH + 20;
         $mpdf->SetTextColor(160, 35, 35);
-        $mpdf->SetFont('dejavusans', 'B', 34);
+        $mpdf->SetFont('dejavusans', 'B', 36);
         $mpdf->SetXY($s2TextLeft, $s2TitleTop);
         $mpdf->Cell($s2TextW, 12, 'PROVINCIAL', 0, 1, 'L');
-        $mpdf->SetFont('dejavusans', 'B', 32);
+        $mpdf->SetFont('dejavusans', 'B', 36);
         $mpdf->SetXY($s2TextLeft, $s2TitleTop + 14);
         $mpdf->Cell($s2TextW, 12, 'CONTEXT', 0, 1, 'L');
         $s2ParaTop = $s2TitleTop + 40;
@@ -949,10 +995,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $s3TextW = $wMm - $s3TextLeft - $s3Pad;
         $s3TitleY = $s3RedBlockH + 52;
         $mpdf->SetTextColor($s3RedR, $s3RedG, $s3RedB);
-        $mpdf->SetFont('dejavusans', 'B', 38);
+        $mpdf->SetFont('dejavusans', 'B', 36);
         $mpdf->SetXY($s3TextLeft, $s3TitleY);
         $mpdf->Cell($s3TextW, 14, 'PROVINCIAL', 0, 1, 'L');
-        $mpdf->SetFont('dejavusans', 'B', 34);
+        $mpdf->SetFont('dejavusans', 'B', 36);
         $mpdf->SetXY($s3TextLeft, $s3TitleY + 16);
         $mpdf->Cell($s3TextW, 14, 'IDENTITY', 0, 1, 'L');
         $s3ParaY = $s3TitleY + 16 + 14 + 22;
@@ -1094,16 +1140,16 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $s4TitleLine2 = 'PRODUCTS';
         $s4Subtitle = 'Registered companies and declared exportable products/services for institutional outreach and promotion.';
         $mpdf->SetTextColor($s4RedR, $s4RedG, $s4RedB);
-        $mpdf->SetFont('dejavusans', 'B', 32);
+        $mpdf->SetFont('dejavusans', 'B', 36);
         $mpdf->SetXY(0, $s4TitleY);
         $mpdf->Cell($wMm, 12, $s4TitleLine1, 0, 1, 'C');
-        $mpdf->SetFont('dejavusans', 'B', 26);
+        $mpdf->SetFont('dejavusans', 'B', 36);
         $mpdf->SetXY(0, $s4TitleY + 14);
         $mpdf->Cell($wMm, 10, $s4TitleLine2, 0, 1, 'C');
         $mpdf->SetTextColor(50, 50, 50);
-        $mpdf->SetFont('dejavusans', '', 11);
+        $mpdf->SetFont('dejavusans', '', 16);
         $mpdf->SetXY($s4Pad, $s4TitleY + 32);
-        $mpdf->MultiCell($wMm - 2 * $s4Pad, 5, $s4Subtitle, 0, 'C');
+        $mpdf->MultiCell($wMm - 2 * $s4Pad, 6, $s4Subtitle, 0, 'C');
         $mpdf->SetLeftMargin(0);
         $mpdf->SetRightMargin(0);
         // Una slide por empresa: fondo blanco; barra roja vertical izquierda (ancha, semi-transparente); izq logo + título "NOMBRE DE" / nombre + 5 bloques; derecha solo imagen (recortada, proporcional)
@@ -1149,51 +1195,33 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                     $mpdf->Image($s5LogoPath, $s5LogoX, $s5LogoY, $lw, $lh);
                 }
             }
-            $s5TitleY = 90;
+            $s5TitleY = 58;
             $nombreEmpresa = $emp['name'] ?? '';
             $nombreUpper = function_exists('mb_strtoupper') ? mb_strtoupper($nombreEmpresa) : strtoupper($nombreEmpresa);
             $s5NameW = $s5LeftZoneW - 2 * $s5Pad;
-            $s5Ellipsis = '…';
-            $s5MaxNameW = $s5NameW - $mpdf->GetStringWidth($s5Ellipsis);
             $mpdf->SetTextColor($s5RedR, $s5RedG, $s5RedB);
             $mpdf->SetFont('dejavusans', 'B', 40);
             $mpdf->SetXY($s5RedBarW + $s5Pad, $s5TitleY);
-            $mpdf->Cell($s5NameW, 11, 'NAME OF THE', 0, 1, 'L');
-            $mpdf->SetFont('dejavusans', 'B', 40);
-            if ($mpdf->GetStringWidth($nombreUpper) <= $s5NameW) {
-                $s5NombreDisplay = $nombreUpper;
-            } else {
-                $s5Len = function_exists('mb_strlen') ? mb_strlen($nombreUpper) : strlen($nombreUpper);
-                $s5Fit = 0;
-                for ($s5k = 1; $s5k <= $s5Len; $s5k++) {
-                    $s5Sub = function_exists('mb_substr') ? mb_substr($nombreUpper, 0, $s5k) : substr($nombreUpper, 0, $s5k);
-                    if ($mpdf->GetStringWidth($s5Sub) <= $s5MaxNameW) {
-                        $s5Fit = $s5k;
-                    } else {
-                        break;
-                    }
-                }
-                $s5NombreDisplay = ($s5Fit > 0 ? (function_exists('mb_substr') ? mb_substr($nombreUpper, 0, $s5Fit) : substr($nombreUpper, 0, $s5Fit)) : '') . $s5Ellipsis;
-            }
-            $mpdf->SetXY($s5RedBarW + $s5Pad, $s5TitleY + 13);
-            $mpdf->Cell($s5NameW, 14, $s5NombreDisplay, 0, 1, 'L');
-            $s5BlockY = 140;
-            $s5BlockH = 42;
-            $s5ColW = ($s5LeftZoneW - 2 * $s5Pad - 24) / 3;
+            $mpdf->MultiCell($s5NameW, 14, $nombreUpper, 0, 'L');
+            $s5BlockY = 95;
+            $s5Cols = 2;
+            $s5ColW = ($s5LeftZoneW - 2 * $s5Pad - 8) / $s5Cols;
+            $s5RowHeights = [42, 56, 42];
             $s5NumW = 12;
             $s5LabelLineH = 7;
             $s5Rows = [
                 ['01', "MAIN\nACTIVITY", $emp['main_activity'] ?? '-'],
                 ['02', 'LOCATION', $localidadPorEmpresa[$cid] ?? '-'],
                 ['03', 'WEBSITE', $emp['website'] ?? '-'],
-                ['04', "SOCIAL\nMEDIA", isset($redesPorEmpresa[$cid]) ? implode(' ', $redesPorEmpresa[$cid]) : '-'],
+                ['04', "SOCIAL\nMEDIA", isset($redesPorEmpresa[$cid]) ? implode("\n", $redesPorEmpresa[$cid]) : '-'],
                 ['05', "YEAR\nESTABLISHED", !empty($emp['start_date']) ? date('Y', (int)$emp['start_date']) : '-'],
             ];
             foreach ($s5Rows as $idx => $row) {
-                $col = $idx % 3;
-                $rowIdx = (int) floor($idx / 3);
+                $col = $idx % $s5Cols;
+                $rowIdx = (int) floor($idx / $s5Cols);
+                $by = $s5BlockY + array_sum(array_slice($s5RowHeights, 0, $rowIdx));
+                $blockH = $s5RowHeights[$rowIdx];
                 $bx = $s5RedBarW + $s5Pad + $col * ($s5ColW + 8);
-                $by = $s5BlockY + $rowIdx * $s5BlockH;
                 $mpdf->SetTextColor($s5RedR, $s5RedG, $s5RedB);
                 $mpdf->SetFont('dejavusans', 'B', 15);
                 $mpdf->SetXY($bx, $by);
@@ -1205,7 +1233,37 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->SetFont('dejavusans', '', 12);
                 $valStr = is_string($row[2]) ? $row[2] : (string)$row[2];
                 $mpdf->SetXY($bx, $by + 26);
-                $mpdf->MultiCell($s5ColW, 5, $valStr, 0, 'L');
+                if ($row[0] === '04' && $valStr !== '-') {
+                    $s5RedesY = $by + 26;
+                    $s5RedesLineH = 5;
+                    $s5RedesLines = explode("\n", $valStr);
+                    foreach ($s5RedesLines as $s5Line) {
+                        $s5Line = trim($s5Line);
+                        if ($s5Line === '') continue;
+                        $s5ColonPos = strpos($s5Line, ':');
+                        if ($s5ColonPos !== false) {
+                            $s5Label = trim(substr($s5Line, 0, $s5ColonPos + 1));
+                            $s5Val = trim(substr($s5Line, $s5ColonPos + 1));
+                            if (preg_match('#^/(.+)$#', $s5Val, $m)) {
+                                $s5Val = '@' . $m[1];
+                            }
+                            $mpdf->SetXY($bx, $s5RedesY);
+                            $mpdf->SetFont('dejavusans', 'B', 12);
+                            $mpdf->Cell($s5ColW, $s5RedesLineH, $s5Label, 0, 1, 'L');
+                            $s5RedesY = $mpdf->y + 1;
+                            $mpdf->SetXY($bx, $s5RedesY);
+                            $mpdf->SetFont('dejavusans', '', 12);
+                            $mpdf->MultiCell($s5ColW, $s5RedesLineH, $s5Val !== '' ? $s5Val : '-', 0, 'L');
+                            $s5RedesY = $mpdf->y + 2;
+                        } else {
+                            $mpdf->SetXY($bx, $s5RedesY);
+                            $mpdf->MultiCell($s5ColW, $s5RedesLineH, $s5Line, 0, 'L');
+                            $s5RedesY = $mpdf->y + 2;
+                        }
+                    }
+                } else {
+                    $mpdf->MultiCell($s5ColW, 5, $valStr, 0, 'L');
+                }
             }
             $s5RedBlockInset = 108;
             $s5RedBlockX = $s5RightZoneX + $s5RedBlockInset;
@@ -1224,44 +1282,47 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $s5ImgX = $s5RedBlockX - (2 / 3) * $s5ImgW;
             $s5ImgY = $s5RedBlockY + $s5ImgPadV;
             $compImgPath = $imagenesPorEmpresa[$cid] ?? $logosPorEmpresa[$cid] ?? null;
-            if ($compImgPath && file_exists($compImgPath) && function_exists('imagecreatefromstring')) {
-                $srcImg = @imagecreatefromstring(file_get_contents($compImgPath));
-                if ($srcImg) {
-                    $sw = imagesx($srcImg);
-                    $sh = imagesy($srcImg);
-                    $scale = max($s5ImgW / $sw, $s5ImgH / $sh);
-                    $srcCropW = $s5ImgW / $scale;
-                    $srcCropH = $s5ImgH / $scale;
-                    $srcX = (int) round(($sw - $srcCropW) / 2);
-                    $srcY = (int) round(($sh - $srcCropH) / 2);
-                    $srcX = max(0, $srcX);
-                    $srcY = max(0, $srcY);
-                    $srcCropW = min($srcCropW, $sw - $srcX);
-                    $srcCropH = min($srcCropH, $sh - $srcY);
-                    $s5ImgDpi = 150;
-                    $s5PxPerMm = $s5ImgDpi / 25.4;
-                    $outW = max(1, (int) round($s5ImgW * $s5PxPerMm));
-                    $outH = max(1, (int) round($s5ImgH * $s5PxPerMm));
-                    $out = imagecreatetruecolor($outW, $outH);
-                    if ($out && $srcCropW > 0 && $srcCropH > 0) {
-                        imagecopyresampled($out, $srcImg, 0, 0, $srcX, $srcY, $outW, $outH, (int)$srcCropW, (int)$srcCropH);
-                        imagedestroy($srcImg);
-                        $tmp = tempnam(sys_get_temp_dir(), 's5img');
-                        if ($tmp && imagejpeg($out, $tmp, 92)) {
-                            $mpdf->Image($tmp, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
-                            @unlink($tmp);
-                        }
-                        imagedestroy($out);
-                    } else {
-                        if ($out) imagedestroy($out);
-                        imagedestroy($srcImg);
-                        $mpdf->Image($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
+            if ($compImgPath && file_exists($compImgPath)) {
+                $compImgOutPath = null;
+                if (extension_loaded('gd')) {
+                    $info = @getimagesize($compImgPath);
+                    $ext = strtolower(pathinfo($compImgPath, PATHINFO_EXTENSION));
+                    $src = false;
+                    if ($info && $info[2] === IMAGETYPE_JPEG) {
+                        $src = @imagecreatefromjpeg($compImgPath);
+                    } elseif ($info && $info[2] === IMAGETYPE_PNG) {
+                        $src = @imagecreatefrompng($compImgPath);
+                    } elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) {
+                        $src = @imagecreatefromwebp($compImgPath);
                     }
+                    if ($src && !empty($info[0]) && !empty($info[1])) {
+                        $sw = imagesx($src);
+                        $sh = imagesy($src);
+                        $pxPerMm = 96 / 25.4;
+                        $tw = (int) round($s5ImgW * $pxPerMm);
+                        $th = (int) round($s5ImgH * $pxPerMm);
+                        $scale = max($tw / $sw, $th / $sh);
+                        $srcCropW = (int) round($tw / $scale);
+                        $srcCropH = (int) round($th / $scale);
+                        $srcX = (int) max(0, ($sw - $srcCropW) / 2);
+                        $srcY = (int) max(0, ($sh - $srcCropH) / 2);
+                        $dst = @imagecreatetruecolor($tw, $th);
+                        if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $tw, $th, $srcCropW, $srcCropH)) {
+                            $tmp = sys_get_temp_dir() . '/mod_comp_img_' . uniqid() . '.png';
+                            if (imagepng($dst, $tmp)) {
+                                $compImgOutPath = $tmp;
+                            }
+                            imagedestroy($dst);
+                        }
+                        imagedestroy($src);
+                    }
+                }
+                if ($compImgOutPath && file_exists($compImgOutPath)) {
+                    $mpdf->Image($compImgOutPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
+                    @unlink($compImgOutPath);
                 } else {
                     $mpdf->Image($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
                 }
-            } elseif ($compImgPath && file_exists($compImgPath)) {
-                $mpdf->Image($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
             } else {
                 $mpdf->SetFillColor(220, 220, 220);
                 $mpdf->Rect($s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH, 'F');
@@ -1440,44 +1501,66 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->Cell($p6ColW, 7, $p6numStr, 0, 1, 'L');
             $p6DataY = $p6ColTop + 9;
             $mpdf->SetTextColor(0, 0, 0);
+            $p6LineH = 5;
+            $mpdf->SetFont('dejavusans', 'B', 12);
+            $p6LblEmpresa = 'COMPANY: ';
+            $p6LblExport = 'ANNUAL EXPORT: ';
+            $p6LblCert = 'CERTIFICATIONS: ';
+            $p6LblTariff = 'Tariff code (NCM/HS): ';
+            $p6WEmpresa = $mpdf->GetStringWidth($p6LblEmpresa);
+            $p6WExport = $mpdf->GetStringWidth($p6LblExport);
+            $p6WCert = $mpdf->GetStringWidth($p6LblCert);
+            $p6WTariff = $mpdf->GetStringWidth($p6LblTariff);
             $mpdf->SetFont('dejavusans', '', 12);
             if ($prod) {
                 $p6EmpresaNombre = $p6CompanyNameById[(int) ($prod['company_id'] ?? 0)] ?? '-';
-                $p6Prefix = 'COMPANY: ';
-                $p6Ellipsis = '…';
-                $p6MaxNameW = $p6ColW - $mpdf->GetStringWidth($p6Prefix) - $mpdf->GetStringWidth($p6Ellipsis);
-                if ($mpdf->GetStringWidth($p6EmpresaNombre) <= $p6MaxNameW) {
-                    $p6EmpresaDisplay = $p6EmpresaNombre;
-                } else {
-                    $p6NameLen = function_exists('mb_strlen') ? mb_strlen($p6EmpresaNombre) : strlen($p6EmpresaNombre);
-                    $p6NameFit = 0;
-                    for ($p6nk = 1; $p6nk <= $p6NameLen; $p6nk++) {
-                        $p6Sub = function_exists('mb_substr') ? mb_substr($p6EmpresaNombre, 0, $p6nk) : substr($p6EmpresaNombre, 0, $p6nk);
-                        if ($mpdf->GetStringWidth($p6Sub) <= $p6MaxNameW) {
-                            $p6NameFit = $p6nk;
-                        } else {
-                            break;
-                        }
-                    }
-                    $p6EmpresaDisplay = ($p6NameFit > 0 ? (function_exists('mb_substr') ? mb_substr($p6EmpresaNombre, 0, $p6NameFit) : substr($p6EmpresaNombre, 0, $p6NameFit)) : '') . $p6Ellipsis;
-                }
                 $mpdf->SetXY($p6colX, $p6DataY);
-                $mpdf->Cell($p6ColW, 6, $p6Prefix . $p6EmpresaDisplay, 0, 1, 'L');
-                $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'ANNUAL EXPORT: ' . (trim($prod['annual_export'] ?? '') ?: '-'), 0, 1, 'L');
-                $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'CERTIFICATIONS: ' . (trim($prod['certifications'] ?? '') ?: '-'), 0, 1, 'L');
-                $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'Tariff code (NCM/HS): ' . (trim($prod['tariff_code'] ?? '') ?: '-'), 0, 1, 'L');
+                $mpdf->SetFont('dejavusans', 'B', 12);
+                $mpdf->Cell($p6WEmpresa, $p6LineH, $p6LblEmpresa, 0, 0, 'L');
+                $mpdf->SetFont('dejavusans', '', 12);
+                $mpdf->MultiCell($p6ColW - $p6WEmpresa, $p6LineH, $p6EmpresaNombre ?: '-', 0, 'L');
+                $p6DataY = $mpdf->y + 1;
+                $mpdf->SetXY($p6colX, $p6DataY);
+                $mpdf->SetFont('dejavusans', 'B', 12);
+                $mpdf->Cell($p6WExport, $p6LineH, $p6LblExport, 0, 0, 'L');
+                $mpdf->SetFont('dejavusans', '', 12);
+                $mpdf->MultiCell($p6ColW - $p6WExport, $p6LineH, trim($prod['annual_export'] ?? '') ?: '-', 0, 'L');
+                $p6DataY = $mpdf->y + 1;
+                $mpdf->SetXY($p6colX, $p6DataY);
+                $mpdf->SetFont('dejavusans', 'B', 12);
+                $mpdf->Cell($p6WCert, $p6LineH, $p6LblCert, 0, 0, 'L');
+                $mpdf->SetFont('dejavusans', '', 12);
+                $mpdf->MultiCell($p6ColW - $p6WCert, $p6LineH, trim($prod['certifications'] ?? '') ?: '-', 0, 'L');
+                $p6DataY = $mpdf->y + 1;
+                $mpdf->SetXY($p6colX, $p6DataY);
+                $mpdf->SetFont('dejavusans', 'B', 12);
+                $mpdf->Cell($p6WTariff, $p6LineH, $p6LblTariff, 0, 0, 'L');
+                $mpdf->SetFont('dejavusans', '', 12);
+                $mpdf->MultiCell($p6ColW - $p6WTariff, $p6LineH, trim($prod['tariff_code'] ?? '') ?: '-', 0, 'L');
             } else {
                 $mpdf->SetXY($p6colX, $p6DataY);
-                $mpdf->Cell($p6ColW, 6, 'COMPANY: -', 0, 1, 'L');
-                $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'ANNUAL EXPORT: -', 0, 1, 'L');
-                $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'CERTIFICATIONS: -', 0, 1, 'L');
-                $mpdf->SetX($p6colX);
-                $mpdf->Cell($p6ColW, 6, 'Tariff code (NCM/HS): -', 0, 1, 'L');
+                $mpdf->SetFont('dejavusans', 'B', 12);
+                $mpdf->Cell($p6WEmpresa, $p6LineH, $p6LblEmpresa, 0, 0, 'L');
+                $mpdf->SetFont('dejavusans', '', 12);
+                $mpdf->MultiCell($p6ColW - $p6WEmpresa, $p6LineH, '-', 0, 'L');
+                $p6DataY = $mpdf->y + 1;
+                $mpdf->SetXY($p6colX, $p6DataY);
+                $mpdf->SetFont('dejavusans', 'B', 12);
+                $mpdf->Cell($p6WExport, $p6LineH, $p6LblExport, 0, 0, 'L');
+                $mpdf->SetFont('dejavusans', '', 12);
+                $mpdf->MultiCell($p6ColW - $p6WExport, $p6LineH, '-', 0, 'L');
+                $p6DataY = $mpdf->y + 1;
+                $mpdf->SetXY($p6colX, $p6DataY);
+                $mpdf->SetFont('dejavusans', 'B', 12);
+                $mpdf->Cell($p6WCert, $p6LineH, $p6LblCert, 0, 0, 'L');
+                $mpdf->SetFont('dejavusans', '', 12);
+                $mpdf->MultiCell($p6ColW - $p6WCert, $p6LineH, '-', 0, 'L');
+                $p6DataY = $mpdf->y + 1;
+                $mpdf->SetXY($p6colX, $p6DataY);
+                $mpdf->SetFont('dejavusans', 'B', 12);
+                $mpdf->Cell($p6WTariff, $p6LineH, $p6LblTariff, 0, 0, 'L');
+                $mpdf->SetFont('dejavusans', '', 12);
+                $mpdf->MultiCell($p6ColW - $p6WTariff, $p6LineH, '-', 0, 'L');
             }
         }
         $mpdf->SetDrawColor(0, 0, 0);

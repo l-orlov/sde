@@ -342,8 +342,52 @@ if (!empty($companyIds)) {
     }
 }
 
-// Redes sociales por empresa (para slide de datos de empresa)
+// Redes sociales por empresa (para slide de datos de empresa) — extraer solo handle (ej. instagram.com/frre → frre)
 $redesPorEmpresa = [];
+$formatSocialUrlToHandle = function ($url) {
+    $u = trim($url);
+    if ($u === '') return '';
+    $u = preg_replace('#^https?://#i', '', $u);
+    $u = preg_replace('#[?#].*$#', '', $u);
+    $u = trim($u);
+    $u = preg_replace('#^www\.#i', '', $u);
+    $parts = array_values(array_filter(explode('/', $u), function ($p) { return $p !== ''; }));
+    if (count($parts) === 0) return $u;
+    $host = strtolower(preg_replace('/:\d+$/', '', $parts[0]));
+    $pathSegments = array_slice($parts, 1);
+    $socialHosts = ['instagram.com', 'facebook.com', 'fb.com', 'fb.me', 'linkedin.com', 'twitter.com', 'x.com', 'youtube.com', 'youtu.be', 'tiktok.com', 'wa.me', 'web.whatsapp.com', 't.me', 'telegram.me', 'vk.com', 'vkontakte.ru', 'vkontakte.com', 'reddit.com'];
+    $skipSegments = ['p', 'reel', 'reels', 'stories', 'share', 'watch', 'pages', 'photo', 'video', 'in', 'company', 'sharing'];
+    if (in_array($host, $socialHosts) && count($pathSegments) > 0) {
+        while (count($pathSegments) > 0 && in_array(strtolower($pathSegments[0]), $skipSegments)) {
+            array_shift($pathSegments);
+        }
+        if (count($pathSegments) > 0) {
+            $handle = $pathSegments[0];
+            $handle = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $handle);
+            return trim($handle) !== '' ? trim($handle) : $u;
+        }
+        return $parts[1] ?? $u;
+    }
+    $prefixesToStrip = ['www.instagram.com/', 'instagram.com/', 'www.facebook.com/', 'facebook.com/', 'www.fb.com/', 'fb.com/', 'www.vk.com/', 'vk.com/', 'www.vkontakte.ru/', 'vkontakte.ru/', 'www.vkontakte.com/', 'vkontakte.com/', 'www.linkedin.com/in/', 'linkedin.com/in/', 'www.linkedin.com/', 'linkedin.com/', 'www.twitter.com/', 'twitter.com/', 'www.x.com/', 'x.com/', 'www.tiktok.com/@', 'tiktok.com/@', 'www.tiktok.com/', 'tiktok.com/', 'www.youtube.com/', 'youtube.com/', 'www.youtu.be/', 'youtu.be/', 't.me/', 'www.t.me/', 'telegram.me/', 'www.telegram.me/', 'www.reddit.com/r/', 'reddit.com/r/', 'www.reddit.com/user/', 'reddit.com/user/', 'www.reddit.com/u/', 'reddit.com/u/', 'www.reddit.com/', 'reddit.com/'];
+    foreach ($prefixesToStrip as $prefix) {
+        if (stripos($u, $prefix) === 0) {
+            $rest = substr($u, strlen($prefix));
+            $rest = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $rest);
+            $first = strpos($rest, '/') !== false ? substr($rest, 0, strpos($rest, '/')) : $rest;
+            return trim($first) !== '' ? trim($first) : $u;
+        }
+    }
+    foreach (['www.instagram.com/', 'instagram.com/', 'www.facebook.com/', 'facebook.com/', 'www.fb.com/', 'fb.com/', 'www.vk.com/', 'vk.com/', 'www.vkontakte.com/', 'vkontakte.com/', 'www.vkontakte.ru/', 'vkontakte.ru/', 'vkontakte.com', 'www.youtube.com/', 'youtube.com/', 'www.youtu.be/', 'youtu.be/', 'www.tiktok.com/@', 'tiktok.com/@', 'www.tiktok.com/', 'tiktok.com/', 't.me/', 'telegram.me/', 'www.linkedin.com/in/', 'linkedin.com/in/', 'www.linkedin.com/', 'linkedin.com/', 'www.reddit.com/r/', 'reddit.com/r/', 'www.reddit.com/user/', 'reddit.com/user/', 'www.reddit.com/', 'reddit.com/', 'www.x.com/', 'x.com/', 'www.twitter.com/', 'twitter.com/'] as $dom) {
+        $pos = stripos($u, $dom);
+        if ($pos !== false) {
+            $after = substr($u, $pos + strlen($dom));
+            $after = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $after);
+            $first = strpos($after, '/') !== false ? substr($after, 0, strpos($after, '/')) : $after;
+            if (trim($first) !== '') return trim($first);
+        }
+    }
+    return $u;
+};
 if (!empty($companyIds)) {
     $check = @mysqli_query($link, "SHOW TABLES LIKE 'company_social_networks'");
     if ($check && mysqli_num_rows($check) > 0) {
@@ -356,10 +400,23 @@ if (!empty($companyIds)) {
                 $t = trim($row['network_type'] ?? '');
                 $u = trim($row['url'] ?? '');
                 if ($u !== '') {
-                    if (!isset($redesPorEmpresa[$cid])) {
-                        $redesPorEmpresa[$cid] = [];
+                    $display = $formatSocialUrlToHandle($u);
+                    $display = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $display);
+                    // extra safety: if something like "www.instagram.com/frre" slipped through, strip the domain again
+                    if ($display !== '') {
+                        $display = preg_replace('~^/?(?:www\.)?(instagram\.com|facebook\.com|fb\.com|vk\.com|vkontakte\.ru|vkontakte\.com|youtube\.com|youtu\.be|tiktok\.com|t\.me|telegram\.me|linkedin\.com|reddit\.com|x\.com|twitter\.com)(?:/@?|$)~i', '', $display);
                     }
-                    $redesPorEmpresa[$cid][] = ($t !== '' ? $t . ': ' : '') . $u;
+                    if ($display === '') {
+                        $display = preg_replace('#^https?://#i', '', $u);
+                        $display = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $display);
+                        $display = preg_replace('~^/?(?:www\.)?(instagram\.com|facebook\.com|fb\.com|vk\.com|vkontakte\.ru|vkontakte\.com|youtube\.com|youtu\.be|tiktok\.com|t\.me|telegram\.me|linkedin\.com|reddit\.com|x\.com|twitter\.com)(?:/@?|$)~i', '', $display);
+                    }
+                    if ($display !== '') {
+                        if (!isset($redesPorEmpresa[$cid])) {
+                            $redesPorEmpresa[$cid] = [];
+                        }
+                        $redesPorEmpresa[$cid][] = ($t !== '' ? $t . ': /' : '/') . $display;
+                    }
                 }
             }
         }
@@ -1098,47 +1155,64 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $ly = $s5ProvLogoY + ($s5ProvLogoH - $logoH) / 2;
                 $mpdf->Image($s5ProvLogoPath, $lx, $ly, $logoW, $logoH);
             }
-            // Logo de la empresa centrado en el bloque negro (debajo del logo provincial, algo más bajo)
+            // Logo de la empresa centrado en el bloque negro (cover en cuadrado, tamaño fijo)
             $s5CompLogoSize = min(115, $s5BlackW - 20, $s5BlackH - 65);
             $s5CompLogoX = $s5BlackX + ($s5BlackW - $s5CompLogoSize) / 2;
             $s5CompLogoY = $s5BlackY + 52;
             $compLogoPath = $logosPorEmpresa[$cid] ?? $imagenesPorEmpresa[$cid] ?? null;
             if ($compLogoPath && file_exists($compLogoPath)) {
-                $mpdf->Image($compLogoPath, $s5CompLogoX, $s5CompLogoY, $s5CompLogoSize, $s5CompLogoSize);
+                $compLogoOutPath = null;
+                if (extension_loaded('gd')) {
+                    $info = @getimagesize($compLogoPath);
+                    $ext = strtolower(pathinfo($compLogoPath, PATHINFO_EXTENSION));
+                    $src = false;
+                    if ($info && $info[2] === IMAGETYPE_JPEG) {
+                        $src = @imagecreatefromjpeg($compLogoPath);
+                    } elseif ($info && $info[2] === IMAGETYPE_PNG) {
+                        $src = @imagecreatefrompng($compLogoPath);
+                    } elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) {
+                        $src = @imagecreatefromwebp($compLogoPath);
+                    }
+                    if ($src && !empty($info[0]) && !empty($info[1])) {
+                        $sw = imagesx($src);
+                        $sh = imagesy($src);
+                        $pxPerMm = 96 / 25.4;
+                        $tw = (int) round($s5CompLogoSize * $pxPerMm);
+                        $th = $tw;
+                        $scale = max($tw / $sw, $th / $sh);
+                        $srcCropW = (int) round($tw / $scale);
+                        $srcCropH = (int) round($th / $scale);
+                        $srcX = (int) max(0, ($sw - $srcCropW) / 2);
+                        $srcY = (int) max(0, ($sh - $srcCropH) / 2);
+                        $dst = @imagecreatetruecolor($tw, $th);
+                        if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $tw, $th, $srcCropW, $srcCropH)) {
+                            $tmp = sys_get_temp_dir() . '/clasico_comp_logo_' . uniqid() . '.png';
+                            if (imagepng($dst, $tmp)) {
+                                $compLogoOutPath = $tmp;
+                            }
+                            imagedestroy($dst);
+                        }
+                        imagedestroy($src);
+                    }
+                }
+                if ($compLogoOutPath && file_exists($compLogoOutPath)) {
+                    $mpdf->Image($compLogoOutPath, $s5CompLogoX, $s5CompLogoY, $s5CompLogoSize, $s5CompLogoSize);
+                    @unlink($compLogoOutPath);
+                } else {
+                    $mpdf->Image($compLogoPath, $s5CompLogoX, $s5CompLogoY, $s5CompLogoSize, $s5CompLogoSize);
+                }
             }
-            // Izquierda: título "NOMBRE DE LA" / nombre empresa (azul) alineado debajo, luego lista con líneas azules debajo de cada fila (sin línea encima de la primera)
+            // Izquierda: nombre empresa (azul), luego lista con líneas azules
             $s5Pad = 24;
             $s5TextW = $s5LeftW - 2 * $s5Pad;
             $mpdf->SetLeftMargin($s5Pad);
             $mpdf->SetRightMargin($wMm - $s5LeftW + $s5Pad);
             $s5TitleY = 28;
             $mpdf->SetXY($s5Pad, $s5TitleY);
-            $mpdf->SetTextColor(0, 0, 0);
-            $mpdf->SetFont('dejavusans', 'B', 38);
-            $mpdf->Cell($s5TextW, 13, 'COMPANY NAME', 0, 1, 'L');
-            $mpdf->Ln(5);
-            $mpdf->SetX($s5Pad);
             $mpdf->SetTextColor(141, 188, 220);
             $mpdf->SetFont('dejavusans', 'B', 34);
             $nombreEmpresa = function_exists('mb_strtoupper') ? mb_strtoupper($emp['name'] ?? '') : strtoupper($emp['name'] ?? '');
-            $s5Ellipsis = '…';
-            $s5MaxW = $s5TextW - $mpdf->GetStringWidth($s5Ellipsis);
-            if ($mpdf->GetStringWidth($nombreEmpresa) <= $s5TextW) {
-                $s5NombreDisplay = $nombreEmpresa;
-            } else {
-                $s5Len = function_exists('mb_strlen') ? mb_strlen($nombreEmpresa) : strlen($nombreEmpresa);
-                $s5Fit = 0;
-                for ($s5k = 1; $s5k <= $s5Len; $s5k++) {
-                    $s5Sub = function_exists('mb_substr') ? mb_substr($nombreEmpresa, 0, $s5k) : substr($nombreEmpresa, 0, $s5k);
-                    if ($mpdf->GetStringWidth($s5Sub) <= $s5MaxW) {
-                        $s5Fit = $s5k;
-                    } else {
-                        break;
-                    }
-                }
-                $s5NombreDisplay = ($s5Fit > 0 ? (function_exists('mb_substr') ? mb_substr($nombreEmpresa, 0, $s5Fit) : substr($nombreEmpresa, 0, $s5Fit)) : '') . $s5Ellipsis;
-            }
-            $mpdf->Cell($s5TextW, 13, $s5NombreDisplay, 0, 1, 'L');
+            $mpdf->MultiCell($s5TextW, 13, $nombreEmpresa, 0, 'L');
             $mpdf->Ln(28);
             $s5LineH = 10;
             $s5LabelH = 7;
@@ -1147,14 +1221,15 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 ['MAIN', 'ACTIVITY', $emp['main_activity'] ?? '-'],
                 ['LOCATION', null, $localidadPorEmpresa[$cid] ?? '-'],
                 ['WEBSITE', null, $emp['website'] ?? '-'],
-                ['SOCIAL', 'MEDIA', isset($redesPorEmpresa[$cid]) ? implode(' ', $redesPorEmpresa[$cid]) : '-'],
+                ['SOCIAL', 'MEDIA', isset($redesPorEmpresa[$cid]) ? implode("\n", $redesPorEmpresa[$cid]) : '-'],
                 ['YEAR', 'ESTABLISHED', !empty($emp['start_date']) ? date('Y', (int)$emp['start_date']) : '-'],
             ];
-            $s5LabelW = $s5TextW * 0.38;
-            $s5ValW = $s5TextW * 0.62;
+            $s5LabelW = $s5TextW * 0.32;
+            $s5ValW = $s5TextW * 0.68;
             $s5ValX = $s5Pad + $s5LabelW;
             $s5GapAfterText = 2;
-            $s5Y = $s5TitleY + 13 + 5 + 13 + 28;
+            // Y after company name: reserve space for up to 4 lines of name + margin
+            $s5Y = $s5TitleY + 4 * 13 + 28 + 5;
             foreach ($s5Rows as $row) {
                 $line1 = $row[0];
                 $line2 = $row[1];
@@ -1174,13 +1249,13 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->SetTextColor(0, 0, 0);
                 $valStr = is_string($value) ? $value : (string)$value;
                 $rowH = ($line2 !== null) ? $s5LabelH * 2 : $s5LineH;
-                if (mb_strlen($valStr) > 45) {
+                $isSocialMedia = ($line1 === 'SOCIAL' && $line2 === 'MEDIA');
+                if ($isSocialMedia || mb_strlen($valStr) > 45) {
                     $mpdf->MultiCell($s5ValW, 5, $valStr, 0, 'R');
-                    $rowH = max($rowH, 15);
                 } else {
                     $mpdf->Cell($s5ValW, $rowH, $valStr, 0, 1, 'R');
                 }
-                $s5Y += $rowH + $s5GapAfterText;
+                $s5Y = $mpdf->y + $s5GapAfterText;
                 $mpdf->SetDrawColor($s5LineColor[0], $s5LineColor[1], $s5LineColor[2]);
                 $mpdf->SetLineWidth(0.4);
                 $mpdf->Line($s5Pad, $s5Y, $s5Pad + $s5TextW, $s5Y);
@@ -1301,11 +1376,11 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->SetXY($prodPad, $prodTitleY);
             $mpdf->SetTextColor(0, 0, 0);
             $mpdf->SetFont('dejavusans', 'B', 42);
-            $mpdf->Cell($prodTextW, 15, 'Featured', 0, 1, 'L');
+            $mpdf->Cell($prodTextW, 15, 'FEATURED', 0, 1, 'L');
             $mpdf->Ln(2);
             $mpdf->SetTextColor(141, 188, 220);
-            $mpdf->SetFont('dejavusans', 'B', 36);
-            $mpdf->Cell($prodTextW, 15, 'Products and services', 0, 1, 'L');
+            $mpdf->SetFont('dejavusans', 'B', 42);
+            $mpdf->Cell($prodTextW, 15, 'PRODUCTS AND SERVICES', 0, 1, 'L');
             $mpdf->Ln(10);
             $prodThumbW = 52;
             $prodThumbH = 38;
@@ -1319,15 +1394,43 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $mpdf->SetXY($prodPad, $prodY);
                 $imgPath = $imagenesPorProducto[$pid] ?? null;
                 if ($imgPath && file_exists($imgPath)) {
-                    $info = @getimagesize($imgPath);
-                    if (!empty($info[0]) && !empty($info[1])) {
-                        $pxToMm = 25.4 / 96;
-                        $imgWmm = $info[0] * $pxToMm;
-                        $imgHmm = $info[1] * $pxToMm;
-                        $scale = min($prodThumbW / $imgWmm, $prodThumbH / $imgHmm);
-                        $iw = $imgWmm * $scale;
-                        $ih = $imgHmm * $scale;
-                        $mpdf->Image($imgPath, $prodPad, $prodImgY + ($prodThumbH - $ih) / 2, $iw, $ih);
+                    $prodThumbOutPath = null;
+                    if (extension_loaded('gd')) {
+                        $info = @getimagesize($imgPath);
+                        $ext = strtolower(pathinfo($imgPath, PATHINFO_EXTENSION));
+                        $src = false;
+                        if ($info && $info[2] === IMAGETYPE_JPEG) {
+                            $src = @imagecreatefromjpeg($imgPath);
+                        } elseif ($info && $info[2] === IMAGETYPE_PNG) {
+                            $src = @imagecreatefrompng($imgPath);
+                        } elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) {
+                            $src = @imagecreatefromwebp($imgPath);
+                        }
+                        if ($src && !empty($info[0]) && !empty($info[1])) {
+                            $sw = imagesx($src);
+                            $sh = imagesy($src);
+                            $pxPerMm = 96 / 25.4;
+                            $tw = (int) round($prodThumbW * $pxPerMm);
+                            $th = (int) round($prodThumbH * $pxPerMm);
+                            $scale = max($tw / $sw, $th / $sh);
+                            $srcCropW = (int) round($tw / $scale);
+                            $srcCropH = (int) round($th / $scale);
+                            $srcX = (int) max(0, ($sw - $srcCropW) / 2);
+                            $srcY = (int) max(0, ($sh - $srcCropH) / 2);
+                            $dst = @imagecreatetruecolor($tw, $th);
+                            if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $tw, $th, $srcCropW, $srcCropH)) {
+                                $tmp = sys_get_temp_dir() . '/clasico_thumb_' . $pid . '_' . uniqid() . '.png';
+                                if (imagepng($dst, $tmp)) {
+                                    $prodThumbOutPath = $tmp;
+                                }
+                                imagedestroy($dst);
+                            }
+                            imagedestroy($src);
+                        }
+                    }
+                    if ($prodThumbOutPath && file_exists($prodThumbOutPath)) {
+                        $mpdf->Image($prodThumbOutPath, $prodPad, $prodImgY, $prodThumbW, $prodThumbH);
+                        @unlink($prodThumbOutPath);
                     } else {
                         $mpdf->Image($imgPath, $prodPad, $prodImgY, $prodThumbW, $prodThumbH);
                     }
@@ -1366,7 +1469,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 }
                 $mpdf->Cell($prodEmpresaCellW, 7, $prodEmpresaDisplay, 0, 1, 'L');
                 $mpdf->SetX($prodContentX);
-                $mpdf->SetFont('dejavusans', 'B', 13);
+                $mpdf->SetFont('dejavusans', 'B', 11);
                 $mpdf->SetTextColor(80, 80, 80);
                 $mpdf->Cell($prodContentW * 0.55, 7, 'TARIFF CODE (NCM/HS):', 0, 0, 'L');
                 $mpdf->SetFont('dejavusans', '', 10);

@@ -339,8 +339,18 @@ try {
             // Все продукты равны, is_main = 0 для всех
             $isMain = 0;
             $productName = htmlspecialchars($productName);
+            if (function_exists('mb_strlen') && mb_strlen($productName) > 55) {
+                $productName = (function_exists('mb_substr') ? mb_substr($productName, 0, 55) : substr($productName, 0, 55));
+            } elseif (strlen($productName) > 55) {
+                $productName = substr($productName, 0, 55);
+            }
             $description = isset($input['product_description'][$index]) && is_array($input['product_description'])
                 ? htmlspecialchars(trim($input['product_description'][$index])) : '';
+            if (function_exists('mb_strlen') && mb_strlen($description) > 105) {
+                $description = (function_exists('mb_substr') ? mb_substr($description, 0, 105) : substr($description, 0, 105));
+            } elseif (strlen($description) > 105) {
+                $description = substr($description, 0, 105);
+            }
             $tariffCodeRaw = isset($input['product_tariff_code'][$index]) && is_array($input['product_tariff_code'])
                 ? trim((string) $input['product_tariff_code'][$index]) : '';
             // Validación Código Arancelario (NCM/HS): formato NNNN.NN.NN.NNNL
@@ -567,7 +577,17 @@ try {
             $certificationsRaw = $certificationsRaw[0] ?? '';
         }
         $productName = htmlspecialchars(trim((string) $mainProductRaw));
+        if (function_exists('mb_strlen') && mb_strlen($productName) > 55) {
+            $productName = (function_exists('mb_substr') ? mb_substr($productName, 0, 55) : substr($productName, 0, 55));
+        } elseif (strlen($productName) > 55) {
+            $productName = substr($productName, 0, 55);
+        }
         $description = htmlspecialchars(trim((string) $productDescRaw));
+        if (function_exists('mb_strlen') && mb_strlen($description) > 105) {
+            $description = (function_exists('mb_substr') ? mb_substr($description, 0, 105) : substr($description, 0, 105));
+        } elseif (strlen($description) > 105) {
+            $description = substr($description, 0, 105);
+        }
         $annualExport = htmlspecialchars(trim((string) $annualExportRaw));
         $certifications = htmlspecialchars(trim((string) $certificationsRaw));
         $type = 'product'; // Устанавливаем тип продукта
@@ -633,8 +653,18 @@ try {
             
             $isMain = 0;
             $serviceName = htmlspecialchars($serviceName);
+            if (function_exists('mb_strlen') && mb_strlen($serviceName) > 55) {
+                $serviceName = (function_exists('mb_substr') ? mb_substr($serviceName, 0, 55) : substr($serviceName, 0, 55));
+            } elseif (strlen($serviceName) > 55) {
+                $serviceName = substr($serviceName, 0, 55);
+            }
             $description = isset($input['service_description'][$index]) && is_array($input['service_description'])
                 ? htmlspecialchars(trim($input['service_description'][$index])) : '';
+            if (function_exists('mb_strlen') && mb_strlen($description) > 105) {
+                $description = (function_exists('mb_substr') ? mb_substr($description, 0, 105) : substr($description, 0, 105));
+            } elseif (strlen($description) > 105) {
+                $description = substr($description, 0, 105);
+            }
             $tariffCodeRaw = isset($input['service_tariff_code'][$index]) && is_array($input['service_tariff_code'])
                 ? trim((string) $input['service_tariff_code'][$index]) : '';
             if ($tariffCodeRaw !== '') {
