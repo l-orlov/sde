@@ -32,6 +32,7 @@ require_once $vendorAutoload;
 
 require_once $webRoot . '/includes/functions.php';
 DBconnect();
+require_once __DIR__ . '/../includes/markets_display_en.php';
 
 global $link;
 
@@ -249,12 +250,7 @@ if (!empty($companyIds)) {
 $productosParaSlides = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $chk = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'current_markets'");
-    $hasCurrentMarkets = ($chk && mysqli_num_rows($chk) > 0);
-    $chk = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'target_markets'");
-    $hasTargetMarkets = ($chk && mysqli_num_rows($chk) > 0);
-    $marketsCols = ($hasCurrentMarkets ? ', p.current_markets' : '') . ($hasTargetMarkets ? ', p.target_markets' : '');
-    $q = "SELECT p.id, p.name, p.name_en, p.activity, p.description, p.description_en, p.annual_export, p.annual_export_en, p.certifications, p.certifications_en, p.company_id, p.type, p.tariff_code" . $marketsCols . "
+    $q = "SELECT p.id, p.name, p.name_en, p.activity, p.description, p.description_en, p.annual_export, p.annual_export_en, p.certifications, p.certifications_en, p.company_id, p.type, p.tariff_code, p.current_markets, p.current_markets_en, p.target_markets, p.target_markets_en
           FROM products p
           WHERE p.company_id IN ($ids)
           ORDER BY p.is_main DESC, p.id ASC
@@ -332,18 +328,19 @@ foreach ($empresasDestacadas as $emp) {
     mysqli_stmt_close($stmt);
 }
 
-// Localidad por empresa (desde company_addresses, primera dirección)
+// Localidad por empresa (company_addresses; EN PDF usa locality_en)
 $localidadPorEmpresa = [];
 $descripcionPorEmpresa = []; // breve descripción: primer producto por empresa, truncado
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT company_id, locality FROM company_addresses WHERE company_id IN ($ids) ORDER BY company_id, id ASC";
+    $q = "SELECT company_id, locality, locality_en FROM company_addresses WHERE company_id IN ($ids) ORDER BY company_id, id ASC";
     $r = @mysqli_query($link, $q);
     if ($r) {
         while ($row = mysqli_fetch_assoc($r)) {
             $cid = (int) $row['company_id'];
-            if (!isset($localidadPorEmpresa[$cid]) && $row['locality'] !== null && $row['locality'] !== '') {
-                $localidadPorEmpresa[$cid] = $row['locality'];
+            if (!isset($localidadPorEmpresa[$cid])) {
+                $loc = !empty(trim($row['locality_en'] ?? '')) ? trim($row['locality_en']) : (($row['locality'] !== null && $row['locality'] !== '') ? $row['locality'] : '');
+                if ($loc !== '') $localidadPorEmpresa[$cid] = $loc;
             }
         }
     }
@@ -363,16 +360,14 @@ if (!empty($companyIds)) {
     }
 }
 
-// Dirección completa primera empresa (para slide Perfil: departamento, domicilio)
+// Dirección completa primera empresa (slide Perfil: departamento, domicilio; EN PDF usa department_en)
 $perfilDepartamento = '';
 $perfilDomicilio = '';
 if (!empty($companies[0]['id'])) {
     $fcid = (int) $companies[0]['id'];
-    $r = @mysqli_query($link, "SELECT * FROM company_addresses WHERE company_id = $fcid ORDER BY id ASC LIMIT 1");
+    $r = @mysqli_query($link, "SELECT department, department_en, street, street_number FROM company_addresses WHERE company_id = $fcid ORDER BY id ASC LIMIT 1");
     if ($r && ($row = mysqli_fetch_assoc($r))) {
-        if (!empty($row['department'])) {
-            $perfilDepartamento = trim($row['department']);
-        }
+        $perfilDepartamento = !empty(trim($row['department_en'] ?? '')) ? trim($row['department_en']) : trim($row['department'] ?? '');
         $st = isset($row['street']) ? trim((string)$row['street']) : '';
         $num = isset($row['street_number']) ? trim((string)$row['street_number']) : '';
         if ($st !== '' || $num !== '') {
@@ -451,35 +446,29 @@ if (!empty($companyIds)) {
     }
 }
 
-// Mercados objetivo: desde products.target_markets (principal) y company_data.target_markets (respaldo) para empresas aprobadas
+// Mercados objetivo: desde products.target_markets (principal) y company_data.target_markets (respaldo)
 $todosLosPaises = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    // 1) Desde products.target_markets (formulario guarda mercados por producto/servicio aquí)
-    $hasProductsMarkets = false;
-    $check = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'target_markets'");
-    if ($check && mysqli_num_rows($check) > 0) {
-        $hasProductsMarkets = true;
-    }
-    if ($hasProductsMarkets) {
-        $q = "SELECT target_markets FROM products WHERE company_id IN ($ids) AND target_markets IS NOT NULL AND target_markets != '' AND target_markets != '[]'";
-        $res = @mysqli_query($link, $q);
-        if ($res) {
-            while ($row = mysqli_fetch_assoc($res)) {
-                $dec = json_decode($row['target_markets'], true);
+    $q = "SELECT target_markets, target_markets_en FROM products WHERE company_id IN ($ids) AND (target_markets IS NOT NULL AND target_markets != '' AND target_markets != '[]' OR target_markets_en IS NOT NULL AND target_markets_en != '' AND target_markets_en != '[]')";
+    $res = @mysqli_query($link, $q);
+    if ($res) {
+        while ($row = mysqli_fetch_assoc($res)) {
+            $raw = !empty(trim((string)($row['target_markets_en'] ?? ''))) ? $row['target_markets_en'] : $row['target_markets'];
+                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
                 if (is_array($dec)) {
                     foreach ($dec as $p) {
                         if (is_string($p)) {
                             $todosLosPaises[] = trim($p);
-                        } elseif (is_array($p) && isset($p['nombre'])) {
-                            $todosLosPaises[] = trim($p['nombre']);
+                        } elseif (is_array($p)) {
+                            $n = trim((string)($p['name'] ?? $p['nombre'] ?? ''));
+                            if ($n !== '') $todosLosPaises[] = $n;
                         }
                     }
                 }
             }
         }
-    }
-    // 2) Respaldo: company_data.target_markets (datos antiguos o desde admin)
+    // Respaldo: company_data.target_markets (datos antiguos o desde admin)
     $placeholders = implode(',', array_fill(0, count($companyIds), '?'));
     $stmt = mysqli_prepare($link, "SELECT target_markets FROM company_data WHERE company_id IN ($placeholders)");
     $types = str_repeat('i', count($companyIds));
@@ -1228,41 +1217,9 @@ for ($i = 0; $i < 5; $i++) {
             $prodTitleY = $prodLogoY + $prodBadgeH + 16;
             $prod = $chunk[0];
             $pid = (int) $prod['id'];
-            // Format current and target markets for PDF display
-            $prodCurrentMarketsStr = '-';
-            if (!empty($prod['current_markets'])) {
-                $raw = $prod['current_markets'];
-                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
-                if (is_array($dec)) {
-                    $list = [];
-                    foreach ($dec as $m) {
-                        $list[] = is_array($m) ? ($m['nombre'] ?? $m['name'] ?? '') : (string)$m;
-                    }
-                    $prodCurrentMarketsStr = implode(', ', array_filter($list));
-                } else {
-                    $prodCurrentMarketsStr = is_string($raw) ? trim($raw) : (string)$raw;
-                }
-                if ($prodCurrentMarketsStr === '') {
-                    $prodCurrentMarketsStr = '-';
-                }
-            }
-            $prodTargetMarketsStr = '-';
-            if (!empty($prod['target_markets'])) {
-                $raw = $prod['target_markets'];
-                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
-                if (is_array($dec)) {
-                    $list = [];
-                    foreach ($dec as $m) {
-                        $list[] = is_array($m) ? ($m['nombre'] ?? $m['name'] ?? '') : (string)$m;
-                    }
-                    $prodTargetMarketsStr = implode(', ', array_filter($list));
-                } else {
-                    $prodTargetMarketsStr = is_string($raw) ? trim($raw) : (string)$raw;
-                }
-                if ($prodTargetMarketsStr === '') {
-                    $prodTargetMarketsStr = '-';
-                }
-            }
+            // Format current and target markets for PDF display (EN: use _en or fallback map)
+            $prodCurrentMarketsStr = pdf_en_markets_display_string($prod['current_markets'] ?? null, $prod['current_markets_en'] ?? null);
+            $prodTargetMarketsStr = pdf_en_markets_display_string($prod['target_markets'] ?? null, $prod['target_markets_en'] ?? null);
             if (mb_strlen($prodCurrentMarketsStr) > 45) {
                 $prodCurrentMarketsStr = mb_substr($prodCurrentMarketsStr, 0, 44) . '…';
             }

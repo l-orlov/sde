@@ -105,24 +105,7 @@ function refresh_company_products_en($link, $companyId) {
         return;
     }
 
-    // Check EN columns exist
-    $r = mysqli_query($link, "SHOW COLUMNS FROM companies LIKE 'name_en'");
-    if (!($r && mysqli_num_rows($r) > 0)) {
-        return;
-    }
-    mysqli_free_result($r);
-    $r = mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'name_en'");
-    if (!($r && mysqli_num_rows($r) > 0)) {
-        return;
-    }
-    mysqli_free_result($r);
-    $r = mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'description_en'");
-    if (!($r && mysqli_num_rows($r) > 0)) {
-        return;
-    }
-    mysqli_free_result($r);
-
-    $stmt = mysqli_prepare($link, "SELECT id, name, main_activity FROM companies WHERE id = ? LIMIT 1");
+    $stmt = mysqli_prepare($link, "SELECT id, name, main_activity, organization_type FROM companies WHERE id = ? LIMIT 1");
     if (!$stmt) {
         return;
     }
@@ -137,9 +120,35 @@ function refresh_company_products_en($link, $companyId) {
 
     $name = isset($company['name']) ? trim((string) $company['name']) : '';
     $mainActivity = isset($company['main_activity']) ? trim((string) $company['main_activity']) : '';
+    $orgType = isset($company['organization_type']) ? trim((string) $company['organization_type']) : '';
+
+    $firstAddress = null;
+    $stmt = mysqli_prepare($link, "SELECT id, locality, department FROM company_addresses WHERE company_id = ? ORDER BY id ASC LIMIT 1");
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($res && mysqli_num_rows($res) > 0) {
+            $firstAddress = mysqli_fetch_assoc($res);
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    $firstContact = null;
+    $stmt = mysqli_prepare($link, "SELECT id, position FROM company_contacts WHERE company_id = ? ORDER BY id ASC LIMIT 1");
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $companyId);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($res && mysqli_num_rows($res) > 0) {
+            $firstContact = mysqli_fetch_assoc($res);
+        }
+        mysqli_stmt_close($stmt);
+    }
 
     $products = [];
-    $stmt = mysqli_prepare($link, "SELECT id, name, description, annual_export, certifications FROM products WHERE company_id = ? AND (deleted_at IS NULL OR deleted_at = 0) ORDER BY id ASC");
+    $productCols = "id, name, description, annual_export, certifications, current_markets, target_markets";
+    $stmt = mysqli_prepare($link, "SELECT $productCols FROM products WHERE company_id = ? AND (deleted_at IS NULL OR deleted_at = 0) ORDER BY id ASC");
     if ($stmt) {
         mysqli_stmt_bind_param($stmt, 'i', $companyId);
         mysqli_stmt_execute($stmt);
@@ -156,6 +165,25 @@ function refresh_company_products_en($link, $companyId) {
         return preg_replace('/\s+/', ' ', $s);
     };
 
+    $extractMarketNames = function ($raw) {
+        $names = [];
+        if (empty($raw)) return $names;
+        $dec = is_string($raw) ? json_decode($raw, true) : $raw;
+        if (!is_array($dec)) return $names;
+        foreach ($dec as $m) {
+            $n = is_array($m) ? trim((string)($m['nombre'] ?? $m['name'] ?? '')) : trim((string)$m);
+            if ($n !== '') $names[] = $n;
+        }
+        return $names;
+    };
+
+    $uniqueMarkets = [];
+    foreach ($products as $p) {
+        foreach ($extractMarketNames($p['current_markets'] ?? null) as $n) { $uniqueMarkets[$n] = true; }
+        foreach ($extractMarketNames($p['target_markets'] ?? null) as $n) { $uniqueMarkets[$n] = true; }
+    }
+    $uniqueMarketsOrdered = array_keys($uniqueMarkets);
+
     $texts = [];
     $texts[] = $name !== '' ? $name : '(no name)';
     $texts[] = $mainActivity !== '' ? $mainActivity : '(none)';
@@ -165,6 +193,14 @@ function refresh_company_products_en($link, $companyId) {
         $texts[] = $singleLine($p['annual_export'] ?? '') ?: '(none)';
         $texts[] = $singleLine($p['certifications'] ?? '') ?: '(none)';
     }
+    foreach ($uniqueMarketsOrdered as $m) {
+        $texts[] = $m;
+    }
+    $companyExtraStart = count($texts);
+    $texts[] = $orgType !== '' ? $orgType : '(none)';
+    $texts[] = ($firstAddress && trim((string)($firstAddress['locality'] ?? '')) !== '') ? trim($firstAddress['locality']) : '(none)';
+    $texts[] = ($firstAddress && trim((string)($firstAddress['department'] ?? '')) !== '') ? trim($firstAddress['department']) : '(none)';
+    $texts[] = ($firstContact && trim((string)($firstContact['position'] ?? '')) !== '') ? trim($firstContact['position']) : '(none)';
 
     $translated = gemini_translate_to_en($texts, $apiKey);
     if (count($translated) < 2) {
@@ -180,13 +216,46 @@ function refresh_company_products_en($link, $companyId) {
         $mainActivityEn = null;
     }
 
-    $stmt = mysqli_prepare($link, "UPDATE companies SET name_en = ?, main_activity_en = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?");
+    $orgTypeEn = null;
+    $localityEn = null;
+    $departmentEn = null;
+    $positionEn = null;
+    if ($companyExtraStart + 4 <= count($translated)) {
+        $o = trim($translated[$companyExtraStart] ?? '');
+        if ($o !== '' && $o !== '(none)') $orgTypeEn = $o;
+        $loc = trim($translated[$companyExtraStart + 1] ?? '');
+        if ($loc !== '' && $loc !== '(none)') $localityEn = $loc;
+        $dept = trim($translated[$companyExtraStart + 2] ?? '');
+        if ($dept !== '' && $dept !== '(none)') $departmentEn = $dept;
+        $pos = trim($translated[$companyExtraStart + 3] ?? '');
+        if ($pos !== '' && $pos !== '(none)') $positionEn = $pos;
+    }
+
+    $stmt = mysqli_prepare($link, "UPDATE companies SET name_en = ?, main_activity_en = ?, organization_type_en = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?");
     if ($stmt) {
-        mysqli_stmt_bind_param($stmt, 'ssi', $nameEn, $mainActivityEn, $companyId);
+        mysqli_stmt_bind_param($stmt, 'sssi', $nameEn, $mainActivityEn, $orgTypeEn, $companyId);
         if (!mysqli_stmt_execute($stmt)) {
             error_log("refresh_company_products_en: UPDATE companies failed: " . mysqli_error($link));
         }
         mysqli_stmt_close($stmt);
+    }
+    if ($firstAddress && ($localityEn !== null || $departmentEn !== null)) {
+        $aid = (int) $firstAddress['id'];
+        $stmt = mysqli_prepare($link, "UPDATE company_addresses SET locality_en = ?, department_en = ? WHERE id = ?");
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'ssi', $localityEn, $departmentEn, $aid);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
+    }
+    if ($firstContact && $positionEn !== null) {
+        $cid = (int) $firstContact['id'];
+        $stmt = mysqli_prepare($link, "UPDATE company_contacts SET position_en = ? WHERE id = ?");
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, 'si', $positionEn, $cid);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+        }
     }
 
     $idx = 2;
@@ -212,11 +281,49 @@ function refresh_company_products_en($link, $companyId) {
         if ($pCertEn === '(none)' || $pCertEn === '') {
             $pCertEn = null;
         }
-        $st = mysqli_prepare($link, "UPDATE products SET name_en = ?, description_en = ?, annual_export_en = ?, certifications_en = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?");
-        if ($st) {
-            mysqli_stmt_bind_param($st, 'ssssi', $pNameEn, $pDescEn, $pAnnualEn, $pCertEn, $pid);
-            mysqli_stmt_execute($st);
-            mysqli_stmt_close($st);
+
+        $currentMarketsEnJson = null;
+        $targetMarketsEnJson = null;
+        $marketsStartIdx = 2 + count($products) * 4;
+        if (isset($p['current_markets'], $p['target_markets'])) {
+            $marketMap = [];
+            foreach ($uniqueMarketsOrdered as $i => $m) {
+                $marketMap[$m] = isset($translated[$marketsStartIdx + $i]) ? trim($translated[$marketsStartIdx + $i]) : $m;
+            }
+            $buildEnJson = function ($raw) use ($extractMarketNames, $marketMap) {
+                if (empty($raw)) return null;
+                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
+                if (!is_array($dec)) return null;
+                $out = [];
+                foreach ($dec as $m) {
+                    $name = is_array($m) ? trim((string)($m['nombre'] ?? $m['name'] ?? '')) : trim((string)$m);
+                    $en = isset($marketMap[$name]) ? $marketMap[$name] : $name;
+                    if (is_array($m)) {
+                        $out[] = array_key_exists('nombre', $m) ? ['nombre' => $en] : ['name' => $en];
+                    } else {
+                        $out[] = $en;
+                    }
+                }
+                return json_encode($out);
+            };
+            $currentMarketsEnJson = $buildEnJson($p['current_markets']);
+            $targetMarketsEnJson = $buildEnJson($p['target_markets']);
+        }
+
+        if ($currentMarketsEnJson !== null && $targetMarketsEnJson !== null) {
+            $st = mysqli_prepare($link, "UPDATE products SET name_en = ?, description_en = ?, annual_export_en = ?, certifications_en = ?, current_markets_en = ?, target_markets_en = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?");
+            if ($st) {
+                mysqli_stmt_bind_param($st, 'ssssssi', $pNameEn, $pDescEn, $pAnnualEn, $pCertEn, $currentMarketsEnJson, $targetMarketsEnJson, $pid);
+                mysqli_stmt_execute($st);
+                mysqli_stmt_close($st);
+            }
+        } else {
+            $st = mysqli_prepare($link, "UPDATE products SET name_en = ?, description_en = ?, annual_export_en = ?, certifications_en = ?, updated_at = UNIX_TIMESTAMP() WHERE id = ?");
+            if ($st) {
+                mysqli_stmt_bind_param($st, 'ssssi', $pNameEn, $pDescEn, $pAnnualEn, $pCertEn, $pid);
+                mysqli_stmt_execute($st);
+                mysqli_stmt_close($st);
+            }
         }
     }
 }

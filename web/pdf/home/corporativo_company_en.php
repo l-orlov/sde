@@ -32,6 +32,7 @@ require_once $vendorAutoload;
 
 require_once $webRoot . '/includes/functions.php';
 DBconnect();
+require_once __DIR__ . '/../includes/markets_display_en.php';
 
 global $link;
 
@@ -185,10 +186,7 @@ if ($currentUserId <= 0) {
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.name_en, c.main_activity, c.main_activity_en, c.website, c.start_date, c.organization_type
-      FROM companies c
-      WHERE c.user_id = ? AND c.moderation_status = 'approved'
-      LIMIT 1");
+$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.name_en, c.main_activity, c.main_activity_en, c.website, c.start_date, c.organization_type, c.organization_type_en FROM companies c WHERE c.user_id = ? AND c.moderation_status = 'approved' LIMIT 1");
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'i', $currentUserId);
     mysqli_stmt_execute($stmt);
@@ -258,12 +256,7 @@ if (!empty($companyIds)) {
 $productosParaSlides = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $chk = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'current_markets'");
-    $hasCurrentMarkets = ($chk && mysqli_num_rows($chk) > 0);
-    $chk = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'target_markets'");
-    $hasTargetMarkets = ($chk && mysqli_num_rows($chk) > 0);
-    $marketsCols = ($hasCurrentMarkets ? ', p.current_markets' : '') . ($hasTargetMarkets ? ', p.target_markets' : '');
-    $q = "SELECT p.id, p.name, p.name_en, p.activity, p.description, p.description_en, p.annual_export, p.annual_export_en, p.certifications, p.certifications_en, p.company_id, p.type, p.tariff_code" . $marketsCols . "
+    $q = "SELECT p.id, p.name, p.name_en, p.activity, p.description, p.description_en, p.annual_export, p.annual_export_en, p.certifications, p.certifications_en, p.company_id, p.type, p.tariff_code, p.current_markets, p.current_markets_en, p.target_markets, p.target_markets_en
           FROM products p
           WHERE p.company_id IN ($ids)
           ORDER BY p.is_main DESC, p.id ASC
@@ -341,23 +334,25 @@ foreach ($empresasDestacadas as $emp) {
     mysqli_stmt_close($stmt);
 }
 
-// Localidad, departamento y domicilio por empresa (desde company_addresses, primera dirección)
+// Localidad, departamento y domicilio por empresa (desde company_addresses; EN PDF usa _en)
 $localidadPorEmpresa = [];
 $departamentoPorEmpresa = [];
 $domicilioPorEmpresa = [];
 $descripcionPorEmpresa = []; // breve descripción: primer producto por empresa, truncado
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT company_id, locality, department, street, street_number FROM company_addresses WHERE company_id IN ($ids) ORDER BY company_id, id ASC";
+    $q = "SELECT company_id, locality, locality_en, department, department_en, street, street_number FROM company_addresses WHERE company_id IN ($ids) ORDER BY company_id, id ASC";
     $r = @mysqli_query($link, $q);
     if ($r) {
         while ($row = mysqli_fetch_assoc($r)) {
             $cid = (int) $row['company_id'];
-            if (!isset($localidadPorEmpresa[$cid]) && $row['locality'] !== null && $row['locality'] !== '') {
-                $localidadPorEmpresa[$cid] = $row['locality'];
+            if (!isset($localidadPorEmpresa[$cid])) {
+                $loc = !empty(trim($row['locality_en'] ?? '')) ? trim($row['locality_en']) : (($row['locality'] !== null && $row['locality'] !== '') ? $row['locality'] : '');
+                if ($loc !== '') $localidadPorEmpresa[$cid] = $loc;
             }
-            if (!isset($departamentoPorEmpresa[$cid]) && !empty(trim($row['department'] ?? ''))) {
-                $departamentoPorEmpresa[$cid] = trim($row['department']);
+            if (!isset($departamentoPorEmpresa[$cid])) {
+                $dept = !empty(trim($row['department_en'] ?? '')) ? trim($row['department_en']) : trim($row['department'] ?? '');
+                if ($dept !== '') $departamentoPorEmpresa[$cid] = $dept;
             }
             if (!isset($domicilioPorEmpresa[$cid])) {
                 $parts = array_filter([trim($row['street'] ?? ''), trim($row['street_number'] ?? '')]);
@@ -381,20 +376,21 @@ if (!empty($companyIds)) {
     }
 }
 
-// Contacto principal por empresa (cargo, email, teléfono desde company_contacts)
+// Contacto principal por empresa (company_contacts; EN PDF usa position_en)
 $contactoPorEmpresa = [];
 if (!empty($companyIds)) {
     $check = @mysqli_query($link, "SHOW TABLES LIKE 'company_contacts'");
     if ($check && mysqli_num_rows($check) > 0) {
         $ids = implode(',', array_map('intval', $companyIds));
-        $q = "SELECT company_id, position, email, area_code, phone FROM company_contacts WHERE company_id IN ($ids) ORDER BY company_id, id ASC";
+        $q = "SELECT company_id, position, position_en, email, area_code, phone FROM company_contacts WHERE company_id IN ($ids) ORDER BY company_id, id ASC";
         $r = @mysqli_query($link, $q);
         if ($r) {
             while ($row = mysqli_fetch_assoc($r)) {
                 $cid = (int) $row['company_id'];
                 if (!isset($contactoPorEmpresa[$cid])) {
+                    $pos = !empty(trim($row['position_en'] ?? '')) ? trim($row['position_en']) : trim($row['position'] ?? '');
                     $contactoPorEmpresa[$cid] = [
-                        'position' => trim($row['position'] ?? ''),
+                        'position' => $pos,
                         'email'    => trim($row['email'] ?? ''),
                         'phone'    => trim(($row['area_code'] ?? '') . ' ' . ($row['phone'] ?? '')),
                     ];
@@ -474,35 +470,29 @@ if (!empty($companyIds)) {
     }
 }
 
-// Mercados objetivo: desde products.target_markets (principal) y company_data.target_markets (respaldo) para empresas aprobadas
+// Mercados objetivo: desde products.target_markets (principal) y company_data.target_markets (respaldo)
 $todosLosPaises = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    // 1) Desde products.target_markets (formulario guarda mercados por producto/servicio aquí)
-    $hasProductsMarkets = false;
-    $check = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'target_markets'");
-    if ($check && mysqli_num_rows($check) > 0) {
-        $hasProductsMarkets = true;
-    }
-    if ($hasProductsMarkets) {
-        $q = "SELECT target_markets FROM products WHERE company_id IN ($ids) AND target_markets IS NOT NULL AND target_markets != '' AND target_markets != '[]'";
-        $res = @mysqli_query($link, $q);
-        if ($res) {
-            while ($row = mysqli_fetch_assoc($res)) {
-                $dec = json_decode($row['target_markets'], true);
+    $q = "SELECT target_markets, target_markets_en FROM products WHERE company_id IN ($ids) AND (target_markets IS NOT NULL AND target_markets != '' AND target_markets != '[]' OR target_markets_en IS NOT NULL AND target_markets_en != '' AND target_markets_en != '[]')";
+    $res = @mysqli_query($link, $q);
+    if ($res) {
+        while ($row = mysqli_fetch_assoc($res)) {
+            $raw = !empty(trim((string)($row['target_markets_en'] ?? ''))) ? $row['target_markets_en'] : $row['target_markets'];
+                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
                 if (is_array($dec)) {
                     foreach ($dec as $p) {
                         if (is_string($p)) {
                             $todosLosPaises[] = trim($p);
-                        } elseif (is_array($p) && isset($p['nombre'])) {
-                            $todosLosPaises[] = trim($p['nombre']);
+                        } elseif (is_array($p)) {
+                            $n = trim((string)($p['name'] ?? $p['nombre'] ?? ''));
+                            if ($n !== '') $todosLosPaises[] = $n;
                         }
                     }
-                }
             }
         }
     }
-    // 2) Respaldo: company_data.target_markets (datos antiguos o desde admin)
+    // Respaldo: company_data.target_markets (datos antiguos o desde admin)
     $placeholders = implode(',', array_fill(0, count($companyIds), '?'));
     $stmt = mysqli_prepare($link, "SELECT target_markets FROM company_data WHERE company_id IN ($placeholders)");
     $types = str_repeat('i', count($companyIds));
@@ -948,8 +938,8 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $pfRowH = 6;
         $pfFirst = $companies[0] ?? [];
         $pfCid = $pfFirst['id'] ?? null;
-        $pfOrgType = trim($pfFirst['organization_type'] ?? '');
-        $pfAct = trim($pfFirst['main_activity'] ?? '');
+        $pfOrgType = !empty(trim($pfFirst['organization_type_en'] ?? '')) ? trim($pfFirst['organization_type_en']) : trim($pfFirst['organization_type'] ?? '');
+        $pfAct = !empty(trim($pfFirst['main_activity_en'] ?? '')) ? trim($pfFirst['main_activity_en']) : trim($pfFirst['main_activity'] ?? '');
         $pfLoc = $pfCid && isset($localidadPorEmpresa[$pfCid]) ? $localidadPorEmpresa[$pfCid] : '';
         $pfDept = $pfCid && isset($departamentoPorEmpresa[$pfCid]) ? $departamentoPorEmpresa[$pfCid] : '';
         $pfDom = $pfCid && isset($domicilioPorEmpresa[$pfCid]) ? $domicilioPorEmpresa[$pfCid] : '';
@@ -1306,36 +1296,8 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->Cell($p7DescW, $p7LabelH, 'Certifications: ' . (!empty(trim((string)($prod['certifications_en'] ?? ''))) ? trim($prod['certifications_en']) : (trim($prod['certifications'] ?? '') ?: '-')), 0, 1, 'L');
             $mpdf->SetX($p7DescX);
             $mpdf->Cell($p7DescW, $p7LabelH, 'Tariff code (NCM/HS): ' . (trim($prod['tariff_code'] ?? '') ?: '-'), 0, 1, 'L');
-            $p7CurrentMarketsStr = '-';
-            if (!empty($prod['current_markets'])) {
-                $raw = $prod['current_markets'];
-                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
-                if (is_array($dec)) {
-                    $list = [];
-                    foreach ($dec as $m) {
-                        $list[] = is_array($m) ? ($m['nombre'] ?? $m['name'] ?? '') : (string)$m;
-                    }
-                    $p7CurrentMarketsStr = implode(', ', array_filter($list));
-                } else {
-                    $p7CurrentMarketsStr = is_string($raw) ? trim($raw) : (string)$raw;
-                }
-                if ($p7CurrentMarketsStr === '') $p7CurrentMarketsStr = '-';
-            }
-            $p7TargetMarketsStr = '-';
-            if (!empty($prod['target_markets'])) {
-                $raw = $prod['target_markets'];
-                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
-                if (is_array($dec)) {
-                    $list = [];
-                    foreach ($dec as $m) {
-                        $list[] = is_array($m) ? ($m['nombre'] ?? $m['name'] ?? '') : (string)$m;
-                    }
-                    $p7TargetMarketsStr = implode(', ', array_filter($list));
-                } else {
-                    $p7TargetMarketsStr = is_string($raw) ? trim($raw) : (string)$raw;
-                }
-                if ($p7TargetMarketsStr === '') $p7TargetMarketsStr = '-';
-            }
+            $p7CurrentMarketsStr = pdf_en_markets_display_string($prod['current_markets'] ?? null, $prod['current_markets_en'] ?? null);
+            $p7TargetMarketsStr = pdf_en_markets_display_string($prod['target_markets'] ?? null, $prod['target_markets_en'] ?? null);
             if (mb_strlen($p7CurrentMarketsStr) > 45) $p7CurrentMarketsStr = mb_substr($p7CurrentMarketsStr, 0, 44) . '…';
             if (mb_strlen($p7TargetMarketsStr) > 45) $p7TargetMarketsStr = mb_substr($p7TargetMarketsStr, 0, 44) . '…';
             $mpdf->SetX($p7DescX);
