@@ -569,9 +569,6 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                     $dh = (int) max(1, round($dw * $s1FullH / $s1BgW));
                     $dst = imagecreatetruecolor($dw, $dh);
                     if ($dst && @imagecopyresampled($dst, $src, 0, 0, 0, 0, $dw, $dh, $sw, $sh)) {
-                        if (function_exists('imagefilter')) {
-                            @imagefilter($dst, IMG_FILTER_BRIGHTNESS, -85);
-                        }
                         $tmp = sys_get_temp_dir() . '/clasico_portada_' . uniqid() . '.png';
                         if (imagepng($dst, $tmp)) {
                             $s1BgStretchedPath = $tmp;
@@ -587,6 +584,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         } elseif ($backgroundSlide1Path && file_exists($backgroundSlide1Path)) {
             $mpdf->Image($backgroundSlide1Path, $s1LeftColW, 0, $s1BgW, $s1FullH);
         }
+        $mpdf->SetAlpha(0.6);
+        $mpdf->SetFillColor(0, 0, 0);
+        $mpdf->Rect($s1LeftColW, 0, $s1BgW, $s1FullH, 'F');
+        $mpdf->SetAlpha(1);
         $s1TextLeft = $s1LeftColW + 14;
         $s1TextW = $wMm - $s1TextLeft - 24;
         $s1Y = 28;
@@ -942,6 +943,485 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->Cell($s3PageBoxW - 26, 9, '03', 0, 0, 'R');
         $mpdf->SetLeftMargin(0);
         $mpdf->SetRightMargin(0);
+        // Nuevo slide después del 3: Ubicación estratégica y conectividad (página 04)
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+        $s3eLeftW = round($wMm * 0.58);
+        $s3eBlockW = round($wMm * 0.42);
+        $s3eBlockH = round($hMm * 0.50);
+        $s3eBlockX = $wMm - $s3eBlockW;
+        $s3eBlockY = $hMm - $s3eBlockH;
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect(0, 0, $wMm, $hMm, 'F');
+        $mpdf->SetFillColor(0, 0, 0);
+        $mpdf->Rect($s3eBlockX, $s3eBlockY, $s3eBlockW, $s3eBlockH, 'F');
+        $s3eLogoX = 24;
+        $s3eLogoY = 20;
+        $s3eLogoW = 64;
+        $s3eLogoH = 24;
+        if (file_exists($pdfLogoPath)) {
+            $imgSize = @getimagesize($pdfLogoPath);
+            $maxLogoW = $s3eLogoW;
+            $maxLogoH = $s3eLogoH;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $imgRatio = $imgSize[0] / $imgSize[1];
+                $logoW = ($maxLogoH * $imgRatio <= $maxLogoW) ? $maxLogoH * $imgRatio : $maxLogoW;
+                $logoH = ($maxLogoH * $imgRatio <= $maxLogoW) ? $maxLogoH : $maxLogoW / $imgRatio;
+            } else {
+                $logoW = $maxLogoW;
+                $logoH = $maxLogoH;
+            }
+            $logoX = $s3eLogoX + ($s3eLogoW - $logoW) / 2;
+            $logoY = $s3eLogoY + ($s3eLogoH - $logoH) / 2;
+            $mpdf->Image($pdfLogoPath, $logoX, $logoY, $logoW, $logoH);
+        }
+        $s3eTextPad = 24;
+        $s3eTextW = $s3eLeftW - 2 * $s3eTextPad;
+        $s3eTitleY = $s3eLogoY + $s3eLogoH + 20;
+        $mpdf->SetTextColor(0, 0, 0);
+        $mpdf->SetFont('dejavusans', 'B', 46);
+        $mpdf->SetXY($s3eTextPad, $s3eTitleY);
+        $mpdf->Cell($s3eTextW, 17, function_exists('mb_strtoupper') ? mb_strtoupper($configInstitucional['nombre_provincia']) : strtoupper($configInstitucional['nombre_provincia']), 0, 1, 'L');
+        $mpdf->SetTextColor(141, 188, 220);
+        $mpdf->SetFont('dejavusans', 'B', 46);
+        $mpdf->SetXY($s3eTextPad, $s3eTitleY + 17);
+        $mpdf->Cell($s3eTextW, 18, 'ESTRATÉGICO', 0, 1, 'L');
+        $s3eFontSize = 14;
+        $s3eLineHeight = 7;
+        $s3eCell = function ($bold, $txt, $ln = 0) use ($mpdf, $s3eLineHeight, $s3eFontSize) {
+            $mpdf->SetFont('dejavusans', $bold ? 'B' : '', $s3eFontSize);
+            $w = $mpdf->GetStringWidth($txt);
+            $mpdf->Cell($w, $s3eLineHeight, $txt, 0, $ln, 'L');
+        };
+        $s3eParaTop = $s3eTitleY + 56;
+        $mpdf->SetXY($s3eTextPad, $s3eParaTop);
+        $mpdf->SetTextColor(0, 0, 0);
+        $s3eCell(false, 'Santiago del Estero ocupa una ', 0);
+        $s3eCell(true, 'posición clave en el Norte', 1);
+        $mpdf->SetX($s3eTextPad);
+        $s3eCell(false, 'argentino y se integra a ', 0);
+        $s3eCell(true, 'ejes de conectividad', 0);
+        $s3eCell(false, ' que vinculan la', 1);
+        $mpdf->SetX($s3eTextPad);
+        $s3eCell(false, 'producción regional con ', 0);
+        $s3eCell(true, 'corredores logísticos hacia el', 1);
+        $mpdf->SetX($s3eTextPad);
+        $s3eCell(true, 'Atlántico y el Pacífico.', 1);
+        $mpdf->Ln(8);
+        $mpdf->SetX($s3eTextPad);
+        $s3eCell(false, 'Con ', 0);
+        $s3eCell(true, 'infraestructura vial en expansión y articulación territorial,', 1);
+        $mpdf->SetX($s3eTextPad);
+        $s3eCell(false, 'la provincia facilita el movimiento de bienes, ', 0);
+        $s3eCell(true, 'la llegada a', 1);
+        $mpdf->SetX($s3eTextPad);
+        $s3eCell(true, 'mercados', 0);
+        $s3eCell(false, ' y la generación de nuevas ', 0);
+        $s3eCell(true, 'oportunidades de', 1);
+        $mpdf->SetX($s3eTextPad);
+        $s3eCell(true, 'inversión.', 1);
+        $mpdf->SetFont('dejavusans', '', $s3eFontSize);
+        $s3eImgMarginR = 10;
+        $s3eImgW = round($wMm * 0.30);
+        $s3eImgH = round($hMm * 0.62);
+        $s3eImgX = $wMm - $s3eBlockW + 24;
+        $s3eImgY = 44;
+        $s3eImgPath = $assetsDir . '/ESTRATEGICO.jpg';
+        if (!file_exists($s3eImgPath)) {
+            $s3eImgPath = !empty($portadaCandidates) ? $portadaCandidates[array_rand($portadaCandidates)] : (!empty($identidadCandidates) ? $identidadCandidates[array_rand($identidadCandidates)] : null);
+        }
+        if ($s3eImgPath && file_exists($s3eImgPath) && extension_loaded('gd')) {
+            $info = @getimagesize($s3eImgPath);
+            $ext = strtolower(pathinfo($s3eImgPath, PATHINFO_EXTENSION));
+            $src = false;
+            if ($info && $info[2] === IMAGETYPE_JPEG) {
+                $src = @imagecreatefromjpeg($s3eImgPath);
+            } elseif ($info && $info[2] === IMAGETYPE_PNG) {
+                $src = @imagecreatefrompng($s3eImgPath);
+            } elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) {
+                $src = @imagecreatefromwebp($s3eImgPath);
+            }
+            if ($src && !empty($info[0]) && !empty($info[1])) {
+                $sw = imagesx($src);
+                $sh = imagesy($src);
+                $scale = 100 / 25.4;
+                $tw = (int) max(1, round($s3eImgW * $scale));
+                $th = (int) max(1, round($s3eImgH * $scale));
+                $r = max($tw / $sw, $th / $sh);
+                $cropW = (int) round($tw / $r);
+                $cropH = (int) round($th / $r);
+                $srcX = (int) max(0, ($sw - $cropW) / 2);
+                $srcY = (int) max(0, ($sh - $cropH) / 2);
+                $dst = @imagecreatetruecolor($tw, $th);
+                if ($dst && $cropW > 0 && $cropH > 0 && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $tw, $th, $cropW, $cropH)) {
+                    $tmp = sys_get_temp_dir() . '/clasico_estrategico_' . uniqid() . '.png';
+                    if (imagepng($dst, $tmp)) {
+                        $mpdf->Image($tmp, $s3eImgX, $s3eImgY, $s3eImgW, $s3eImgH);
+                        @unlink($tmp);
+                    }
+                    imagedestroy($dst);
+                }
+                imagedestroy($src);
+            }
+        } elseif ($s3eImgPath && file_exists($s3eImgPath)) {
+            $mpdf->Image($s3eImgPath, $s3eImgX, $s3eImgY, $s3eImgW, $s3eImgH);
+        } else {
+            $mpdf->SetFillColor(60, 60, 65);
+            $mpdf->Rect($s3eImgX, $s3eImgY, $s3eImgW, $s3eImgH, 'F');
+        }
+        $s3eFooterY = $hMm - 28;
+        $s3eFooterPadLeft = 22;
+        $mpdf->SetTextColor(255, 255, 255);
+        $mpdf->SetFont('dejavusans', 'B', 14);
+        $mpdf->SetXY($s3eBlockX + $s3eFooterPadLeft, $s3eFooterY);
+        $mpdf->Cell($s3eBlockW - $s3eFooterPadLeft, 8, 'UBICACIÓN ESTRATÉGICA Y CONECTIVIDAD', 0, 0, 'L');
+        $s3ePageBoxW = 40;
+        $s3ePageBoxH = 13;
+        $s3ePageBoxX = $wMm - $s3ePageBoxW;
+        $s3ePageBoxY = $hMm - $s3ePageBoxH - 18;
+        $mpdf->SetFillColor(141, 188, 220);
+        $mpdf->Rect($s3ePageBoxX, $s3ePageBoxY, $s3ePageBoxW, $s3ePageBoxH, 'F');
+        $mpdf->SetTextColor(255, 255, 255);
+        $mpdf->SetFont('dejavusans', 'B', 14);
+        $mpdf->SetXY($s3ePageBoxX, $s3ePageBoxY + 2.2);
+        $mpdf->Cell($s3ePageBoxW - 26, 9, '04', 0, 0, 'R');
+        $mpdf->SetLeftMargin(0);
+        $mpdf->SetRightMargin(0);
+        // Slide: Estructura productiva y sectores clave (página 05)
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+        $s5eLeftW = round($wMm * 0.40);
+        $s5eRightW = $wMm - $s5eLeftW;
+        $mpdf->SetFillColor(0, 0, 0);
+        $mpdf->Rect(0, 0, $s5eLeftW, $hMm, 'F');
+        $s5ePad = 28;
+        $s5eTitleX = $s5ePad;
+        $s5eTitleY = 52;
+        $mpdf->SetTextColor(255, 255, 255);
+        $mpdf->SetFont('dejavusans', 'B', 42);
+        $mpdf->SetXY($s5eTitleX, $s5eTitleY);
+        $mpdf->Cell($s5eLeftW - 2 * $s5ePad, 16, 'ESTRUCTURA', 0, 1, 'L');
+        $mpdf->SetXY($s5eTitleX, $s5eTitleY + 18);
+        $mpdf->Cell($s5eLeftW - 2 * $s5ePad, 16, 'PRODUCTIVA', 0, 1, 'L');
+        $mpdf->SetXY($s5eTitleX, $s5eTitleY + 36);
+        $mpdf->Cell($s5eLeftW - 2 * $s5ePad, 16, 'Y SECTORES', 0, 1, 'L');
+        $mpdf->SetTextColor(141, 188, 220);
+        $mpdf->SetXY($s5eTitleX, $s5eTitleY + 54);
+        $mpdf->Cell($s5eLeftW - 2 * $s5ePad, 16, 'CLAVE', 0, 1, 'L');
+        $s5eParaY = $hMm - 76;
+        $s5eParaW = $s5eLeftW - 2 * $s5ePad;
+        $mpdf->SetTextColor(255, 255, 255);
+        $mpdf->SetFont('dejavusans', '', 14);
+        $mpdf->SetXY($s5eTitleX, $s5eParaY);
+        $mpdf->MultiCell($s5eParaW, 6.5, 'Santiago del Estero presenta una matriz productiva diversificada basada en recursos naturales, desarrollo agroindustrial, crecimiento energético y consolidación de economías regionales con proyección nacional e internacional.', 0, 'L');
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect($s5eLeftW, 0, $s5eRightW, $hMm, 'F');
+        $s5eLogoX = $wMm - 88;
+        $s5eLogoY = 18;
+        $s5eLogoW = 64;
+        $s5eLogoH = 24;
+        if (file_exists($pdfLogoPath)) {
+            $imgSize = @getimagesize($pdfLogoPath);
+            $maxLogoW = $s5eLogoW;
+            $maxLogoH = $s5eLogoH;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $imgRatio = $imgSize[0] / $imgSize[1];
+                $logoW = ($maxLogoH * $imgRatio <= $maxLogoW) ? $maxLogoH * $imgRatio : $maxLogoW;
+                $logoH = ($maxLogoH * $imgRatio <= $maxLogoW) ? $maxLogoH : $maxLogoW / $imgRatio;
+            } else {
+                $logoW = $maxLogoW;
+                $logoH = $maxLogoH;
+            }
+            $lx = $s5eLogoX + ($s5eLogoW - $logoW) / 2;
+            $ly = $s5eLogoY + ($s5eLogoH - $logoH) / 2;
+            $mpdf->Image($pdfLogoPath, $lx, $ly, $logoW, $logoH);
+        }
+        $s5eColPad = 14;
+        $s5eBoxW = ($s5eRightW - 2 * $s5eColPad - 12) / 2;
+        $s5eBoxH = ($hMm - 70 - 24) / 2;
+        $s5eStartY = 58;
+        $s5eStartX = $s5eLeftW + $s5eColPad;
+        $s5eSections = [
+            ['num' => '01', 'title' => 'Agroindustria', 'items' => ['Algodón', 'Maíz y soja', 'Alfalfa y forrajes', 'Producción hortícola', 'Desarrollo agroindustrial']],
+            ['num' => '02', 'title' => 'Ganadería', 'items' => ['Ganadería bovina', 'Producción caprina', 'Producción porcina y aviar', 'Industria frigorífica', 'Desarrollo genético y sanidad animal']],
+            ['num' => '03', 'title' => 'Regionales', 'items' => ['Producción apícola (miel)', 'Alcaparras', 'Producción forestal', 'Agricultura familiar', 'Valor agregado regional']],
+            ['num' => '04', 'title' => 'Desarrollo', 'items' => ['Energías renovables', 'Infraestructura productiva', 'Sistemas de riego', 'Desarrollo territorial sostenible', 'Expansión industrial']],
+        ];
+        $s5eRedW = 2;
+        $s5eRedH = 16;
+        $s5eHeaderH = 10;
+        $s5eLineH = 6;
+        $s5eGap = 3;
+        foreach ($s5eSections as $idx => $sec) {
+            $col = $idx % 2;
+            $row = (int) ($idx / 2);
+            $x = $s5eStartX + $col * ($s5eBoxW + 12);
+            $y = $s5eStartY + $row * ($s5eBoxH + 12);
+            $mpdf->SetTextColor(0, 0, 0);
+            $mpdf->SetFont('dejavusans', 'B', 20);
+            $mpdf->SetXY($x, $y);
+            $mpdf->Cell(16, $s5eLineH, $sec['num'], 0, 0, 'L');
+            $mpdf->SetFillColor(200, 50, 50);
+            $s5eRedY = $y + ($s5eLineH - $s5eRedH) / 2;
+            $mpdf->Rect($x + 18, $s5eRedY, $s5eRedW, $s5eRedH, 'F');
+            $s5eTitleLeft = $x + 18 + $s5eRedW + 5;
+            $mpdf->SetXY($s5eTitleLeft, $y);
+            $mpdf->Cell($s5eBoxW - 30, $s5eLineH, $sec['title'], 0, 1, 'L');
+            $itemY = $y + $s5eHeaderH;
+            $mpdf->SetFont('dejavusans', '', 12);
+            foreach ($sec['items'] as $item) {
+                $mpdf->SetXY($s5eTitleLeft, $itemY);
+                $mpdf->SetTextColor(0, 0, 0);
+                $mpdf->Cell(5, $s5eLineH, "\xE2\x80\xA2", 0, 0, 'L');
+                $mpdf->Cell($s5eBoxW - ($s5eTitleLeft - $x) - 5, $s5eLineH, $item, 0, 1, 'L');
+                $itemY += $s5eLineH + $s5eGap;
+            }
+        }
+        // Bloque blanco sobre el borde derecho (como slide 3) + badge número de página 05
+        $s5eWhiteStripW = round($wMm * 0.05);
+        $s5eWhiteStripX = $wMm - $s5eWhiteStripW;
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect($s5eWhiteStripX, 0, $s5eWhiteStripW, $hMm, 'F');
+        $s5ePageBoxW = 40;
+        $s5ePageBoxH = 13;
+        $s5ePageBoxX = $wMm - $s5ePageBoxW;
+        $s5ePageBoxY = $hMm - $s5ePageBoxH - 18;
+        $mpdf->SetFillColor(141, 188, 220);
+        $mpdf->Rect($s5ePageBoxX, $s5ePageBoxY, $s5ePageBoxW, $s5ePageBoxH, 'F');
+        $mpdf->SetTextColor(255, 255, 255);
+        $mpdf->SetFont('dejavusans', 'B', 14);
+        $mpdf->SetXY($s5ePageBoxX, $s5ePageBoxY + 2.2);
+        $mpdf->Cell($s5ePageBoxW - 26, 9, '05', 0, 0, 'R');
+        $mpdf->SetLeftMargin(0);
+        $mpdf->SetRightMargin(0);
+        // Slide: Innovación y futuro productivo (página 06) — misma estructura que el 05
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+        $s6eLeftW = round($wMm * 0.40);
+        $s6eRightW = $wMm - $s6eLeftW;
+        $mpdf->SetFillColor(0, 0, 0);
+        $mpdf->Rect(0, 0, $s6eLeftW, $hMm, 'F');
+        $s6ePad = 28;
+        $s6eTitleX = $s6ePad;
+        $s6eTitleY = 52;
+        $mpdf->SetTextColor(141, 188, 220);
+        $mpdf->SetFont('dejavusans', 'B', 42);
+        $mpdf->SetXY($s6eTitleX, $s6eTitleY);
+        $mpdf->Cell($s6eLeftW - 2 * $s6ePad, 16, 'INNOVACIÓN', 0, 1, 'L');
+        $mpdf->SetTextColor(255, 255, 255);
+        $mpdf->SetXY($s6eTitleX, $s6eTitleY + 18);
+        $mpdf->Cell($s6eLeftW - 2 * $s6ePad, 16, 'Y FUTURO', 0, 1, 'L');
+        $mpdf->SetXY($s6eTitleX, $s6eTitleY + 36);
+        $mpdf->Cell($s6eLeftW - 2 * $s6ePad, 16, 'PRODUCTIVO', 0, 1, 'L');
+        $s6eParaY = $hMm - 78;
+        $s6eParaW = $s6eLeftW - 2 * $s6ePad;
+        $mpdf->SetTextColor(255, 255, 255);
+        $mpdf->SetLeftMargin($s6eTitleX);
+        $mpdf->SetXY($s6eTitleX, $s6eParaY);
+        $mpdf->WriteHTML('<div style="width:' . round($s6eParaW) . 'mm;font-size:14pt;line-height:6.5mm;margin:0;color:#ffffff;font-family:dejavusans;">La provincia impulsa nuevas oportunidades basadas en <b>innovación, economía del conocimiento, educación y transformación digital</b>, fortaleciendo la competitividad productiva y la inserción internacional.</div>');
+        $mpdf->SetLeftMargin(0);
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect($s6eLeftW, 0, $s6eRightW, $hMm, 'F');
+        $s6eLogoX = $wMm - 88;
+        $s6eLogoY = 18;
+        $s6eLogoW = 64;
+        $s6eLogoH = 24;
+        if (file_exists($pdfLogoPath)) {
+            $imgSize = @getimagesize($pdfLogoPath);
+            $maxLogoW = $s6eLogoW;
+            $maxLogoH = $s6eLogoH;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $imgRatio = $imgSize[0] / $imgSize[1];
+                $logoW = ($maxLogoH * $imgRatio <= $maxLogoW) ? $maxLogoH * $imgRatio : $maxLogoW;
+                $logoH = ($maxLogoH * $imgRatio <= $maxLogoW) ? $maxLogoH : $maxLogoW / $imgRatio;
+            } else {
+                $logoW = $maxLogoW;
+                $logoH = $maxLogoH;
+            }
+            $lx = $s6eLogoX + ($s6eLogoW - $logoW) / 2;
+            $ly = $s6eLogoY + ($s6eLogoH - $logoH) / 2;
+            $mpdf->Image($pdfLogoPath, $lx, $ly, $logoW, $logoH);
+        }
+        $s6eColPad = 22;
+        $s6eBoxPad = 8;
+        $s6eBoxW = ($s6eRightW - 2 * $s6eColPad - 2 * $s6eBoxPad - 12) / 2;
+        $s6eStartY = 62;
+        $s6eStartX = $s6eLeftW + $s6eColPad + $s6eBoxPad;
+        $s6eLineH = 6;
+        $s6eRowGap = 50;
+        $s6eItems = [
+            ['num' => '01', 'title' => 'Educación'],
+            ['num' => '02', 'title' => 'Tecnología'],
+            ['num' => '03', 'lines' => ['Economía del', 'conocimiento']],
+            ['num' => '04', 'lines' => ['Formación', 'profesional']],
+            ['num' => '05', 'lines' => ['Transformación', 'digital']],
+            ['num' => '06', 'title' => 'Desarrollo'],
+        ];
+        $s6eRedW = 2;
+        $s6eRedH = 16;
+        $s6eTitleLeft = 18 + $s6eRedW + 5;
+        foreach ($s6eItems as $idx => $it) {
+            $col = $idx % 2;
+            $row = (int) ($idx / 2);
+            $x = $s6eStartX + $col * ($s6eBoxW + 12);
+            $y = $s6eStartY + $row * $s6eRowGap;
+            $mpdf->SetTextColor(0, 0, 0);
+            $mpdf->SetFont('dejavusans', 'B', 20);
+            $mpdf->SetXY($x, $y);
+            $mpdf->Cell(16, $s6eLineH, $it['num'], 0, 0, 'L');
+            $mpdf->SetFillColor(200, 50, 50);
+            $s6eRedY = $y + ($s6eLineH - $s6eRedH) / 2;
+            $mpdf->Rect($x + 18, $s6eRedY, $s6eRedW, $s6eRedH, 'F');
+            $titleX = $x + $s6eTitleLeft;
+            if (!empty($it['lines'])) {
+                $mpdf->SetXY($titleX, $y);
+                $mpdf->Cell($s6eBoxW - $s6eTitleLeft, $s6eLineH, $it['lines'][0], 0, 1, 'L');
+                $mpdf->SetXY($titleX, $y + $s6eLineH + 2);
+                $mpdf->Cell($s6eBoxW - $s6eTitleLeft, $s6eLineH, $it['lines'][1], 0, 1, 'L');
+            } else {
+                $mpdf->SetXY($titleX, $y);
+                $mpdf->Cell($s6eBoxW - $s6eTitleLeft, $s6eLineH, $it['title'], 0, 1, 'L');
+            }
+        }
+        $s6eWhiteStripW = round($wMm * 0.05);
+        $s6eWhiteStripX = $wMm - $s6eWhiteStripW;
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect($s6eWhiteStripX, 0, $s6eWhiteStripW, $hMm, 'F');
+        $s6ePageBoxW = 40;
+        $s6ePageBoxH = 13;
+        $s6ePageBoxX = $wMm - $s6ePageBoxW;
+        $s6ePageBoxY = $hMm - $s6ePageBoxH - 18;
+        $mpdf->SetFillColor(141, 188, 220);
+        $mpdf->Rect($s6ePageBoxX, $s6ePageBoxY, $s6ePageBoxW, $s6ePageBoxH, 'F');
+        $mpdf->SetTextColor(255, 255, 255);
+        $mpdf->SetFont('dejavusans', 'B', 14);
+        $mpdf->SetXY($s6ePageBoxX, $s6ePageBoxY + 2.2);
+        $mpdf->Cell($s6ePageBoxW - 26, 9, '06', 0, 0, 'R');
+        $mpdf->SetLeftMargin(0);
+        $mpdf->SetRightMargin(0);
+        // Slide: Turismo como motor económico (página 07)
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+        $s7tLeftW = round($wMm * 0.34);
+        $s7tRightW = $wMm - $s7tLeftW;
+        $s7tImgPath = $assetsDir . '/MOTOR_ECONOMICO.jpg';
+        if (!file_exists($s7tImgPath)) {
+            $s7tImgPath = !empty($portadaCandidates) ? $portadaCandidates[array_rand($portadaCandidates)] : null;
+        }
+        $s7tImgPadLeft = 20;
+        $s7tImgPadRight = 14;
+        $s7tImgW = $s7tLeftW - $s7tImgPadLeft - $s7tImgPadRight;
+        $mpdf->SetFillColor(40, 40, 45);
+        $mpdf->Rect(0, 0, $s7tLeftW, $hMm, 'F');
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect(0, 0, $s7tImgPadLeft, $hMm, 'F');
+        if ($s7tImgPath && file_exists($s7tImgPath) && extension_loaded('gd')) {
+            $info = @getimagesize($s7tImgPath);
+            $ext = strtolower(pathinfo($s7tImgPath, PATHINFO_EXTENSION));
+            $src = false;
+            if ($info && $info[2] === IMAGETYPE_JPEG) {
+                $src = @imagecreatefromjpeg($s7tImgPath);
+            } elseif ($info && $info[2] === IMAGETYPE_PNG) {
+                $src = @imagecreatefrompng($s7tImgPath);
+            } elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) {
+                $src = @imagecreatefromwebp($s7tImgPath);
+            }
+            if ($src && !empty($info[0]) && !empty($info[1])) {
+                $sw = imagesx($src);
+                $sh = imagesy($src);
+                $cropLeftPct = 0.35;
+                $srcX = (int) round($sw * $cropLeftPct);
+                $cropW = $sw - $srcX;
+                $cropH = $sh;
+                $scale = 100 / 25.4;
+                $dw = (int) max(1, round($s7tImgW * $scale));
+                $dh = (int) max(1, round($hMm * $scale));
+                $dst = @imagecreatetruecolor($dw, $dh);
+                if ($dst && $cropW > 0 && $cropH > 0 && @imagecopyresampled($dst, $src, 0, 0, $srcX, 0, $dw, $dh, $cropW, $cropH)) {
+                    $tmp = sys_get_temp_dir() . '/clasico_turismo_' . uniqid() . '.png';
+                    if (imagepng($dst, $tmp)) {
+                        $mpdf->Image($tmp, $s7tImgPadLeft, 0, $s7tImgW, $hMm);
+                        @unlink($tmp);
+                    }
+                    imagedestroy($dst);
+                }
+                imagedestroy($src);
+            }
+        } elseif ($s7tImgPath && file_exists($s7tImgPath)) {
+            $mpdf->Image($s7tImgPath, $s7tImgPadLeft, 0, $s7tImgW, $hMm);
+        }
+        $mpdf->SetAlpha(0.5);
+        $mpdf->SetFillColor(0, 0, 0);
+        $mpdf->Rect($s7tImgPadLeft, 0, $s7tImgW, $hMm, 'F');
+        $mpdf->SetAlpha(1);
+        $s7tBlackBarW = round($wMm * 0.25);
+        $s7tBlackBarH = round($hMm * 0.10);
+        $s7tBlackBarBottomPad = 40;
+        $s7tBlackBarY = $hMm - $s7tBlackBarH - $s7tBlackBarBottomPad;
+        $mpdf->SetFillColor(0, 0, 0);
+        $mpdf->Rect(0, $s7tBlackBarY, $s7tBlackBarW, $s7tBlackBarH, 'F');
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect($s7tImgPadLeft + $s7tImgW, 0, $s7tImgPadRight, $hMm, 'F');
+        $mpdf->Rect($s7tLeftW, 0, $s7tRightW, $hMm, 'F');
+        $s7tLogoX = $wMm - 88;
+        $s7tLogoY = 20;
+        $s7tLogoW = 64;
+        $s7tLogoH = 24;
+        if (file_exists($pdfLogoPath)) {
+            $imgSize = @getimagesize($pdfLogoPath);
+            $maxLogoW = $s7tLogoW;
+            $maxLogoH = $s7tLogoH;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $imgRatio = $imgSize[0] / $imgSize[1];
+                $logoW = ($maxLogoH * $imgRatio <= $maxLogoW) ? $maxLogoH * $imgRatio : $maxLogoW;
+                $logoH = ($maxLogoH * $imgRatio <= $maxLogoW) ? $maxLogoH : $maxLogoW / $imgRatio;
+            } else {
+                $logoW = $maxLogoW;
+                $logoH = $maxLogoH;
+            }
+            $lx = $s7tLogoX + ($s7tLogoW - $logoW) / 2;
+            $ly = $s7tLogoY + ($s7tLogoH - $logoH) / 2;
+            $mpdf->Image($pdfLogoPath, $lx, $ly, $logoW, $logoH);
+        }
+        $s7tPad = 28;
+        $s7tTextLeft = $s7tLeftW + $s7tPad;
+        $s7tTextW = $s7tRightW - $s7tPad - 24;
+        $s7tTitleY = 72;
+        $mpdf->SetTextColor(141, 188, 220);
+        $mpdf->SetFont('dejavusans', 'B', 42);
+        $mpdf->SetXY($s7tTextLeft, $s7tTitleY);
+        $mpdf->Cell($s7tTextW, 16, 'TURISMO COMO', 0, 1, 'L');
+        $mpdf->SetTextColor(0, 0, 0);
+        $mpdf->SetFont('dejavusans', 'B', 42);
+        $mpdf->SetXY($s7tTextLeft, $s7tTitleY + 18);
+        $mpdf->Cell($s7tTextW, 16, 'MOTOR ECONÓMICO', 0, 1, 'L');
+        $s7tSubtitleY = $s7tTitleY + 52;
+        $mpdf->SetFont('dejavusans', 'B', 20);
+        $mpdf->SetXY($s7tTextLeft, $s7tSubtitleY);
+        $mpdf->Cell($s7tTextW, 10, 'Turismo y Desarrollo Territorial', 0, 1, 'L');
+        $s7tParaY = $s7tSubtitleY + 22;
+        $mpdf->SetLeftMargin($s7tTextLeft);
+        $mpdf->SetXY($s7tTextLeft, $s7tParaY);
+        $mpdf->SetFont('dejavusans', '', 14);
+        $mpdf->SetTextColor(0, 0, 0);
+        $mpdf->WriteHTML('<div style="width:' . round($s7tTextW) . 'mm;font-size:14pt;line-height:6.5mm;margin:0;color:#000000;font-family:dejavusans;">El turismo se consolida como uno de los motores estratégicos de diversificación económica <b>provincial</b>, integrando <b>naturaleza</b>, <b>cultura</b>, <b>deporte</b> y <b>bienestar</b>.</div>');
+        $mpdf->SetLeftMargin(0);
+        $s7tWhiteStripW = round($wMm * 0.05);
+        $s7tWhiteStripX = $wMm - $s7tWhiteStripW;
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect($s7tWhiteStripX, 0, $s7tWhiteStripW, $hMm, 'F');
+        $s7tPageBoxW = 40;
+        $s7tPageBoxH = 13;
+        $s7tPageBoxX = $wMm - $s7tPageBoxW;
+        $s7tPageBoxY = $hMm - $s7tPageBoxH - 18;
+        $mpdf->SetFillColor(141, 188, 220);
+        $mpdf->Rect($s7tPageBoxX, $s7tPageBoxY, $s7tPageBoxW, $s7tPageBoxH, 'F');
+        $mpdf->SetTextColor(255, 255, 255);
+        $mpdf->SetFont('dejavusans', 'B', 14);
+        $mpdf->SetXY($s7tPageBoxX, $s7tPageBoxY + 2.2);
+        $mpdf->Cell($s7tPageBoxW - 26, 9, '07', 0, 0, 'R');
+        $mpdf->SetLeftMargin(0);
+        $mpdf->SetRightMargin(0);
     } elseif ($i === 4) {
         // Slide 4 intro: Empresas y productos exportables — como en diseño (logo como s3, 3 imágenes Empresa, título y texto)
         $mpdf->AddPage();
@@ -1113,11 +1593,11 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetTextColor(255, 255, 255);
         $mpdf->SetFont('dejavusans', 'B', 14);
         $mpdf->SetXY($s4PageBoxX, $s4PageBoxY + 2.2);
-        $mpdf->Cell($s4PageBoxW - 26, 9, '04', 0, 0, 'R');
+        $mpdf->Cell($s4PageBoxW - 26, 9, '08', 0, 0, 'R');
         $mpdf->SetLeftMargin(0);
         $mpdf->SetRightMargin(0);
         // Una slide por empresa: izquierda blanca (título + datos), derecha bloque negro 50% con márgenes y logo de la empresa + logo provincial arriba derecha sin recuadro azul
-        $pageNum = 5;
+        $pageNum = 9;
         foreach ($companies as $emp) {
             $mpdf->AddPage();
             $mpdf->SetXY(0, 0);
@@ -1294,7 +1774,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $prodBlackH = round($hMm * 0.42);
         $prodBlackX = $wMm - $prodBlackW;
         $prodBlackY = $hMm - $prodBlackH;
-        $prodPageNum = 5 + count($companies);
+        $prodPageNum = 9 + count($companies);
         foreach ($productoSlidesChunks as $idx => $chunk) {
             $mpdf->AddPage();
             $mpdf->SetXY(0, 0);
@@ -1556,9 +2036,6 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $dh = (int) max(1, round($dw * $s7FullH / $s7ImageW));
                 $dst = imagecreatetruecolor($dw, $dh);
                 if ($dst && @imagecopyresampled($dst, $src, 0, 0, 0, 0, $dw, $dh, $sw, $sh)) {
-                    if (function_exists('imagefilter')) {
-                        @imagefilter($dst, IMG_FILTER_BRIGHTNESS, -85);
-                    }
                     $tmp = sys_get_temp_dir() . '/clasico_contacto_' . uniqid() . '.png';
                     if (imagepng($dst, $tmp)) {
                         $s7BgStretchedPath = $tmp;
@@ -1577,6 +2054,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->SetFillColor(30, 30, 40);
             $mpdf->Rect(0, 0, $s7ImageW + $s7Overlap, $s7FullH, 'F');
         }
+        $mpdf->SetAlpha(0.6);
+        $mpdf->SetFillColor(0, 0, 0);
+        $mpdf->Rect(0, 0, $s7ImageW + $s7Overlap, $s7FullH, 'F');
+        $mpdf->SetAlpha(1);
         $mpdf->SetFillColor(255, 255, 255);
         $mpdf->Rect($s7ImageW - $s7Overlap, 0, $s7RightColW + $s7Overlap, $s7WhiteH, 'F');
         $mpdf->SetFillColor(0, 51, 153);
