@@ -33,6 +33,7 @@ require_once $vendorAutoload;
 
 require_once $webRoot . '/includes/functions.php';
 DBconnect();
+require_once __DIR__ . '/../helpers/markets_display_en.php';
 
 global $link;
 
@@ -185,10 +186,7 @@ if ($currentUserId <= 0) {
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.main_activity, c.website, c.start_date
-      FROM companies c
-      WHERE c.user_id = ? AND c.moderation_status = 'approved'
-      LIMIT 1");
+$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.name_en, c.main_activity, c.main_activity_en, c.website, c.start_date, c.organization_type, c.organization_type_en FROM companies c WHERE c.user_id = ? AND c.moderation_status = 'approved' LIMIT 1");
 if ($stmt) {
     mysqli_stmt_bind_param($stmt, 'i', $currentUserId);
     mysqli_stmt_execute($stmt);
@@ -241,7 +239,7 @@ $empresasDestacadas = array_slice($companies, 0, 3);
 $productosMuestra = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.company_id, p.type
+    $q = "SELECT p.id, p.name, p.name_en, p.activity, p.description, p.description_en, p.company_id, p.type
           FROM products p
           WHERE p.company_id IN ($ids)
           ORDER BY p.id ASC
@@ -256,20 +254,9 @@ if (!empty($companyIds)) {
 
 // Todos los productos y servicios de la empresa para slides "Exportable products" (un slide por cada uno; datos siempre desde BD)
 $productosParaSlides = [];
-$hasTargetMarkets = false;
-$hasCurrentMarkets = false;
-$targetMarketsCheck = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'target_markets'");
-if ($targetMarketsCheck && mysqli_num_rows($targetMarketsCheck) > 0) {
-    $hasTargetMarkets = true;
-}
-$currentMarketsCheck = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'current_markets'");
-if ($currentMarketsCheck && mysqli_num_rows($currentMarketsCheck) > 0) {
-    $hasCurrentMarkets = true;
-}
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $marketsCols = ($hasCurrentMarkets ? ', p.current_markets' : '') . ($hasTargetMarkets ? ', p.target_markets' : '');
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code" . $marketsCols . "
+    $q = "SELECT p.id, p.name, p.name_en, p.activity, p.description, p.description_en, p.annual_export, p.annual_export_en, p.certifications, p.certifications_en, p.company_id, p.type, p.tariff_code, p.current_markets, p.current_markets_en, p.target_markets, p.target_markets_en
           FROM products p
           WHERE p.company_id IN ($ids)
           ORDER BY p.is_main DESC, p.id ASC
@@ -347,29 +334,31 @@ foreach ($empresasDestacadas as $emp) {
     mysqli_stmt_close($stmt);
 }
 
-// Localidad por empresa (desde company_addresses, primera dirección)
+// Localidad por empresa (company_addresses; EN PDF usa locality_en)
 $localidadPorEmpresa = [];
 $descripcionPorEmpresa = []; // breve descripción: primer producto por empresa, truncado
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT company_id, locality FROM company_addresses WHERE company_id IN ($ids) ORDER BY company_id, id ASC";
+    $q = "SELECT company_id, locality, locality_en FROM company_addresses WHERE company_id IN ($ids) ORDER BY company_id, id ASC";
     $r = @mysqli_query($link, $q);
     if ($r) {
         while ($row = mysqli_fetch_assoc($r)) {
             $cid = (int) $row['company_id'];
-            if (!isset($localidadPorEmpresa[$cid]) && $row['locality'] !== null && $row['locality'] !== '') {
-                $localidadPorEmpresa[$cid] = $row['locality'];
+            if (!isset($localidadPorEmpresa[$cid])) {
+                $loc = !empty(trim($row['locality_en'] ?? '')) ? trim($row['locality_en']) : (($row['locality'] !== null && $row['locality'] !== '') ? $row['locality'] : '');
+                if ($loc !== '') $localidadPorEmpresa[$cid] = $loc;
             }
         }
     }
-    $q = "SELECT company_id, description FROM products WHERE company_id IN ($ids) AND description IS NOT NULL AND description != '' ORDER BY company_id, id ASC";
+    $q = "SELECT company_id, description, description_en FROM products WHERE company_id IN ($ids) AND (description IS NOT NULL AND description != '' OR description_en IS NOT NULL AND description_en != '') ORDER BY company_id, id ASC";
     $r = mysqli_query($link, $q);
     if ($r) {
         while ($row = mysqli_fetch_assoc($r)) {
             $cid = (int) $row['company_id'];
             if (!isset($descripcionPorEmpresa[$cid])) {
-                $descripcionPorEmpresa[$cid] = mb_substr(trim($row['description']), 0, 120);
-                if (mb_strlen(trim($row['description'])) > 120) {
+                $d = !empty(trim((string)($row['description_en'] ?? ''))) ? trim($row['description_en']) : trim($row['description'] ?? '');
+                $descripcionPorEmpresa[$cid] = mb_substr($d, 0, 120);
+                if (mb_strlen($d) > 120) {
                     $descripcionPorEmpresa[$cid] .= '…';
                 }
             }
@@ -447,35 +436,29 @@ if (!empty($companyIds)) {
     }
 }
 
-// Mercados objetivo: desde products.target_markets (principal) y company_data.target_markets (respaldo) para empresas aprobadas
+// Mercados objetivo: desde products.target_markets (principal) y company_data.target_markets (respaldo)
 $todosLosPaises = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    // 1) Desde products.target_markets (formulario guarda mercados por producto/servicio aquí)
-    $hasProductsMarkets = false;
-    $check = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'target_markets'");
-    if ($check && mysqli_num_rows($check) > 0) {
-        $hasProductsMarkets = true;
-    }
-    if ($hasProductsMarkets) {
-        $q = "SELECT target_markets FROM products WHERE company_id IN ($ids) AND target_markets IS NOT NULL AND target_markets != '' AND target_markets != '[]'";
-        $res = @mysqli_query($link, $q);
-        if ($res) {
-            while ($row = mysqli_fetch_assoc($res)) {
-                $dec = json_decode($row['target_markets'], true);
+    $q = "SELECT target_markets, target_markets_en FROM products WHERE company_id IN ($ids) AND (target_markets IS NOT NULL AND target_markets != '' AND target_markets != '[]' OR target_markets_en IS NOT NULL AND target_markets_en != '' AND target_markets_en != '[]')";
+    $res = @mysqli_query($link, $q);
+    if ($res) {
+        while ($row = mysqli_fetch_assoc($res)) {
+            $raw = !empty(trim((string)($row['target_markets_en'] ?? ''))) ? $row['target_markets_en'] : $row['target_markets'];
+                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
                 if (is_array($dec)) {
                     foreach ($dec as $p) {
                         if (is_string($p)) {
                             $todosLosPaises[] = trim($p);
-                        } elseif (is_array($p) && isset($p['nombre'])) {
-                            $todosLosPaises[] = trim($p['nombre']);
+                        } elseif (is_array($p)) {
+                            $n = trim((string)($p['name'] ?? $p['nombre'] ?? ''));
+                            if ($n !== '') $todosLosPaises[] = $n;
                         }
                     }
-                }
             }
         }
     }
-    // 2) Respaldo: company_data.target_markets (datos antiguos o desde admin)
+    // Respaldo: company_data.target_markets (datos antiguos o desde admin)
     $placeholders = implode(',', array_fill(0, count($companyIds), '?'));
     $stmt = mysqli_prepare($link, "SELECT target_markets FROM company_data WHERE company_id IN ($placeholders)");
     $types = str_repeat('i', count($companyIds));
@@ -651,12 +634,12 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->Cell($s1TextW, 22, 'COMPANY / BUSINESS', 0, 1, 'L');
         $mpdf->SetX($s1TextLeft);
         $mpdf->SetFont($pdfFontFamily, 'B', 52);
-        $s1CompanyName = (!empty($companies[0]['name']) ? trim($companies[0]['name']) : null) ?: 'name';
+        $s1CompanyName = !empty(trim((string)($companies[0]['name_en'] ?? ''))) ? trim($companies[0]['name_en']) : ((!empty($companies[0]['name']) ? trim($companies[0]['name']) : null) ?: 'name');
         $mpdf->Cell($s1TextW, 20, $s1CompanyName, 0, 1, 'L');
         $s1BoxPad = 8;
         $s1BoxH = 14;
         $s1BoxY = $s1Ty + 48;
-        $s1MainActivity = !empty($companies[0]['main_activity']) ? trim($companies[0]['main_activity']) : '';
+        $s1MainActivity = !empty(trim((string)($companies[0]['main_activity_en'] ?? ''))) ? trim($companies[0]['main_activity_en']) : (!empty($companies[0]['main_activity']) ? trim($companies[0]['main_activity']) : '');
         $s1ProvText = $s1MainActivity !== '' ? (function_exists('mb_strtoupper') ? mb_strtoupper($s1MainActivity) : strtoupper($s1MainActivity)) : 'MAIN ACTIVITY';
         $mpdf->SetFont($pdfFontFamily, 'B', 16);
         $s1BoxTextW = $mpdf->GetStringWidth($s1ProvText);
@@ -808,8 +791,8 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetFont($pdfFontFamily, 'B', 52);
         $mpdf->SetXY($pfPad, $pfTitleY + 20);
         $mpdf->Cell($pfLeftW - 2 * $pfPad, 18, 'PROFILE', 0, 1, 'L');
-        $pfPerfil1 = 'Tipo de Organización';
-        $pfPerfil2 = trim($pfEmp['main_activity'] ?? '') ?: '-';
+        $pfPerfil1 = 'Organization type';
+        $pfPerfil2 = !empty(trim($pfEmp['organization_type_en'] ?? '')) ? trim($pfEmp['organization_type_en']) : (trim($pfEmp['organization_type'] ?? '') ?: '-');
         $pfLoc = $pfCid && isset($localidadPorEmpresa[$pfCid]) ? $localidadPorEmpresa[$pfCid] : '-';
         $pfDepto = '-';
         $pfDomicilio = '-';
@@ -1088,7 +1071,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         // Slides Productos: un producto por slide — header (nombre producto + logo empresa + SDE), dos imágenes (producto con borde rojo + contextual), tres columnas abajo
         $p6CompanyNameById = [];
         foreach ($companies as $c) {
-            $p6CompanyNameById[(int) $c['id']] = $c['name'] ?? '';
+            $p6CompanyNameById[(int) $c['id']] = !empty(trim((string)($c['name_en'] ?? ''))) ? ($c['name_en'] ?? '') : ($c['name'] ?? '');
         }
         $p6RedR = 196;
         $p6RedG = 52;
@@ -1253,39 +1236,12 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $p6N = 3;
             $p6ColW = ($wMm - 2 * $p6Pad - ($p6N - 1) * $p6ColGap) / $p6N;
             $p6ColTitles = ['01. ANNUAL EXPORT (USD):', '02. CERTIFICATIONS', '03. TARIFF CODE (NCM/HS):', '04. CURRENT / MARKETS OF INTEREST'];
-            $p6Annual = trim($prod['annual_export'] ?? '') ?: 'TEXTO';
-            $p6Cert = trim($prod['certifications'] ?? '') ?: 'TEXTO';
+            $p6Annual = !empty(trim((string)($prod['annual_export_en'] ?? ''))) ? trim($prod['annual_export_en']) : (trim($prod['annual_export'] ?? '') ?: 'TEXTO');
+            $p6Cert = !empty(trim((string)($prod['certifications_en'] ?? ''))) ? trim($prod['certifications_en']) : (trim($prod['certifications'] ?? '') ?: 'TEXTO');
             $p6Tariff = trim($prod['tariff_code'] ?? '') ?: '-';
-            $p6CurrentStr = '-';
-            if (!empty($prod['current_markets'])) {
-                $raw = $prod['current_markets'];
-                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
-                if (is_array($dec)) {
-                    $list = [];
-                    foreach ($dec as $m) {
-                        $list[] = is_array($m) ? ($m['nombre'] ?? $m['name'] ?? '') : (string)$m;
-                    }
-                    $p6CurrentStr = implode(', ', array_filter($list));
-                } else {
-                    $p6CurrentStr = is_string($raw) ? trim($raw) : (string)$raw;
-                }
-                if ($p6CurrentStr === '') $p6CurrentStr = '-';
-            }
-            $p6TargetStr = '-';
-            if (!empty($prod['target_markets'])) {
-                $raw = $prod['target_markets'];
-                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
-                if (is_array($dec)) {
-                    $list = [];
-                    foreach ($dec as $m) {
-                        $list[] = is_array($m) ? ($m['nombre'] ?? $m['name'] ?? '') : (string)$m;
-                    }
-                    $p6TargetStr = implode(', ', array_filter(array_slice($list, 0, 5)));
-                } else {
-                    $p6TargetStr = is_string($raw) ? trim($raw) : (string)$raw;
-                }
-                if ($p6TargetStr === '') $p6TargetStr = '-';
-            }
+            $p6CurrentStr = pdf_en_markets_display_string($prod['current_markets'] ?? null, $prod['current_markets_en'] ?? null);
+            $p6TargetStr = pdf_en_markets_display_string($prod['target_markets'] ?? null, $prod['target_markets_en'] ?? null);
+            if (mb_strlen($p6TargetStr) > 80) $p6TargetStr = mb_substr($p6TargetStr, 0, 79) . '…';
             $p6Mercados = 'Current markets: ' . $p6CurrentStr . "\n" . 'Markets of interest: ' . $p6TargetStr;
             $p6ColContents = [$p6Annual, $p6Cert, $p6Tariff, $p6Mercados];
             $p6ColsPerRow = 2;
@@ -1505,11 +1461,11 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $c8ColGap = 14;
         $c8ItemH = 38;
         $c8Items = [
-            ['AWARDS', 'Información proveniente del input del formulario.'],
-            ['BUSINESS ROUNDS', 'Información proveniente del input del formulario.'],
-            ['COMMERCIAL REFERENCES', 'Información proveniente del input del formulario.'],
-            ['TRADE FAIRS', 'Información proveniente del input del formulario.'],
-            ['EXPORT EXPERIENCE', 'Información proveniente del input del formulario.'],
+            ['AWARDS', 'Information from the form input.'],
+            ['BUSINESS ROUNDS', 'Information from the form input.'],
+            ['COMMERCIAL REFERENCES', 'Information from the form input.'],
+            ['TRADE FAIRS', 'Information from the form input.'],
+            ['EXPORT EXPERIENCE', 'Information from the form input.'],
         ];
         foreach ($c8Items as $idx => $item) {
             if ($idx < 3) {
@@ -2022,7 +1978,9 @@ function buildOfertaPdfHtml($data) {
     $bloquesEmpresa = '';
     foreach (array_slice($empresas, 0, 3) as $i => $emp) {
         $cid = (int)($emp['id'] ?? 0);
-        $bloquesEmpresa .= '<div style="margin-bottom:16px;"><span class="acento1" style="font-weight:700;">' . htmlspecialchars($emp['name'] ?? '') . '</span><br><span style="color:#000066;">' . htmlspecialchars($emp['main_activity'] ?? '') . '</span></div>';
+        $empName = !empty(trim((string)($emp['name_en'] ?? ''))) ? ($emp['name_en'] ?? '') : ($emp['name'] ?? '');
+        $empMainAct = !empty(trim((string)($emp['main_activity_en'] ?? ''))) ? ($emp['main_activity_en'] ?? '') : ($emp['main_activity'] ?? '');
+        $bloquesEmpresa .= '<div style="margin-bottom:16px;"><span class="acento1" style="font-weight:700;">' . htmlspecialchars($empName) . '</span><br><span style="color:#000066;">' . htmlspecialchars($empMainAct) . '</span></div>';
     }
     $s4Imgs = '';
     foreach (array_slice($empresas, 0, 3) as $emp) {
@@ -2059,9 +2017,9 @@ function buildOfertaPdfHtml($data) {
         }
         $cards .= '<div style="background:#fff;border-radius:8px;overflow:hidden;padding:12px;text-align:center;">
             <div style="height:100px;background:#eee;border-radius:6px;overflow:hidden;">' . ($src ? '<img src="' . $src . '" alt="" style="width:100%;height:100%;object-fit:cover;" />' : '') . '</div>
-            <p style="margin:8px 0 4px;font-weight:700;color:#000;">' . htmlspecialchars($p['name'] ?? '') . '</p>
+            <p style="margin:8px 0 4px;font-weight:700;color:#000;">' . htmlspecialchars(!empty(trim((string)($p['name_en'] ?? ''))) ? ($p['name_en'] ?? '') : ($p['name'] ?? '')) . '</p>
             <p style="margin:0;font-size:14px;color:#003399;">' . htmlspecialchars($p['activity'] ?? '') . '</p>
-            <p style="margin:4px 0 0;font-size:12px;">' . htmlspecialchars(mb_substr($p['description'] ?? '', 0, 80)) . '</p>
+            <p style="margin:4px 0 0;font-size:12px;">' . htmlspecialchars(mb_substr(!empty(trim((string)($p['description_en'] ?? ''))) ? ($p['description_en'] ?? '') : ($p['description'] ?? ''), 0, 80)) . '</p>
         </div>';
     }
     $s5 = '

@@ -1240,6 +1240,7 @@ for ($i = 0; $i < 5; $i++) {
                     }
                     $prodCurrentMarketsStr = implode(', ', array_filter($list));
                 } else {
+                    // Compat: DB may store plain string ("América del Sur") or JSON array
                     $prodCurrentMarketsStr = is_string($raw) ? trim($raw) : (string)$raw;
                 }
                 if ($prodCurrentMarketsStr === '') {
@@ -1257,6 +1258,7 @@ for ($i = 0; $i < 5; $i++) {
                     }
                     $prodTargetMarketsStr = implode(', ', array_filter($list));
                 } else {
+                    // Compat: DB may store plain string or JSON array
                     $prodTargetMarketsStr = is_string($raw) ? trim($raw) : (string)$raw;
                 }
                 if ($prodTargetMarketsStr === '') {

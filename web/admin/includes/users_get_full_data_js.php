@@ -183,7 +183,14 @@ try {
         
         // Добавляем current_markets и target_markets если они есть
         if ($hasMarketsFields) {
-            $itemData['current_markets'] = $row['current_markets'] ?? '';
+            $rawCur = $row['current_markets'] ?? '';
+            $decCur = is_string($rawCur) ? json_decode($rawCur, true) : $rawCur;
+            if (is_array($decCur) && count($decCur) > 0) {
+                $first = $decCur[0];
+                $itemData['current_markets'] = is_array($first) ? (string)($first['nombre'] ?? $first['name'] ?? '') : (string)$first;
+            } else {
+                $itemData['current_markets'] = is_string($rawCur) ? trim($rawCur) : '';
+            }
             $targetMarkets = $row['target_markets'] ?? null;
             if ($targetMarkets) {
                 $decoded = json_decode($targetMarkets, true);

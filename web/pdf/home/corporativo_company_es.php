@@ -1307,6 +1307,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                     }
                     $p7CurrentMarketsStr = implode(', ', array_filter($list));
                 } else {
+                    // Compat: DB may store plain string ("América del Sur") or JSON array
                     $p7CurrentMarketsStr = is_string($raw) ? trim($raw) : (string)$raw;
                 }
                 if ($p7CurrentMarketsStr === '') $p7CurrentMarketsStr = '-';
@@ -1322,6 +1323,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                     }
                     $p7TargetMarketsStr = implode(', ', array_filter($list));
                 } else {
+                    // Compat: DB may store plain string or JSON array
                     $p7TargetMarketsStr = is_string($raw) ? trim($raw) : (string)$raw;
                 }
                 if ($p7TargetMarketsStr === '') $p7TargetMarketsStr = '-';
