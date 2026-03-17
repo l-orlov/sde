@@ -2398,7 +2398,8 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 } else {
                     $mpdf->Cell($s5ValW, $rowH, $valStr, 0, 1, 'R');
                 }
-                $s5Y = $mpdf->y + $s5GapAfterText;
+                // Ensure minimum row height for two-line labels so next row does not overlap (e.g. REDES SOCIALES / AÑO DE INICIO)
+                $s5Y = max($mpdf->y, $s5Y + $rowH) + $s5GapAfterText;
                 $mpdf->SetDrawColor($s5LineColor[0], $s5LineColor[1], $s5LineColor[2]);
                 $mpdf->SetLineWidth(0.4);
                 $mpdf->Line($s5Pad, $s5Y, $s5Pad + $s5TextW, $s5Y);

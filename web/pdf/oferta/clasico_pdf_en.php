@@ -425,15 +425,15 @@ if (!empty($companyIds)) {
     }
 }
 
-// Mercados objetivo: desde products.target_markets (principal) y company_data.target_markets (respaldo) para empresas aprobadas
+// Mercados objetivo: desde products.target_markets_en (principal) y company_data.target_markets (respaldo) para empresas aprobadas
 $todosLosPaises = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT target_markets, target_markets_en FROM products WHERE company_id IN ($ids) AND (target_markets IS NOT NULL AND target_markets != '' AND target_markets != '[]' OR target_markets_en IS NOT NULL AND target_markets_en != '' AND target_markets_en != '[]')";
+    $q = "SELECT target_markets_en FROM products WHERE company_id IN ($ids) AND (target_markets_en IS NOT NULL AND target_markets_en != '' AND target_markets_en != '[]')";
     $res = @mysqli_query($link, $q);
     if ($res) {
         while ($row = mysqli_fetch_assoc($res)) {
-            $raw = !empty(trim((string)($row['target_markets_en'] ?? ''))) ? $row['target_markets_en'] : $row['target_markets'];
+            $raw = $row['target_markets_en'] ?? '';
                 $dec = is_string($raw) ? json_decode($raw, true) : $raw;
                 if (is_array($dec)) {
                     foreach ($dec as $p) {
@@ -2285,7 +2285,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $empNameDisplay = !empty(trim((string)($emp['name_en'] ?? ''))) ? ($emp['name_en'] ?? '') : ($emp['name'] ?? '');
             $nombreEmpresa = function_exists('mb_strtoupper') ? mb_strtoupper($empNameDisplay) : strtoupper($empNameDisplay);
             $mpdf->MultiCell($s5TextW, 13, $nombreEmpresa, 0, 'L');
-            $s5NameY = $mpdf->GetY();
+            $s5NameY = isset($mpdf->y) ? (float) $mpdf->y : $s5TitleY + 13;
             $mpdf->Ln(28);
             $s5LineH = 10;
             $s5LabelH = 7;
@@ -2327,7 +2327,8 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 } else {
                     $mpdf->Cell($s5ValW, $rowH, $valStr, 0, 1, 'R');
                 }
-                $s5Y = $mpdf->y + $s5GapAfterText;
+                // Ensure minimum row height for two-line labels so next row does not overlap (e.g. SOCIAL MEDIA / YEAR ESTABLISHED)
+                $s5Y = max($mpdf->y, $s5Y + $rowH) + $s5GapAfterText;
                 $mpdf->SetDrawColor($s5LineColor[0], $s5LineColor[1], $s5LineColor[2]);
                 $mpdf->SetLineWidth(0.4);
                 $mpdf->Line($s5Pad, $s5Y, $s5Pad + $s5TextW, $s5Y);
