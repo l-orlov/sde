@@ -83,11 +83,6 @@ if ($link) {
 ?>
 <!-- HEADER -->
 <div class="hero-section">
-    <div class="hero-bg-video" aria-hidden="true">
-        <video class="hero-bg-video-file" autoplay muted playsinline id="hero-bg-video">
-            <source src="video/video11.mp4" type="video/mp4">
-        </video>
-    </div>
     <div class="hero-header">
         <div class="hero-header-container">
             <div class="hero-header-logos">

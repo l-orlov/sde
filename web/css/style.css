@@ -1729,25 +1729,19 @@ div.label span .req,
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('../img/bg_image.jpg');
+  background-image: url('../img/bg_image.jpeg');
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
   z-index: 0;
 }
-/* Desktop: show video; keep ::before image as fallback when video fails to load */
+/* Desktop: keep static background image (no video) */
 @media (min-width: 769px) {
   .hero-bg-video {
-    display: block;
-  }
-  .hero-section::before {
-    background-image: none;
-  }
-  .hero-section.hero-video-ended .hero-bg-video {
     display: none;
   }
-  .hero-section.hero-video-ended::before {
-    background-image: url('../img/bg_image.jpg');
+  .hero-section::before {
+    background-image: url('../img/bg_image.jpeg');
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
