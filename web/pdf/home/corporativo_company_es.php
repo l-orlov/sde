@@ -77,7 +77,7 @@ $backgroundSlide1Uri = ($backgroundSlide1Path && file_exists($backgroundSlide1Pa
     : '';
 // Imagen del slide 2 (Contexto provincial): una de las Productivo al azar
 $productivoCandidates = [];
-foreach (['Productivo1.webp', 'Productivo2.jpg', 'Productivo3.jpg', 'Productivo4.jpg', 'Productivo5 copy.jpg'] as $name) {
+foreach (['Productivo1.webp', 'Productivo2.jpg', 'Productivo3.jpg', 'Productivo4.jpg', 'Productivo5.jpg'] as $name) {
     $p = $assetsDir . '/' . $name;
     if (file_exists($p)) {
         $productivoCandidates[] = $p;
