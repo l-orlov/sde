@@ -2548,6 +2548,9 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             }
         }
 
+        $mpdf->SetLeftMargin(0);
+        $mpdf->SetRightMargin(0);
+    } elseif ($i === 4) {
         // Slide 4: Empresas exportadoras — шапка como slide 1; dos imágenes Empresa lado a lado arriba; abajo título EMPRESAS/EXPORTADORAS (izq) y párrafo (der)
         $mpdf->AddPage();
         $mpdf->SetXY(0, 0);
@@ -2579,7 +2582,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         }
         $mpdf->SetFont('dejavusans', '', 17);
         $mpdf->SetXY($wMm - $s4Pad - 36, ($s4HeaderH - 8) / 2);
-        $mpdf->Cell(32, 8, 'Page 04', 0, 0, 'R');
+        $mpdf->Cell(32, 8, 'Page 14', 0, 0, 'R');
         $s4LineH = 0.5;
         $s4LineGap = 21;
         $mpdf->SetFillColor(255, 255, 255);
@@ -2652,7 +2655,8 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $s4TitleW = $s4ImgW;
         $s4TitleGap = 6;
         $s4ParaLeft = $s4Pad + $s4ImgW + $s4ImgGap;
-        $s4ParaW = $s4ImgW;
+        // Make the paragraph under the titles narrower.
+        $s4ParaW = max(1, $s4ImgW - 35);
         $mpdf->SetTextColor(141, 188, 220);
         $mpdf->SetFont('dejavusans', 'B', 40);
         $mpdf->SetXY($s4TitleLeft, $s4TextRowY);
@@ -2670,7 +2674,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetLeftMargin(0);
         $mpdf->SetRightMargin(0);
         // Una slide por empresa: шапка como slide 1; fondo negro; izq "NOMBRE DE LA" + nombre (azul); centro imagen; derecha panel azul oscuro con datos
-        $pageNum = 5;
+        $pageNum = 10;
         foreach ($companies as $emp) {
             $mpdf->AddPage();
             $mpdf->SetXY(0, 0);
@@ -2703,7 +2707,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             }
             $mpdf->SetFont('dejavusans', '', 17);
             $mpdf->SetXY($wMm - $s5Pad - 36, ($s5HeaderH - 8) / 2);
-            $mpdf->Cell(32, 8, 'Page ' . sprintf('%02d', $pageNum), 0, 0, 'R');
+            $mpdf->Cell(32, 8, 'Page ' . sprintf('%02d', $mpdf->PageNo()), 0, 0, 'R');
             $s5LineH = 0.5;
             $s5LineGap = 21;
             $mpdf->SetFillColor(255, 255, 255);
@@ -2923,7 +2927,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         }
     } elseif ($i === 5) {
         // Intro slide Productos exportables: mismo estilo que slide 4; dos imágenes (izq más ancha); PRODUCTOS/EXPORTABLES (izq), párrafo (der)
-        $prodIntroPageNum = 5 + count($companies);
+        $prodIntroPageNum = 9 + count($companies);
         $mpdf->AddPage();
         $mpdf->SetXY(0, 0);
         $p6Pad = 20;
@@ -2954,7 +2958,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         }
         $mpdf->SetFont('dejavusans', '', 17);
         $mpdf->SetXY($wMm - $p6Pad - 36, ($p6HeaderH - 8) / 2);
-        $mpdf->Cell(32, 8, 'Page ' . sprintf('%02d', $prodIntroPageNum), 0, 0, 'R');
+        $mpdf->Cell(32, 8, 'Page ' . sprintf('%02d', $mpdf->PageNo()), 0, 0, 'R');
         $p6LineH = 0.5;
         $p6LineGap = 21;
         $mpdf->SetFillColor(255, 255, 255);
@@ -3130,7 +3134,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             }
             $mpdf->SetFont('dejavusans', '', 17);
             $mpdf->SetXY($wMm - $p7Pad - 36, ($p7HeaderH - 8) / 2);
-            $mpdf->Cell(32, 8, 'Page ' . sprintf('%02d', $prodPageNum), 0, 0, 'R');
+            $mpdf->Cell(32, 8, 'Page ' . sprintf('%02d', $mpdf->PageNo()), 0, 0, 'R');
             $p7LineH = 0.5;
             $p7LineGap = 21;
             $mpdf->SetFillColor(255, 255, 255);
