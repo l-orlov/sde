@@ -423,11 +423,36 @@ if (!empty($companyIds)) {
 $todosLosPaises = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $q = "SELECT target_markets, target_markets_en FROM products WHERE company_id IN ($ids) AND (target_markets IS NOT NULL AND target_markets != '' AND target_markets != '[]' OR target_markets_en IS NOT NULL AND target_markets_en != '' AND target_markets_en != '[]')";
-    $res = @mysqli_query($link, $q);
-    if ($res) {
-        while ($row = mysqli_fetch_assoc($res)) {
-            $raw = !empty(trim((string)($row['target_markets_en'] ?? ''))) ? $row['target_markets_en'] : $row['target_markets'];
+    // Some DBs may have only `target_markets` or only `target_markets_en`. Avoid unknown column errors.
+    $hasProductsTargetMarkets = false;
+    $hasProductsTargetMarketsEn = false;
+    $checkTm = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'target_markets'");
+    if ($checkTm && mysqli_num_rows($checkTm) > 0) {
+        $hasProductsTargetMarkets = true;
+    }
+    $checkTmen = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'target_markets_en'");
+    if ($checkTmen && mysqli_num_rows($checkTmen) > 0) {
+        $hasProductsTargetMarketsEn = true;
+    }
+    $cols = [];
+    if ($hasProductsTargetMarkets) $cols[] = 'target_markets';
+    if ($hasProductsTargetMarketsEn) $cols[] = 'target_markets_en';
+    if (!empty($cols)) {
+        $selectCols = implode(', ', $cols);
+        $conds = [];
+        if ($hasProductsTargetMarkets) {
+            $conds[] = "(target_markets IS NOT NULL AND target_markets != '' AND target_markets != '[]')";
+        }
+        if ($hasProductsTargetMarketsEn) {
+            $conds[] = "(target_markets_en IS NOT NULL AND target_markets_en != '' AND target_markets_en != '[]')";
+        }
+        $where = implode(' OR ', $conds);
+        $q = "SELECT $selectCols FROM products WHERE company_id IN ($ids) AND ($where)";
+        $res = @mysqli_query($link, $q);
+        if ($res) {
+            while ($row = mysqli_fetch_assoc($res)) {
+                $rawEn = $row['target_markets_en'] ?? null;
+                $raw = (!empty(trim((string)($rawEn ?? '')))) ? $rawEn : ($row['target_markets'] ?? null);
                 $dec = is_string($raw) ? json_decode($raw, true) : $raw;
                 if (is_array($dec)) {
                     foreach ($dec as $p) {
@@ -438,6 +463,7 @@ if (!empty($companyIds)) {
                             if ($n !== '') $todosLosPaises[] = $n;
                         }
                     }
+                }
             }
         }
     }
@@ -1004,6 +1030,1375 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->MultiCell($s3TextW, 7, "A territory with diverse productive\ncapabilities and strong potential for\nbusiness and trade linkages.", 0, 'L');
         $mpdf->SetLeftMargin(0);
         $mpdf->SetRightMargin(0);
+
+        // Slide 3bis (nuevo): Estrategico — fondo ESTRATEGICO2.JPG + barra roja + bloque de texto blanco
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+
+        $s3nBgPath = $assetsDir . '/ESTRATEGICO2.JPG';
+        if ($s3nBgPath && file_exists($s3nBgPath) && extension_loaded('gd')) {
+            $s3nScale = 100 / 25.4;
+            $s3nDstWpx = (int) max(1, round($wMm * $s3nScale));
+            $s3nDstHpx = (int) max(1, round($hMm * $s3nScale));
+            $info = @getimagesize($s3nBgPath);
+            $src = null;
+            if ($info && !empty($info[2]) && $info[2] === IMAGETYPE_JPEG) {
+                $src = @imagecreatefromjpeg($s3nBgPath);
+            }
+            if ($src) {
+                $sw = imagesx($src);
+                $sh = imagesy($src);
+                $targetAR = $wMm / $hMm;
+                $imgAR = $sw / $sh;
+
+                if ($imgAR >= $targetAR) {
+                    $cropH = $sh;
+                    $cropW = (int) round($sh * $targetAR);
+                    $srcX = (int) floor(($sw - $cropW) / 2);
+                    $srcY = 0;
+                } else {
+                    $cropW = $sw;
+                    $cropH = (int) round($sw / $targetAR);
+                    $srcX = 0;
+                    $srcY = (int) floor(($sh - $cropH) / 2);
+                }
+
+                $dst = @imagecreatetruecolor($s3nDstWpx, $s3nDstHpx);
+                if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $s3nDstWpx, $s3nDstHpx, $cropW, $cropH)) {
+                    $tmp = sys_get_temp_dir() . '/moderno_s3n_bg_' . uniqid() . '.png';
+                    if (imagepng($dst, $tmp)) {
+                        $mpdf->Image($tmp, 0, 0, $wMm, $hMm);
+                        @unlink($tmp);
+                    } else {
+                        $mpdf->Image($s3nBgPath, 0, 0, $wMm, $hMm);
+                    }
+                    imagedestroy($dst);
+                } else {
+                    $mpdf->Image($s3nBgPath, 0, 0, $wMm, $hMm);
+                    if ($dst) imagedestroy($dst);
+                }
+                imagedestroy($src);
+            } else {
+                $mpdf->Image($s3nBgPath, 0, 0, $wMm, $hMm);
+            }
+        } elseif ($s3nBgPath && file_exists($s3nBgPath)) {
+            // Fallback: sin recorte (por falta de GD)
+            $mpdf->Image($s3nBgPath, 0, 0, $wMm, $hMm);
+        } else {
+            $mpdf->SetFillColor(220, 220, 220);
+            $mpdf->Rect(0, 0, $wMm, $hMm, 'F');
+        }
+
+        // Barra roja (с отступами сверху/слева/справа)
+        $s3nEdgePad = 18;
+        $s3nRedR = 196;
+        $s3nRedG = 52;
+        $s3nRedB = 59;
+        $s3nHeaderH = (int) round($hMm * 0.33);
+
+        $s3nRedLeft = $s3nEdgePad;
+        $s3nRedTop = $s3nEdgePad;
+        $s3nRedW = $wMm - 2 * $s3nEdgePad;
+
+        $mpdf->SetFillColor($s3nRedR, $s3nRedG, $s3nRedB);
+        $mpdf->Rect($s3nRedLeft, $s3nRedTop, $s3nRedW, $s3nHeaderH, 'F');
+
+        // Текст внутри красного блока
+        $s3nInnerPadX = 10; // внутренний отступ от левого края красного блока
+        $s3nPadX = $s3nRedLeft + $s3nInnerPadX;
+        $s3nTitleW = $s3nRedW - 2 * $s3nInnerPadX;
+
+        $mpdf->SetTextColor(255, 255, 255);
+        $mpdf->SetFont('dejavusans', 'B', 46);
+        // Опустить заголовок внутри красного блока
+        $s3nTitleY = $s3nRedTop + 25;
+        $mpdf->SetXY($s3nPadX, $s3nTitleY);
+        $mpdf->Cell($s3nTitleW, 16, 'SANTIAGO DEL ESTERO', 0, 1, 'L');
+        $mpdf->SetXY($s3nPadX, $s3nTitleY + 18);
+        $mpdf->Cell($s3nTitleW, 16, 'STRATEGIC', 0, 1, 'L');
+
+        $mpdf->SetFont('dejavusans', '', 12);
+        $s3nCaptionY = $s3nRedTop + $s3nHeaderH - 14;
+        $mpdf->SetXY($s3nRedLeft, $s3nCaptionY);
+        $mpdf->Cell($s3nRedW, 10, 'CONNECTING PRODUCTION WITH NATIONAL AND INTERNATIONAL MARKETS', 0, 0, 'C');
+
+        // Белый блок: слева как красный; ширина ~45%; высота ~30%
+        $s3nBoxPad = 12;
+        $s3nBoxX = $s3nRedLeft;
+        $s3nBoxW = (int) round($wMm * 0.45);
+        // Чуть уменьшить высоту и опустить вниз
+        $s3nBoxH = (int) round($hMm * 0.28);
+        $s3nBoxY = $s3nRedTop + $s3nHeaderH + 40;
+
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect($s3nBoxX, $s3nBoxY, $s3nBoxW, $s3nBoxH, 'F');
+
+        // Белый блок логотипа: те же размеры, что красный бейдж на слайде «EMPRESAS Y PRODUCTOS EXPORTABLES» ($s4LogoBadgeW×$s4LogoBadgeH)
+        $s3nLogoBadgeW = 62;
+        $s3nLogoBadgeH = 28;
+        $s3nLogoMargin = 12;
+        $s3nLogoPad = 10;
+        $s3nLogoInnerPad = 8;
+        $s3nLogoBadgeX = (int) round($wMm - $s3nLogoMargin - $s3nLogoPad - $s3nLogoBadgeW);
+        $s3nLogoBadgeY = (int) round($hMm - $s3nLogoMargin - $s3nLogoPad - $s3nLogoBadgeH);
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect($s3nLogoBadgeX, $s3nLogoBadgeY, $s3nLogoBadgeW, $s3nLogoBadgeH, 'F');
+
+        $s3nLogoMaxW = $s3nLogoBadgeW - $s3nLogoInnerPad;
+        $s3nLogoMaxH = $s3nLogoBadgeH - $s3nLogoInnerPad;
+        $s3nLogoPath = $pdfLogoPath;
+        if (file_exists($s3nLogoPath)) {
+            $imgSize = @getimagesize($s3nLogoPath);
+            $lw = $s3nLogoMaxW;
+            $lh = $s3nLogoMaxH;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $r = $imgSize[0] / $imgSize[1];
+                if ($s3nLogoMaxH * $r <= $s3nLogoMaxW) {
+                    $lw = $s3nLogoMaxH * $r;
+                    $lh = $s3nLogoMaxH;
+                } else {
+                    $lw = $s3nLogoMaxW;
+                    $lh = $s3nLogoMaxW / $r;
+                }
+            }
+            $s3nLogoX = (int) round($s3nLogoBadgeX + ($s3nLogoBadgeW - $lw) / 2);
+            $s3nLogoY = (int) round($s3nLogoBadgeY + ($s3nLogoBadgeH - $lh) / 2);
+            $mpdf->Image($s3nLogoPath, $s3nLogoX, $s3nLogoY, $lw, $lh);
+        }
+
+        // Текст (слева) внутри белого блока
+        $s3nTextX = $s3nBoxX + $s3nBoxPad;
+        // Доп. отступ вниз, чтобы текст в HTML не "прилипал" к верхней границе
+        $s3nTextY = $s3nBoxY + $s3nBoxPad + 3;
+        $s3nTextW = max(1, $s3nBoxW - 2 * $s3nBoxPad);
+
+        $mpdf->SetTextColor(0, 0, 0);
+        $s3nFontSize = 13;
+        $mpdf->SetFont('dejavusans', '', $s3nFontSize);
+
+        // Рендер через HTML, чтобы корректно выделять жирным конкретные фразы
+        // Рисуем текст "по строкам" (без WriteHTML), чтобы позиционирование было детерминированным.
+        $s3nLineH = 6.2;
+        $y = $s3nTextY;
+        $lines = [
+            // 1
+            [
+                ['Santiago del Estero holds a ', false],
+                ['key position in northern Argentina', true],
+            ],
+            // 2
+            [
+                ['and is part of ', false],
+                ['connectivity corridors', true],
+            ],
+            // 3
+            [
+                ['linking the Atlantic and the Pacific.', true],
+            ],
+            // 4
+            [
+                ['With ', false],
+                ['expanding road infrastructure', true],
+                [' and territorial integration,', false],
+            ],
+            // 5
+            [
+                ['the province facilitates ', false],
+                ['the movement of goods and access to markets', true],
+            ],
+            // 6
+            [
+                ['and the creation of new ', false],
+                ['investment opportunities', true],
+            ],
+        ];
+
+        $s3nExtraGapAfterLine4 = 6; // отступ сверху после 4-й строки (мм)
+        foreach ($lines as $idx => $runs) {
+            $x = $s3nTextX;
+            foreach ($runs as $run) {
+                [$txt, $isBold] = $run;
+                if ($txt === '') {
+                    continue;
+                }
+                $mpdf->SetFont('dejavusans', $isBold ? 'B' : '', $s3nFontSize);
+                $w = $mpdf->GetStringWidth($txt);
+                $mpdf->SetXY($x, $y);
+                $mpdf->Cell($w, $s3nLineH, $txt, 0, 0, 'L');
+                $x += $w;
+            }
+            $y += $s3nLineH;
+            if ($idx === 2) {
+                $y += $s3nExtraGapAfterLine4;
+            }
+        }
+
+        $mpdf->SetLeftMargin(0);
+        $mpdf->SetRightMargin(0);
+
+        // Slide 3ter: Estructura productiva — izq. rojo (margen/anchura ajustados), imagen cuadrada encima; der. logo + grillas 2×2
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+        $s3pRedR = 196;
+        $s3pRedG = 52;
+        $s3pRedB = 59;
+        $s3pLeftMargin = 46;
+        // Под квадрат картинки: чтобы при высоте ~90% ширина была равной высоте и не "ломала" раскладку
+        // Под квадрат картинки: слегка уменьшаем ширину красного блока
+        $s3pRedW = (int) round($hMm * 0.60);
+        $s3pSplitX = $s3pLeftMargin + $s3pRedW;
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect(0, 0, $wMm, $hMm, 'F');
+        $s3pRedX = $s3pLeftMargin;
+        $s3pRedY = 0;
+        $s3pRedH = $hMm;
+        $mpdf->SetFillColor($s3pRedR, $s3pRedG, $s3pRedB);
+        $mpdf->Rect($s3pRedX, $s3pRedY, $s3pRedW, $s3pRedH, 'F');
+        // Квадратная картинка больше и ближе к левому краю
+        $s3pImgPad = 0; // минимум рамки, чтобы изображение было максимально крупным
+        $s3pImgShiftLeft = 30; // сдвигаем сильнее влево
+        // Требование: высота картинки ~70% высоты красного блока, ширина = высота (квадрат).
+        // Квадратная картинка: высота 75% от высоты красного блока
+        $s3pTargetImgH = (int) round($s3pRedH * 0.75);
+        $s3pImgSize = (int) max(1, min($s3pRedW - 2 * $s3pImgPad, $s3pTargetImgH - 2 * $s3pImgPad));
+        $s3pImgW = $s3pImgSize;
+        $s3pImgH = $s3pImgSize;
+        $s3pImgX = (int) round($s3pRedX + $s3pImgPad - $s3pImgShiftLeft);
+        $s3pImgY = (int) round($s3pRedY + ($s3pRedH - $s3pImgH) / 2);
+        $s3pPhotoPath = $assetsDir . '/Productivo4.jpg';
+        $s3pImgDrawn = false;
+        if (extension_loaded('gd') && $s3pPhotoPath && file_exists($s3pPhotoPath)) {
+            $s3pScale = 100 / 25.4;
+            $dwPx = (int) max(1, round($s3pImgW * $s3pScale));
+            $dhPx = (int) max(1, round($s3pImgH * $s3pScale));
+            $info = @getimagesize($s3pPhotoPath);
+            $src = false;
+            if ($info && $info[2] === IMAGETYPE_JPEG) {
+                $src = @imagecreatefromjpeg($s3pPhotoPath);
+            } elseif ($info && $info[2] === IMAGETYPE_PNG) {
+                $src = @imagecreatefrompng($s3pPhotoPath);
+            }
+            if ($src) {
+                $sw = imagesx($src);
+                $sh = imagesy($src);
+                $ratio = $s3pImgW / $s3pImgH;
+                $imgR = $sw / $sh;
+                if ($imgR >= $ratio) {
+                    $cropW = (int) round($sh * $ratio);
+                    $cropH = $sh;
+                    $srcX = (int) floor(($sw - $cropW) / 2);
+                    $srcY = (int) max(0, min(floor(($sh - $cropH) / 2) + round($sh * 0.04), $sh - $cropH));
+                } else {
+                    $cropW = $sw;
+                    $cropH = (int) round($sw / $ratio);
+                    $srcX = 0;
+                    $srcY = (int) floor(($sh - $cropH) / 2);
+                }
+                $dst = @imagecreatetruecolor($dwPx, $dhPx);
+                if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $dwPx, $dhPx, $cropW, $cropH)) {
+                    imagedestroy($src);
+                    $s3pTmp = sys_get_temp_dir() . '/moderno_s3p_' . uniqid() . '.png';
+                    if (imagepng($dst, $s3pTmp)) {
+                        $mpdf->Image($s3pTmp, $s3pImgX, $s3pImgY, $s3pImgW, $s3pImgH);
+                        $s3pImgDrawn = true;
+                        @unlink($s3pTmp);
+                    }
+                    imagedestroy($dst);
+                } else {
+                    if ($dst) {
+                        imagedestroy($dst);
+                    }
+                    imagedestroy($src);
+                }
+            }
+        }
+        if (!$s3pImgDrawn && file_exists($s3pPhotoPath)) {
+            $mpdf->Image($s3pPhotoPath, $s3pImgX, $s3pImgY, $s3pImgW, $s3pImgH);
+        } elseif (!$s3pImgDrawn) {
+            $mpdf->SetFillColor(80, 80, 90);
+            $mpdf->Rect($s3pImgX, $s3pImgY, $s3pImgW, $s3pImgH, 'F');
+        }
+        // Полупрозрачный черный блок поверх всей картинки
+        $s3pOverlayTop = $s3pImgY;
+        $s3pOverlayH = $s3pImgH;
+        if (method_exists($mpdf, 'SetAlpha')) {
+            // Меньше прозрачности => больше непрозрачность
+            $mpdf->SetAlpha(0.55);
+        }
+        $mpdf->SetFillColor(0, 0, 0);
+        $mpdf->Rect($s3pImgX, $s3pOverlayTop, $s3pImgW, $s3pOverlayH, 'F');
+        if (method_exists($mpdf, 'SetAlpha')) {
+            $mpdf->SetAlpha(1);
+        }
+        $mpdf->SetTextColor(255, 255, 255);
+        // Сузить колонку текста под заголовком (меньше ширина) и слегка увеличить размер шрифта
+        $s3pTxtPad = 12;
+        $s3pTxtW = $s3pImgW - 2 * $s3pTxtPad;
+        $s3pTitleX = $s3pImgX + $s3pTxtPad;
+        // Заголовок прижимаем к верхнему краю картинки с отступом
+        $s3pHeadingTopInset = 10; // мм
+        $s3pTitleY = $s3pImgY + $s3pHeadingTopInset;
+        $mpdf->SetXY($s3pTitleX, $s3pTitleY);
+        $s3pHeadingFont = 38;
+        $s3pHeadingLineH = 16; // мм
+        $mpdf->SetFont('dejavusans', 'B', $s3pHeadingFont);
+        // Гарантированно прижимаем к правому краю: X = правый край рамки - ширина строки
+        $s3pHead1 = 'PRODUCTIVE';
+        $s3pHead2 = 'STRUCTURE AND';
+        $s3pHead3 = 'KEY SECTORS';
+        $s3pHeadY = $s3pTitleY;
+        $w = $mpdf->GetStringWidth($s3pHead1);
+        $mpdf->SetXY($s3pTitleX + $s3pTxtW - $w, $s3pHeadY);
+        $mpdf->Cell($w, $s3pHeadingLineH, $s3pHead1, 0, 1, 'L');
+        $s3pHeadY += $s3pHeadingLineH;
+        $w = $mpdf->GetStringWidth($s3pHead2);
+        $mpdf->SetXY($s3pTitleX + $s3pTxtW - $w, $s3pHeadY);
+        $mpdf->Cell($w, $s3pHeadingLineH, $s3pHead2, 0, 1, 'L');
+        $s3pHeadY += $s3pHeadingLineH;
+        $w = $mpdf->GetStringWidth($s3pHead3);
+        $mpdf->SetXY($s3pTitleX + $s3pTxtW - $w, $s3pHeadY);
+        $mpdf->Cell($w, $s3pHeadingLineH, $s3pHead3, 0, 1, 'L');
+
+        $s3pCap = str_replace('!', '.', 'Santiago del Estero has a diversified productive matrix based on natural resources, agro-industrial development, energy growth and consolidation of regional economies with national and international reach.');
+        $s3pCapFontSize = 11;
+        $s3pCapLineH = 5.2;
+        $s3pCapBottomInset = 10; // мм от нижнего края картинки
+        $s3pCapEstimatedLines = 4; // оценка, чтобы прижать абзац к низу
+        $s3pCapY = (int) round($s3pImgY + $s3pImgH - $s3pCapBottomInset - $s3pCapEstimatedLines * $s3pCapLineH);
+        $mpdf->SetFont('dejavusans', '', $s3pCapFontSize);
+        $mpdf->SetXY($s3pTitleX, $s3pCapY);
+        $mpdf->MultiCell($s3pTxtW, $s3pCapLineH, $s3pCap, 0, 'R');
+        $s3pRightPad = 14;
+        // Размер логотипа как на предыдущем слайде 3bis (внутренний размер бейджа: 54×20)
+        $s3pLogoMaxW = 54;
+        $s3pLogoMaxH = 20;
+        if (file_exists($pdfLogoPath)) {
+            $imgSize = @getimagesize($pdfLogoPath);
+            $lw = $s3pLogoMaxW;
+            $lh = $s3pLogoMaxH;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $r = $imgSize[0] / $imgSize[1];
+                if ($s3pLogoMaxH * $r <= $s3pLogoMaxW) {
+                    $lw = $s3pLogoMaxH * $r;
+                    $lh = $s3pLogoMaxH;
+                } else {
+                    $lw = $s3pLogoMaxW;
+                    $lh = $s3pLogoMaxW / $r;
+                }
+            }
+            $mpdf->Image($pdfLogoPath, (int) round($wMm - $s3pRightPad - $lw), $s3pRightPad, $lw, $lh);
+        }
+        // Чуть дальше от красного блока
+        $s3pGridX = $s3pSplitX + 14;
+        $s3pGridW = $wMm - $s3pGridX - 12;
+        // Ещё сильнее сжать сетку: меньше зазор между колонками
+        $s3pGap = 4;
+        $s3pColW = ($s3pGridW - $s3pGap) / 2;
+        // Сетка сдвинута вниз и ряды слегка ближе
+        $s3pRow1Y = 85;
+        $s3pRow2Y = 150;
+        $s3pBlocks = [
+            ['Agroindustry', ['Cotton', 'Corn and soybeans', 'Alfalfa and forage', 'Horticultural production', 'Agro-industrial development']],
+            ['Livestock', [
+                'Cattle farming',
+                'Goat production',
+                'Pork and poultry production',
+                'Meat processing industry',
+                'Genetic development and\nanimal health',
+            ]],
+            ['Regional', ['Beekeeping (honey)', 'Capers', 'Forestry', 'Family farming', 'Regional value added']],
+            ['Development', ['Renewable energy', 'Productive infrastructure', 'Irrigation systems', 'Sustainable territorial development', 'Industrial expansion']],
+        ];
+        $mpdf->SetTextColor(0, 0, 0);
+        foreach ($s3pBlocks as $bi => $block) {
+            $col = $bi % 2;
+            $row = (int) floor($bi / 2);
+            $bx = $s3pGridX + $col * ($s3pColW + $s3pGap);
+            $by = $row === 0 ? $s3pRow1Y : $s3pRow2Y;
+            $mpdf->SetXY($bx, $by);
+            $mpdf->SetFont('dejavusans', 'B', 18);
+            $mpdf->Cell($s3pColW, 7.5, str_replace('!', '.', $block[0]), 0, 1, 'L');
+            // Размер шрифта для пунктов
+            $mpdf->SetFont('dejavusans', '', 15);
+            // Пункты: вернуть обычный шаг внутри блока
+            // Отступ сверху у пунктов внутри блока
+            $bulletY = $by + 10;
+            $s3pItemLineH = 8;
+            $bulletPrefix = '• ';
+            $bulletPrefixW = $mpdf->GetStringWidth($bulletPrefix);
+            foreach ($block[1] as $item) {
+                $mpdf->SetXY($bx, $bulletY);
+
+                $item = str_replace('!', '.', $item);
+                // В исходных строках перенос задан как литерал "\n" (из-за одинарных кавычек),
+                // поэтому сначала приводим его к реальному символу перевода строки.
+                $item = str_replace("\\n", "\n", $item);
+                $parts = explode("\n", $item);
+
+                // Если нужно принудительно 2 строки (например, "Desarrollo genético y sanidad animal")
+                if (count($parts) >= 2) {
+                    $first = $parts[0];
+                    $second = $parts[1];
+
+                    $mpdf->MultiCell($s3pColW, $s3pItemLineH, $bulletPrefix . $first, 0, 'L');
+
+                    // Вторая строка без маркера, но с тем же отступом как после "• "
+                    $mpdf->SetXY($bx + $bulletPrefixW, $mpdf->y);
+                    $mpdf->MultiCell($s3pColW - $bulletPrefixW, $s3pItemLineH, $second, 0, 'L');
+
+                    $bulletY = $mpdf->y;
+                } else {
+                    // Делаем точку частью строки текста, чтобы она визуально совпадала по центру строки
+                    $mpdf->MultiCell($s3pColW, $s3pItemLineH, $bulletPrefix . $parts[0], 0, 'L');
+                    $bulletY = $mpdf->y;
+                }
+            }
+        }
+        $mpdf->SetLeftMargin(0);
+        $mpdf->SetRightMargin(0);
+
+        // Slide 3ter-futuro: повторяем 3ter, но с другим изображением и текстом (как на скриншоте)
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+        $s3fRedR = 196;
+        $s3fRedG = 52;
+        $s3fRedB = 59;
+        $s3fLeftMargin = 46;
+        $s3fRedW = (int) round($hMm * 0.60);
+        $s3fSplitX = $s3fLeftMargin + $s3fRedW;
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect(0, 0, $wMm, $hMm, 'F');
+        $s3fRedX = $s3fLeftMargin;
+        $s3fRedY = 0;
+        $s3fRedH = $hMm;
+        $mpdf->SetFillColor($s3fRedR, $s3fRedG, $s3fRedB);
+        $mpdf->Rect($s3fRedX, $s3fRedY, $s3fRedW, $s3fRedH, 'F');
+
+        // Квадратная картинка
+        $s3fImgPad = 0;
+        $s3fImgShiftLeft = 30;
+        $s3fTargetImgH = (int) round($s3fRedH * 0.75);
+        $s3fImgSize = (int) max(1, min($s3fRedW - 2 * $s3fImgPad, $s3fTargetImgH - 2 * $s3fImgPad));
+        $s3fImgW = $s3fImgSize;
+        $s3fImgH = $s3fImgSize;
+        $s3fImgX = (int) round($s3fRedX + $s3fImgPad - $s3fImgShiftLeft);
+        $s3fImgY = (int) round($s3fRedY + ($s3fRedH - $s3fImgH) / 2);
+
+        $s3fPhotoPath = $assetsDir . '/EDUCACION_TECNOLOGIA.jpg';
+        $s3fImgDrawn = false;
+        if (extension_loaded('gd') && $s3fPhotoPath && file_exists($s3fPhotoPath)) {
+            // Для avif GD может не поддерживать ресайз/кроп. В этом случае сработает fallback mPDF.
+            $mpdf->Image($s3fPhotoPath, $s3fImgX, $s3fImgY, $s3fImgW, $s3fImgH);
+            $s3fImgDrawn = true;
+        }
+        if (!$s3fImgDrawn && file_exists($s3fPhotoPath)) {
+            $mpdf->Image($s3fPhotoPath, $s3fImgX, $s3fImgY, $s3fImgW, $s3fImgH);
+        } elseif (!$s3fImgDrawn) {
+            $mpdf->SetFillColor(80, 80, 90);
+            $mpdf->Rect($s3fImgX, $s3fImgY, $s3fImgW, $s3fImgH, 'F');
+        }
+
+        // Черный полупрозрачный слой поверх картинки
+        $s3fOverlayTop = $s3fImgY;
+        $s3fOverlayH = $s3fImgH;
+        if (method_exists($mpdf, 'SetAlpha')) {
+            $mpdf->SetAlpha(0.55);
+        }
+        $mpdf->SetFillColor(0, 0, 0);
+        $mpdf->Rect($s3fImgX, $s3fOverlayTop, $s3fImgW, $s3fOverlayH, 'F');
+        if (method_exists($mpdf, 'SetAlpha')) {
+            $mpdf->SetAlpha(1);
+        }
+
+        $mpdf->SetTextColor(255, 255, 255);
+        $s3fTxtPad = 12;
+        $s3fTxtW = $s3fImgW - 2 * $s3fTxtPad;
+        $s3fTitleX = $s3fImgX + $s3fTxtPad;
+        $s3fHeadingTopInset = 10;
+        $s3fTitleY = $s3fImgY + $s3fHeadingTopInset;
+
+        // Заголовок на картинке (как на 3ter)
+        $mpdf->SetXY($s3fTitleX, $s3fTitleY);
+        $s3fHeadingFont = 38;
+        $s3fHeadingLineH = 16;
+        $mpdf->SetFont('dejavusans', 'B', $s3fHeadingFont);
+        $s3fHead1 = 'INNOVATION AND';
+        $s3fHead2 = 'PRODUCTIVE';
+        $s3fHead3 = 'FUTURE';
+        $w = $mpdf->GetStringWidth($s3fHead1);
+        $mpdf->SetXY($s3fTitleX + $s3fTxtW - $w, $s3fTitleY);
+        $mpdf->Cell($w, $s3fHeadingLineH, $s3fHead1, 0, 1, 'L');
+        $s3fTitleY += $s3fHeadingLineH;
+        $w = $mpdf->GetStringWidth($s3fHead2);
+        $mpdf->SetXY($s3fTitleX + $s3fTxtW - $w, $s3fTitleY);
+        $mpdf->Cell($w, $s3fHeadingLineH, $s3fHead2, 0, 1, 'L');
+        $s3fTitleY += $s3fHeadingLineH;
+        $w = $mpdf->GetStringWidth($s3fHead3);
+        $mpdf->SetXY($s3fTitleX + $s3fTxtW - $w, $s3fTitleY);
+        $mpdf->Cell($w, $s3fHeadingLineH, $s3fHead3, 0, 1, 'L');
+
+        // Подпись (как на 3ter)
+        $s3fCap = str_replace('!', '.', 'Santiago del Estero has a diversified productive matrix based on natural resources, agro-industrial development, energy growth and consolidation of regional economies with national and international reach.');
+        $s3fCapBottomInset = 10;
+        $s3fCapEstimatedLines = 4;
+        $s3fCapLineH = 5.2;
+        $s3fCapY = (int) round($s3fImgY + $s3fImgH - $s3fCapBottomInset - $s3fCapEstimatedLines * $s3fCapLineH);
+        $mpdf->SetFont('dejavusans', '', 11);
+        $mpdf->SetXY($s3fTitleX, $s3fCapY);
+        $mpdf->MultiCell($s3fTxtW, $s3fCapLineH, $s3fCap, 0, 'R');
+
+        // Лого (как на 3ter)
+        $s3fRightPad = 14;
+        $s3fLogoMaxW = 54;
+        $s3fLogoMaxH = 20;
+        if (file_exists($pdfLogoPath)) {
+            $imgSize = @getimagesize($pdfLogoPath);
+            $lw = $s3fLogoMaxW;
+            $lh = $s3fLogoMaxH;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $r = $imgSize[0] / $imgSize[1];
+                if ($s3fLogoMaxH * $r <= $s3fLogoMaxW) {
+                    $lw = $s3fLogoMaxH * $r;
+                    $lh = $s3fLogoMaxH;
+                } else {
+                    $lw = $s3fLogoMaxW;
+                    $lh = $s3fLogoMaxW / $r;
+                }
+            }
+            $mpdf->Image($pdfLogoPath, (int) round($wMm - $s3fRightPad - $lw), $s3fRightPad, $lw, $lh);
+        }
+
+        // Справа: текст как на скриншоте (2 колонки × 3 строки)
+        // Сдвинуть всю таблицу правее
+        $s3fGridX = $s3fSplitX + 30;
+        $s3fGridW = $wMm - $s3fGridX - 12;
+        // Сблизить 1-ю колонку со 2-й
+        $s3fGap = 1;
+        $s3fColW = ($s3fGridW - $s3fGap) / 2;
+        $s3fRowYs = [85, 115, 145];
+        $s3fLeftTitles = [
+            'Education',
+            'Knowledge economy',
+            'Digital transformation',
+        ];
+        $s3fRightTitles = [
+            'Development',
+            'Professional training',
+            'Technology',
+        ];
+        $mpdf->SetTextColor(0, 0, 0);
+        // Увеличить шрифт заголовков с пунктами
+        $mpdf->SetFont('dejavusans', 'B', 17);
+
+        $bulletPrefix = '• ';
+        $bulletPrefixW = $mpdf->GetStringWidth($bulletPrefix);
+        $renderTwoLineTitle = function (string $x, int $y, string $text) use ($mpdf, $s3fColW, $bulletPrefix, $bulletPrefixW) {
+            $parts = [$text];
+            if ($text === 'Knowledge economy') {
+                $parts = ['Knowledge', 'economy'];
+            } elseif ($text === 'Professional training') {
+                $parts = ['Professional', 'training'];
+            } elseif ($text === 'Digital transformation') {
+                $parts = ['Digital', 'transformation'];
+            }
+
+            $mpdf->SetXY($x, $y);
+            $mpdf->MultiCell($s3fColW, 9, $bulletPrefix . $parts[0], 0, 'L');
+            if (count($parts) >= 2) {
+                $mpdf->SetXY($x + $bulletPrefixW, $mpdf->y);
+                $mpdf->MultiCell($s3fColW - $bulletPrefixW, 9, $parts[1], 0, 'L');
+            }
+        };
+
+        foreach ($s3fLeftTitles as $idx => $t) {
+            $by = $s3fRowYs[$idx] ?? $s3fRowYs[count($s3fRowYs) - 1];
+            $renderTwoLineTitle($s3fGridX, $by, $t);
+
+            $rt = $s3fRightTitles[$idx] ?? '';
+            $renderTwoLineTitle($s3fGridX + $s3fColW + $s3fGap, $by, $rt);
+        }
+
+        $mpdf->SetLeftMargin(0);
+        $mpdf->SetRightMargin(0);
+
+        // Slide 3ter-turismo: como en el screenshot (izq. texto + der. foto + logo abajo a la derecha)
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect(0, 0, $wMm, $hMm, 'F');
+
+        $tX = 60;
+        $tY = 20;
+        $tW = 330;
+        $tH = 213;
+        $tRedR = 196;
+        $tRedG = 52;
+        $tRedB = 59;
+        $mpdf->SetFillColor($tRedR, $tRedG, $tRedB);
+        $mpdf->Rect($tX, $tY, $tW, $tH, 'F');
+
+        // Franjas rojas semitransparentes sobre blanco, a ambos lados del panel rojo
+        $tStripeW = $wMm * 0.042;
+        $tStripeH = $hMm * 0.30;
+        $tStripeX = $tX + $tW;
+        // 20 mm desde el borde inferior del panel rojo hasta el borde inferior de la franja
+        $tStripeY = ($tY + $tH) - 20 - $tStripeH;
+        $mpdf->SetAlpha(0.42, 'Normal');
+        $mpdf->SetFillColor($tRedR, $tRedG, $tRedB);
+        $mpdf->Rect($tStripeX, $tStripeY, $tStripeW, $tStripeH, 'F');
+        // Franja izquierda: arriba, 20 mm bajo el borde superior del panel rojo
+        $tStripeLeftX = $tX - $tStripeW;
+        $tStripeLeftY = $tY + 20;
+        $mpdf->Rect($tStripeLeftX, $tStripeLeftY, $tStripeW, $tStripeH, 'F');
+        $mpdf->SetAlpha(1, 'Normal');
+
+        // Mismo margen que foto grande respecto al borde rojo derecho: 10 mm
+        $tContentMarginH = (int) round($tW - 175 - 145);
+        $tTextX = $tX + $tContentMarginH;
+        $tTextY = $tY + 40;
+        // Ancho texto = ancho imagen pequeña
+        $smallImgW = 120;
+        $smallImgH = 72;
+        $tTitleW = $smallImgW;
+        $tParaW = $smallImgW;
+        $tTitleLineH = 11;
+
+        $mpdf->SetTextColor(255, 255, 255);
+        $mpdf->SetFont('dejavusans', 'B', 24);
+
+        // Tras Cell(..., 0, 1) mPDF pone X al margen izquierdo de la página — hay que volver a $tTextX
+        $ty = $tTextY;
+        $mpdf->SetXY($tTextX, $ty);
+        $mpdf->Cell($tTitleW, $tTitleLineH, 'TOURISM AS', 0, 1, 'L');
+        $ty += $tTitleLineH;
+        $mpdf->SetXY($tTextX, $ty);
+        $mpdf->Cell($tTitleW, $tTitleLineH, 'ECONOMIC DRIVER', 0, 1, 'L');
+        $ty += $tTitleLineH;
+
+        $mpdf->SetFont('dejavusans', '', 18);
+        $tSubY = $ty + 5;
+        $tSubLineH = 8;
+        $mpdf->SetXY($tTextX, $tSubY);
+        $mpdf->Cell($tParaW, $tSubLineH, 'Tourism and Territorial', 0, 1, 'L');
+        $mpdf->SetXY($tTextX, $tSubY + $tSubLineH);
+        $mpdf->Cell($tParaW, $tSubLineH, 'Development', 0, 1, 'L');
+
+        // Línea bajo el subtítulo (mPDF no tiene GetY — считаем Y вручную)
+        $mpdf->SetLineWidth(1);
+        $tLineY = $tSubY + ($tSubLineH * 2) + 4;
+        $mpdf->SetDrawColor(255, 255, 255);
+        $mpdf->Line($tTextX, $tLineY, $tTextX + $smallImgW, $tLineY);
+
+        $mpdf->SetLineWidth(0.2);
+        $mpdf->SetFont('dejavusans', '', 13);
+        $tParaY = $tLineY + 7;
+        $mpdf->SetXY($tTextX, $tParaY);
+        $tPara = 'Tourism is consolidating as one of the strategic drivers of provincial economic diversification, '
+            . 'integrating nature, culture, sport and wellbeing.';
+        $mpdf->MultiCell($tParaW, 5.8, $tPara, 0, 'L');
+
+        // Imagen pequeña: pegada al borde inferior del bloque rojo
+        $smallImgMarginLeft = $tContentMarginH;
+        $smallImgMarginBottom = 0;
+        $smallImgX = (int) round($tX + $smallImgMarginLeft);
+        $smallImgY = (int) round($tY + $tH - $smallImgMarginBottom - $smallImgH);
+        $smallImgPath = $assetsDir . '/GASTRONOMIA_ARTESANIA.jpg';
+        if (file_exists($smallImgPath)) {
+            // Cover-crop: слот от (smallImgX,Y) до низа красного блока — без внутреннего отступа снизу
+            $cX = $smallImgX;
+            $cY = $smallImgY;
+            $cW = $smallImgW;
+            $cH = $smallImgH;
+            if (extension_loaded('gd')) {
+                $info = @getimagesize($smallImgPath);
+                if ($info && $info[2] === IMAGETYPE_JPEG) {
+                    $src = @imagecreatefromjpeg($smallImgPath);
+                } elseif ($info && $info[2] === IMAGETYPE_PNG) {
+                    $src = @imagecreatefrompng($smallImgPath);
+                } else {
+                    $src = false;
+                }
+                if ($src) {
+                    $sw = imagesx($src);
+                    $sh = imagesy($src);
+                    $srcR = $sw / $sh;
+                    $dstR = $cW / $cH;
+                    // Кроп с приоритетом верхней части кадра
+                    if ($srcR >= $dstR) {
+                        $cropHtop = (int) round($sw / $dstR);
+                        if ($cropHtop <= $sh) {
+                            $cropW = $sw;
+                            $cropH = $cropHtop;
+                            $srcX = 0;
+                            $srcY = 0;
+                        } else {
+                            $cropH = $sh;
+                            $cropW = (int) round($sh * $dstR);
+                            $srcX = (int) floor(($sw - $cropW) / 2);
+                            $srcY = 0;
+                        }
+                    } else {
+                        $cropW = $sw;
+                        $cropH = (int) round($sw / $dstR);
+                        $srcX = 0;
+                        $srcY = 0;
+                    }
+                    $dstPxW = max(1, (int) round($cW * (100 / 25.4)));
+                    $dstPxH = max(1, (int) round($cH * (100 / 25.4)));
+                    $dst = @imagecreatetruecolor($dstPxW, $dstPxH);
+                    if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $dstPxW, $dstPxH, $cropW, $cropH)) {
+                        $tmp = sys_get_temp_dir() . '/moderno_crop_s3f_' . uniqid() . '.png';
+                        if (imagepng($dst, $tmp)) {
+                            $mpdf->Image($tmp, $cX, $cY, $cW, $cH);
+                            @unlink($tmp);
+                        }
+                        imagedestroy($dst);
+                    } else {
+                        imagedestroy($dst);
+                        $mpdf->Image($smallImgPath, $cX, $cY, $cW, $cH);
+                    }
+                    imagedestroy($src);
+                } else {
+                    $mpdf->Image($smallImgPath, $cX, $cY, $cW, $cH);
+                }
+            } else {
+                // Fallback: если GD недоступен
+                $mpdf->Image($smallImgPath, $cX, $cY, $cW, $cH);
+            }
+        }
+
+        // Foto grande derecha
+        $photoX = $tX + 175;
+        $photoW = 145;
+        $photoH = 160;
+        // Прижать к нижнему краю + чуть поднять фото и блок лого вместе
+        $photoLiftUp = 12; // мм вверх
+        $photoY = (int) round($tY + $tH - 12 - $photoH - $photoLiftUp);
+        $photoPath = $assetsDir . '/MOTOR_ECONOMICO.jpg';
+        if (file_exists($photoPath)) {
+            if (extension_loaded('gd')) {
+                $info = @getimagesize($photoPath);
+                $src = false;
+                if ($info && $info[2] === IMAGETYPE_JPEG) {
+                    $src = @imagecreatefromjpeg($photoPath);
+                } elseif ($info && $info[2] === IMAGETYPE_PNG) {
+                    $src = @imagecreatefrompng($photoPath);
+                }
+                if ($src) {
+                    $sw = imagesx($src);
+                    $sh = imagesy($src);
+                    $srcR = $sw / $sh;
+                    $dstR = $photoW / $photoH;
+                    if ($srcR >= $dstR) {
+                        $cropH = $sh;
+                        $cropW = (int) round($sh * $dstR);
+                        $srcX = (int) floor(($sw - $cropW) / 2);
+                        $srcY = 0;
+                    } else {
+                        $cropW = $sw;
+                        $cropH = (int) round($sw / $dstR);
+                        $srcX = 0;
+                        $srcY = (int) floor(($sh - $cropH) / 2);
+                    }
+                    $dstPxW = max(1, (int) round($photoW * (100 / 25.4)));
+                    $dstPxH = max(1, (int) round($photoH * (100 / 25.4)));
+                    $dst = @imagecreatetruecolor($dstPxW, $dstPxH);
+                    if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $dstPxW, $dstPxH, $cropW, $cropH)) {
+                        $tmp = sys_get_temp_dir() . '/moderno_crop_s3f2_' . uniqid() . '.png';
+                        if (imagepng($dst, $tmp)) {
+                            $mpdf->Image($tmp, $photoX, $photoY, $photoW, $photoH);
+                            @unlink($tmp);
+                        }
+                        imagedestroy($dst);
+                    } else {
+                        imagedestroy($dst);
+                        $mpdf->Image($photoPath, $photoX, $photoY, $photoW, $photoH);
+                    }
+                    imagedestroy($src);
+                } else {
+                    $mpdf->Image($photoPath, $photoX, $photoY, $photoW, $photoH);
+                }
+            } else {
+                $mpdf->Image($photoPath, $photoX, $photoY, $photoW, $photoH);
+            }
+        }
+
+        // Logo abajo-derecha dentro de la foto
+        $logoBoxW = 52;
+        $logoBoxH = 22;
+        // Отступы от правого/нижнего края красного блока такие же, как у большой картинки
+        // (выравниваем внешний край белого бокса с внешним краем фото)
+        $logoBoxX = $photoX + $photoW - $logoBoxW;
+        $logoBoxY = $photoY + $photoH - $logoBoxH;
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect($logoBoxX, $logoBoxY, $logoBoxW, $logoBoxH, 'F');
+        $logoMaxW = $logoBoxW - 8;
+        $logoMaxH = $logoBoxH - 8;
+        if (!empty($pdfLogoPath) && file_exists($pdfLogoPath)) {
+            $imgSize = @getimagesize($pdfLogoPath);
+            $lw = $logoMaxW;
+            $lh = $logoMaxH;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $r = $imgSize[0] / $imgSize[1];
+                if ($logoMaxH * $r <= $logoMaxW) {
+                    $lw = $logoMaxH * $r;
+                    $lh = $logoMaxH;
+                } else {
+                    $lw = $logoMaxW;
+                    $lh = $logoMaxW / $r;
+                }
+            }
+            $mpdf->Image($pdfLogoPath, $logoBoxX + 4, $logoBoxY + 4, $lw, $lh);
+        }
+
+        // Slide turismo 3 columnas: termas / estadio / autódromo (zigzag texto–foto)
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect(0, 0, $wMm, $hMm, 'F');
+        $stLogoPad = 14;
+        $stLogoMaxH = 15;
+        $stLogoMaxW = 58;
+        if (!empty($pdfLogoPath) && file_exists($pdfLogoPath)) {
+            $imgSize = @getimagesize($pdfLogoPath);
+            $slw = $stLogoMaxW;
+            $slh = $stLogoMaxH;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $lr = $imgSize[0] / $imgSize[1];
+                if ($stLogoMaxH * $lr <= $stLogoMaxW) {
+                    $slw = $stLogoMaxH * $lr;
+                    $slh = $stLogoMaxH;
+                } else {
+                    $slw = $stLogoMaxW;
+                    $slh = $stLogoMaxW / $lr;
+                }
+            }
+            $mpdf->Image($pdfLogoPath, (int) round($wMm - $stLogoPad - $slw), $stLogoPad, $slw, $slh);
+        }
+        $stPad = 13;
+        $stGap = 7;
+        $stContentT = 36;
+        $stContentH = $hMm - $stContentT - 14;
+        $stColW = ($wMm - 2 * $stPad - 2 * $stGap) / 3;
+        $stX1 = $stPad;
+        $stX2 = $stPad + $stColW + $stGap;
+        $stX3 = $stPad + 2 * ($stColW + $stGap);
+        $stHdrH = 86;
+        $stCol2TextDrop = 16;
+        $stColSideTextDrop = 12;
+        // Imágenes cuadradas, más grandes, centradas en cada columna
+        $stImgSq = min($stColW - 6, 96);
+        $stImgInset = ($stColW - $stImgSq) / 2;
+        $stStackH = max(
+            $stColSideTextDrop + $stHdrH + $stGap + $stImgSq,
+            $stImgSq + $stGap + $stCol2TextDrop + $stHdrH
+        );
+        $stY0 = $stContentT + max(0, ($stContentH - $stStackH) / 2);
+        $stRedR = 196;
+        $stRedG = 52;
+        $stRedB = 59;
+        $stScale = 100 / 25.4;
+
+        // Solo recorte tipo «object-fit: cover» — nunca estirar la foto al tamaño del hueco
+        $stDrawCoverImg = static function ($path, $bx, $by, $bw, $bh) use ($mpdf, $stScale) {
+            if (!is_string($path) || !file_exists($path) || !extension_loaded('gd')) {
+                return;
+            }
+            $src = @imagecreatefromstring((string) @file_get_contents($path));
+            if (!$src) {
+                $info = @getimagesize($path);
+                if ($info && $info[2] === IMAGETYPE_JPEG) {
+                    $src = @imagecreatefromjpeg($path);
+                } elseif ($info && $info[2] === IMAGETYPE_PNG) {
+                    $src = @imagecreatefrompng($path);
+                } elseif ($info && defined('IMAGETYPE_WEBP') && $info[2] === IMAGETYPE_WEBP && function_exists('imagecreatefromwebp')) {
+                    $src = @imagecreatefromwebp($path);
+                }
+            }
+            if (!$src) {
+                return;
+            }
+            $sw = imagesx($src);
+            $sh = imagesy($src);
+            if ($sw < 1 || $sh < 1) {
+                imagedestroy($src);
+
+                return;
+            }
+            $dstR = $bw / $bh;
+            $srcR = $sw / $sh;
+            if ($srcR >= $dstR) {
+                $cropH = $sh;
+                $cropW = (int) max(1, min($sw, round($sh * $dstR)));
+                $sx = (int) floor(($sw - $cropW) / 2);
+                $sy = 0;
+            } else {
+                $cropW = $sw;
+                $cropH = (int) max(1, min($sh, round($sw / $dstR)));
+                $sx = 0;
+                $sy = (int) floor(($sh - $cropH) / 2);
+            }
+            $pxW = max(1, (int) round($bw * $stScale));
+            $pxH = max(1, (int) round($bh * $stScale));
+            $dst = @imagecreatetruecolor($pxW, $pxH);
+            if (!$dst) {
+                imagedestroy($src);
+
+                return;
+            }
+            imagealphablending($dst, false);
+            imagesavealpha($dst, true);
+            $ok = @imagecopyresampled($dst, $src, 0, 0, $sx, $sy, $pxW, $pxH, $cropW, $cropH);
+            imagedestroy($src);
+            if ($ok) {
+                $tmp = sys_get_temp_dir() . '/moderno_st3_' . uniqid('', true) . '.png';
+                if (imagepng($dst, $tmp, 6)) {
+                    $mpdf->Image($tmp, $bx, $by, $bw, $bh);
+                    @unlink($tmp);
+                }
+            }
+            imagedestroy($dst);
+        };
+
+        $stRenderHeader = static function ($cx, $y, $colW, $numStr, $ttl, $sub) use ($mpdf, $stRedR, $stRedG, $stRedB) {
+            $numW = 26;
+            $mpdf->SetTextColor(0, 0, 0);
+            $mpdf->SetFont('dejavusans', '', 40);
+            $mpdf->SetXY($cx, $y);
+            $mpdf->Cell($numW, 14, $numStr, 0, 0, 'L');
+            $rx = $cx + $numW + 2;
+            $rw = $colW - $numW - 2;
+            $rh = 30;
+            $mpdf->SetFillColor($stRedR, $stRedG, $stRedB);
+            $mpdf->Rect($rx, $y, $rw, $rh, 'F');
+            $redPadX = 3;
+            $redPadTop = 2.5;
+            $redPadBot = 2.5;
+            $innerW = max(8, $rw - 2 * $redPadX);
+            $innerH = $rh - $redPadTop - $redPadBot;
+            $mpdf->SetTextColor(255, 255, 255);
+            $mpdf->SetFont('dejavusans', 'B', 18);
+            $lineTextH = 6.8;
+            $lineGap = 2.2;
+            $words = preg_split('/\s+/u', trim((string) $ttl), -1, PREG_SPLIT_NO_EMPTY);
+            $lines = [];
+            $line = '';
+            foreach ($words as $w) {
+                $test = $line === '' ? $w : $line . ' ' . $w;
+                if ($mpdf->GetStringWidth($test) <= $innerW - 0.5) {
+                    $line = $test;
+                } else {
+                    if ($line !== '') {
+                        $lines[] = $line;
+                    }
+                    $line = $w;
+                }
+            }
+            if ($line !== '') {
+                $lines[] = $line;
+            }
+            if ($lines === []) {
+                $lines[] = $ttl;
+            }
+            $nL = count($lines);
+            $blockH = $nL * $lineTextH + max(0, $nL - 1) * $lineGap;
+            $ty = $y + $redPadTop + max(0, ($innerH - $blockH) / 2);
+            $cy = $ty;
+            foreach ($lines as $i => $ln) {
+                $mpdf->SetXY($rx + $redPadX, $cy);
+                $mpdf->Cell($innerW, $lineTextH, $ln, 0, 0, 'C');
+                $cy += $lineTextH + ($i < $nL - 1 ? $lineGap : 0);
+            }
+            $mpdf->SetTextColor(0, 0, 0);
+            $mpdf->SetFont('dejavusans', '', 15);
+            // Subtítulo alineado al ancho del bloque rojo, centrado bajo el título
+            $stSubMarginTop = 7;
+            $mpdf->SetXY($rx, $y + $rh + $stSubMarginTop);
+            $mpdf->MultiCell($rw, 5, $sub, 0, 'C');
+        };
+
+        $stDrawCoverImg($assetsDir . '/Turismo_termal.jpg', $stX1 + $stImgInset, $stY0 + $stColSideTextDrop + $stHdrH + $stGap, $stImgSq, $stImgSq);
+        $stRenderHeader($stX1, $stY0 + $stColSideTextDrop, $stColW, '01', 'Termas de Río Hondo', 'International thermal tourism');
+
+        $stDrawCoverImg($assetsDir . '/Estadio_Unico.jpeg', $stX2 + $stImgInset, $stY0, $stImgSq, $stImgSq);
+        $stRenderHeader($stX2, $stY0 + $stImgSq + $stGap + $stCol2TextDrop, $stColW, '02', 'Estadio Único Madre de Ciudades', 'Events and entertainment');
+
+        $stDrawCoverImg($assetsDir . '/Autodromo_Internacional.jpg', $stX3 + $stImgInset, $stY0 + $stColSideTextDrop + $stHdrH + $stGap, $stImgSq, $stImgSq);
+        $stRenderHeader($stX3, $stY0 + $stColSideTextDrop, $stColW, '03', 'International Racetrack', 'Sports tourism');
+
+        $mpdf->SetLeftMargin(0);
+        $mpdf->SetRightMargin(0);
+
+        // Slide turismo 3 columnas (2): ciudad histórica / parque / cultura — mismo layout
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect(0, 0, $wMm, $hMm, 'F');
+        if (!empty($pdfLogoPath) && file_exists($pdfLogoPath)) {
+            $imgSize = @getimagesize($pdfLogoPath);
+            $slw = $stLogoMaxW;
+            $slh = $stLogoMaxH;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $lr = $imgSize[0] / $imgSize[1];
+                if ($stLogoMaxH * $lr <= $stLogoMaxW) {
+                    $slw = $stLogoMaxH * $lr;
+                    $slh = $stLogoMaxH;
+                } else {
+                    $slw = $stLogoMaxW;
+                    $slh = $stLogoMaxW / $lr;
+                }
+            }
+            $mpdf->Image($pdfLogoPath, (int) round($wMm - $stLogoPad - $slw), $stLogoPad, $slw, $slh);
+        }
+        $stDrawCoverImg($assetsDir . '/CIUDAD_HISTORICA2.jpg', $stX1 + $stImgInset, $stY0 + $stColSideTextDrop + $stHdrH + $stGap, $stImgSq, $stImgSq);
+        $stRenderHeader($stX1, $stY0 + $stColSideTextDrop, $stColW, '04', 'Historic City', 'Cultural heritage');
+        $stDrawCoverImg($assetsDir . '/parque_ashpa_kausay.png', $stX2 + $stImgInset, $stY0, $stImgSq, $stImgSq);
+        $stRenderHeader($stX2, $stY0 + $stImgSq + $stGap + $stCol2TextDrop, $stColW, '05', 'Nature and Ecotourism', 'Natural experiences');
+        $stDrawCoverImg($assetsDir . '/Identidad_santiaguena.jpg', $stX3 + $stImgInset, $stY0 + $stColSideTextDrop + $stHdrH + $stGap, $stImgSq, $stImgSq);
+        $stRenderHeader($stX3, $stY0 + $stColSideTextDrop, $stColW, '06', 'Culture and Tradition', 'Santiago identity');
+        $mpdf->SetLeftMargin(0);
+        $mpdf->SetRightMargin(0);
+
+        // Slide 3quater-cultura: mismo layout que turismo; textos e imágenes cultura
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect(0, 0, $wMm, $hMm, 'F');
+        $mpdf->SetFillColor($tRedR, $tRedG, $tRedB);
+        $mpdf->Rect($tX, $tY, $tW, $tH, 'F');
+        $mpdf->SetAlpha(0.42, 'Normal');
+        $mpdf->SetFillColor($tRedR, $tRedG, $tRedB);
+        $mpdf->Rect($tStripeX, $tStripeY, $tStripeW, $tStripeH, 'F');
+        $mpdf->Rect($tStripeLeftX, $tStripeLeftY, $tStripeW, $tStripeH, 'F');
+        $mpdf->SetAlpha(1, 'Normal');
+
+        $mpdf->SetTextColor(255, 255, 255);
+        $mpdf->SetFont('dejavusans', 'B', 24);
+        $ty = $tTextY;
+        $mpdf->SetXY($tTextX, $ty);
+        $mpdf->Cell($tTitleW, $tTitleLineH, 'CULTURE AND', 0, 1, 'L');
+        $ty += $tTitleLineH;
+        $mpdf->SetXY($tTextX, $ty);
+        $mpdf->Cell($tTitleW, $tTitleLineH, 'IDENTITY', 0, 1, 'L');
+        $ty += $tTitleLineH;
+        $mpdf->SetFont('dejavusans', '', 18);
+        $tSubY = $ty + 5;
+        $mpdf->SetXY($tTextX, $tSubY);
+        $mpdf->Cell($tParaW, 9, 'Cultural Identity and Heritage', 0, 1, 'L');
+        $mpdf->SetLineWidth(1);
+        $tLineY = $tSubY + 9 + 4;
+        $mpdf->SetDrawColor(255, 255, 255);
+        $mpdf->Line($tTextX, $tLineY, $tTextX + $smallImgW, $tLineY);
+        $mpdf->SetLineWidth(0.2);
+        $mpdf->SetFont('dejavusans', '', 13);
+        $tParaY = $tLineY + 7;
+        $mpdf->SetXY($tTextX, $tParaY);
+        $tParaCult = 'Santiago del Estero, Madre de Ciudades, preserves a living cultural heritage that brings together '
+            . 'tradition, music, gastronomy and artistic expression as part of its territorial identity.';
+        $mpdf->MultiCell($tParaW, 5.8, $tParaCult, 0, 'L');
+
+        $smallImgPathC = $assetsDir . '/Identidad_Cultural.jpg';
+        if (file_exists($smallImgPathC)) {
+            $cX = $smallImgX;
+            $cY = $smallImgY;
+            $cW = $smallImgW;
+            $cH = $smallImgH;
+            if (extension_loaded('gd')) {
+                $info = @getimagesize($smallImgPathC);
+                if ($info && $info[2] === IMAGETYPE_JPEG) {
+                    $src = @imagecreatefromjpeg($smallImgPathC);
+                } elseif ($info && $info[2] === IMAGETYPE_PNG) {
+                    $src = @imagecreatefrompng($smallImgPathC);
+                } else {
+                    $src = false;
+                }
+                if ($src) {
+                    $sw = imagesx($src);
+                    $sh = imagesy($src);
+                    $srcR = $sw / $sh;
+                    $dstR = $cW / $cH;
+                    if ($srcR >= $dstR) {
+                        $cropHtop = (int) round($sw / $dstR);
+                        if ($cropHtop <= $sh) {
+                            $cropW = $sw;
+                            $cropH = $cropHtop;
+                            $srcXC = 0;
+                            $srcYC = 0;
+                        } else {
+                            $cropH = $sh;
+                            $cropW = (int) round($sh * $dstR);
+                            $srcXC = (int) floor(($sw - $cropW) / 2);
+                            $srcYC = 0;
+                        }
+                    } else {
+                        $cropW = $sw;
+                        $cropH = (int) round($sw / $dstR);
+                        $srcXC = 0;
+                        $srcYC = 0;
+                    }
+                    $dstPxW = max(1, (int) round($cW * (100 / 25.4)));
+                    $dstPxH = max(1, (int) round($cH * (100 / 25.4)));
+                    $dst = @imagecreatetruecolor($dstPxW, $dstPxH);
+                    if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcXC, $srcYC, $dstPxW, $dstPxH, $cropW, $cropH)) {
+                        $tmpC = sys_get_temp_dir() . '/moderno_crop_s3cul_sm_' . uniqid() . '.png';
+                        if (imagepng($dst, $tmpC)) {
+                            $mpdf->Image($tmpC, $cX, $cY, $cW, $cH);
+                            @unlink($tmpC);
+                        }
+                        imagedestroy($dst);
+                    } else {
+                        imagedestroy($dst);
+                        $mpdf->Image($smallImgPathC, $cX, $cY, $cW, $cH);
+                    }
+                    imagedestroy($src);
+                } else {
+                    $mpdf->Image($smallImgPathC, $cX, $cY, $cW, $cH);
+                }
+            } else {
+                $mpdf->Image($smallImgPathC, $cX, $cY, $cW, $cH);
+            }
+        }
+
+        $photoPathC = $assetsDir . '/CULTURA_IDENTIDAD.jpg';
+        if (file_exists($photoPathC)) {
+            if (extension_loaded('gd')) {
+                $info = @getimagesize($photoPathC);
+                $src = false;
+                if ($info && $info[2] === IMAGETYPE_JPEG) {
+                    $src = @imagecreatefromjpeg($photoPathC);
+                } elseif ($info && $info[2] === IMAGETYPE_PNG) {
+                    $src = @imagecreatefrompng($photoPathC);
+                }
+                if ($src) {
+                    $sw = imagesx($src);
+                    $sh = imagesy($src);
+                    $srcR = $sw / $sh;
+                    $dstR = $photoW / $photoH;
+                    if ($srcR >= $dstR) {
+                        $cropH = $sh;
+                        $cropW = (int) round($sh * $dstR);
+                        $srcXC = (int) floor(($sw - $cropW) / 2);
+                        $srcYC = 0;
+                    } else {
+                        $cropW = $sw;
+                        $cropH = (int) round($sw / $dstR);
+                        $srcXC = 0;
+                        $srcYC = (int) floor(($sh - $cropH) / 2);
+                    }
+                    $dstPxW = max(1, (int) round($photoW * (100 / 25.4)));
+                    $dstPxH = max(1, (int) round($photoH * (100 / 25.4)));
+                    $dst = @imagecreatetruecolor($dstPxW, $dstPxH);
+                    if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcXC, $srcYC, $dstPxW, $dstPxH, $cropW, $cropH)) {
+                        $tmpC = sys_get_temp_dir() . '/moderno_crop_s3cul_lg_' . uniqid() . '.png';
+                        if (imagepng($dst, $tmpC)) {
+                            $mpdf->Image($tmpC, $photoX, $photoY, $photoW, $photoH);
+                            @unlink($tmpC);
+                        }
+                        imagedestroy($dst);
+                    } else {
+                        imagedestroy($dst);
+                        $mpdf->Image($photoPathC, $photoX, $photoY, $photoW, $photoH);
+                    }
+                    imagedestroy($src);
+                } else {
+                    $mpdf->Image($photoPathC, $photoX, $photoY, $photoW, $photoH);
+                }
+            } else {
+                $mpdf->Image($photoPathC, $photoX, $photoY, $photoW, $photoH);
+            }
+        }
+
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect($logoBoxX, $logoBoxY, $logoBoxW, $logoBoxH, 'F');
+        if (!empty($pdfLogoPath) && file_exists($pdfLogoPath)) {
+            $imgSize = @getimagesize($pdfLogoPath);
+            $lw = $logoMaxW;
+            $lh = $logoMaxH;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $r = $imgSize[0] / $imgSize[1];
+                if ($logoMaxH * $r <= $logoMaxW) {
+                    $lw = $logoMaxH * $r;
+                    $lh = $logoMaxH;
+                } else {
+                    $lw = $logoMaxW;
+                    $lh = $logoMaxW / $r;
+                }
+            }
+            $mpdf->Image($pdfLogoPath, $logoBoxX + 4, $logoBoxY + 4, $lw, $lh);
+        }
+
+        // Slide folklore / artesanía / gastronomía / patrimonio (panel rojo + 2 fotos)
+        $mpdf->AddPage();
+        $mpdf->SetXY(0, 0);
+        $mpdf->SetFillColor(255, 255, 255);
+        $mpdf->Rect(0, 0, $wMm, $hMm, 'F');
+        $folLogoPad = 14;
+        $folLogoMaxH = 15;
+        $folLogoMaxW = 58;
+        if (!empty($pdfLogoPath) && file_exists($pdfLogoPath)) {
+            $imgSize = @getimagesize($pdfLogoPath);
+            $flw = $folLogoMaxW;
+            $flh = $folLogoMaxH;
+            if (!empty($imgSize[0]) && !empty($imgSize[1])) {
+                $flr = $imgSize[0] / $imgSize[1];
+                if ($folLogoMaxH * $flr <= $folLogoMaxW) {
+                    $flw = $folLogoMaxH * $flr;
+                    $flh = $folLogoMaxH;
+                } else {
+                    $flw = $folLogoMaxW;
+                    $flh = $folLogoMaxW / $flr;
+                }
+            }
+            $mpdf->Image($pdfLogoPath, (int) round($wMm - $folLogoPad - $flw), $folLogoPad, $flw, $flh);
+        }
+        $folRedX = 20;
+        $folRedW = 168;
+        $folRedBottomMargin = 20;
+        $folRedH = 178;
+        $folRedY = $hMm - $folRedBottomMargin - $folRedH;
+        $folRedR = 196;
+        $folRedG = 52;
+        $folRedB = 59;
+        $mpdf->SetFillColor($folRedR, $folRedG, $folRedB);
+        $mpdf->Rect($folRedX, $folRedY, $folRedW, $folRedH, 'F');
+        $folTx = $folRedX + 12;
+        $folNumW = 22;
+        $folSubW = $folRedW - 24 - $folNumW;
+        $folSubMarginTop = 4;
+        $folTitleH = 8.5;
+        $folSubLineH = 5.8;
+        $folTopPad = 14;
+        $folBottomPad = 14;
+        $folSections = [
+            ['01.', 'Folklore', 'Music, dance and popular tradition.'],
+            ['02.', 'Craftsmanship', 'Ancestral knowledge and regional production.'],
+            ['03.', 'Gastronomy', "Traditional flavours and local identity.\nPopular Festivals.\nCelebrations and cultural gatherings."],
+            ['04.', 'Historical Heritage', 'Spaces and provincial cultural memory.'],
+        ];
+        $mpdf->SetFont('dejavusans', '', 12.5);
+        $folSectionData = [];
+        foreach ($folSections as $folSec) {
+            $subText = trim((string) $folSec[2]);
+            if (strpos($subText, "\n") !== false) {
+                $lines = array_values(array_filter(array_map('trim', explode("\n", $subText))));
+            } else {
+                $words = preg_split('/\s+/u', $subText, -1, PREG_SPLIT_NO_EMPTY);
+                $lines = [];
+                $ln = '';
+                foreach ($words as $w) {
+                    $test = $ln === '' ? $w : $ln . ' ' . $w;
+                    if ($mpdf->GetStringWidth($test) <= $folSubW - 1) {
+                        $ln = $test;
+                    } else {
+                        if ($ln !== '') {
+                            $lines[] = $ln;
+                        }
+                        $ln = $w;
+                    }
+                }
+                if ($ln !== '') {
+                    $lines[] = $ln;
+                }
+            }
+            $folSectionData[] = [$folSec[0], $folSec[1], $lines];
+        }
+        $folContentH = 0;
+        foreach ($folSectionData as $sd) {
+            $folContentH += $folTitleH + $folSubMarginTop + count($sd[2]) * $folSubLineH;
+        }
+        $folGapCount = count($folSectionData) - 1;
+        $folAvailableH = $folRedH - $folTopPad - $folBottomPad;
+        $folGap = $folGapCount > 0 ? max(3, ($folAvailableH - $folContentH) / $folGapCount) : 0;
+        $mpdf->SetTextColor(255, 255, 255);
+        $folTy = $folRedY + $folTopPad;
+        foreach ($folSectionData as $sd) {
+            $mpdf->SetFont('dejavusans', 'B', 18);
+            $mpdf->SetXY($folTx, $folTy);
+            $mpdf->Cell($folNumW, $folTitleH, $sd[0], 0, 0, 'L');
+            $mpdf->Cell($folRedW - 24 - $folNumW, $folTitleH, $sd[1], 0, 0, 'L');
+            $folTy += $folTitleH + $folSubMarginTop;
+            $mpdf->SetFont('dejavusans', '', 12.5);
+            foreach ($sd[2] as $lineStr) {
+                $mpdf->SetXY($folTx + $folNumW, $folTy);
+                $mpdf->Cell($folSubW, $folSubLineH, $lineStr, 0, 0, 'L');
+                $folTy += $folSubLineH;
+            }
+            $folTy += $folGap;
+        }
+        $folScale = 100 / 25.4;
+        $folDrawCover = static function ($path, $bx, $by, $bw, $bh, $cropBiasX = 0) use ($mpdf, $folScale) {
+            if (!is_string($path) || !file_exists($path) || !extension_loaded('gd')) {
+                return;
+            }
+            $src = @imagecreatefromstring((string) @file_get_contents($path));
+            if (!$src) {
+                $info = @getimagesize($path);
+                if ($info && $info[2] === IMAGETYPE_JPEG) {
+                    $src = @imagecreatefromjpeg($path);
+                } elseif ($info && $info[2] === IMAGETYPE_PNG) {
+                    $src = @imagecreatefrompng($path);
+                }
+            }
+            if (!$src) {
+                return;
+            }
+            $sw = imagesx($src);
+            $sh = imagesy($src);
+            if ($sw < 1 || $sh < 1) {
+                imagedestroy($src);
+
+                return;
+            }
+            $dstR = $bw / $bh;
+            $srcR = $sw / $sh;
+            if ($srcR >= $dstR) {
+                $cropH = $sh;
+                $cropW = (int) max(1, min($sw, round($sh * $dstR)));
+                $sx = (int) floor(($sw - $cropW) / 2 + ($sw - $cropW) * (float) $cropBiasX);
+                $sx = max(0, min($sw - $cropW, $sx));
+                $sy = 0;
+            } else {
+                $cropW = $sw;
+                $cropH = (int) max(1, min($sh, round($sw / $dstR)));
+                $sx = 0;
+                $sy = (int) floor(($sh - $cropH) / 2);
+            }
+            $pxW = max(1, (int) round($bw * $folScale));
+            $pxH = max(1, (int) round($bh * $folScale));
+            $dst = @imagecreatetruecolor($pxW, $pxH);
+            if (!$dst) {
+                imagedestroy($src);
+
+                return;
+            }
+            imagealphablending($dst, false);
+            imagesavealpha($dst, true);
+            if (@imagecopyresampled($dst, $src, 0, 0, $sx, $sy, $pxW, $pxH, $cropW, $cropH)) {
+                $tmp = sys_get_temp_dir() . '/moderno_fol_' . uniqid('', true) . '.png';
+                if (imagepng($dst, $tmp, 6)) {
+                    $mpdf->Image($tmp, $bx, $by, $bw, $bh);
+                    @unlink($tmp);
+                }
+            }
+            imagedestroy($dst);
+            imagedestroy($src);
+        };
+        $folOverlap = 26;
+        $folMidW = 110;
+        $folMidY = $folRedY - 10;
+        $folMidH = min(172, $hMm - $folMidY - 2);
+        $folMidX = $folRedX + $folRedW - $folOverlap;
+        $folDrawCover($assetsDir . '/memoria_cultural.jpg', $folMidX, $folMidY, $folMidW, $folMidH, 0.18);
+        $folRightW = 114;
+        $folRightH = 106;
+        $folRightPad = 16;
+        $folRightX = $wMm - $folRightPad - $folRightW;
+        $folRightY = $hMm - $folRedBottomMargin - $folRightH;
+        $folDrawCover($assetsDir . '/danza_tradicion.jpg', $folRightX, $folRightY, $folRightW, $folRightH);
+        $mpdf->SetLeftMargin(0);
+        $mpdf->SetRightMargin(0);
+
+
     } elseif ($i === 4) {
         // Slide 4: imagen 85% altura; encima rojo semi-transparente con borde inferior en V (ángulo al centro); bloque blanco con el mismo borde en V; logo como slide 1; título y subtítulo centrados
         $mpdf->AddPage();
@@ -1867,9 +3262,9 @@ function buildOfertaPdfHtml($data) {
             <p class="texto" style="color:#000;">The provincial exportable offer is organized by sectors to facilitate search and international promotion.</p>
         </div>
         <div class="primario" style="width:40%;padding:32px 24px;">
-            <div style="margin-bottom:16px;"><strong style="color:#75A8DA;">Rubro A</strong><br><span class="texto">' . htmlspecialchars($rubroA) . '</span></div>
-            <div style="margin-bottom:16px;"><strong style="color:#75A8DA;">Rubro B</strong><br><span class="texto">' . htmlspecialchars($rubroB) . '</span></div>
-            <div><strong style="color:#75A8DA;">Rubro C</strong><br><span class="texto">' . htmlspecialchars($rubroC) . '</span></div>
+            <div style="margin-bottom:16px;"><strong style="color:#75A8DA;">Sector A</strong><br><span class="texto">' . htmlspecialchars($rubroA) . '</span></div>
+            <div style="margin-bottom:16px;"><strong style="color:#75A8DA;">Sector B</strong><br><span class="texto">' . htmlspecialchars($rubroB) . '</span></div>
+            <div><strong style="color:#75A8DA;">Sector C</strong><br><span class="texto">' . htmlspecialchars($rubroC) . '</span></div>
         </div>
         <div style="width:30%;padding:32px 24px;">
             <div style="width:180px;height:180px;margin:0 auto 20px;overflow:hidden;border-radius:50%;">' . $s3Img . '</div>
