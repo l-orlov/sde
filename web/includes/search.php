@@ -60,7 +60,7 @@ $__pdf_oferta_urls = [
             <a data-i18n="nav_turismo" href="https://turismosantiago.gob.ar/" target="_blank" rel="noopener" class="nav-link nav-link-search">Turismo</a>
             <span class="hero-nav-sep hero-nav-sep-search" aria-hidden="true">|</span>
             <span class="hero-nav-contact-wrap">
-                <a data-i18n="nav_contact" href="?page=landing#contactos" class="nav-link nav-link-search">Contacto</a>
+                <a data-i18n="nav_contact" href="?page=landing#contacto" class="nav-link nav-link-search">Contacto</a>
                 <a href="https://wa.me/" class="nav-whatsapp" target="_blank" rel="noopener" aria-label="WhatsApp">
                     <img src="img/icono_whatsapp.png" alt="" class="whatsapp-icon">
                 </a>
@@ -93,7 +93,7 @@ $__pdf_oferta_urls = [
         <div class="search-results" id="search-results"></div>
     </div>
 
-    <div class="landing-footer" id="contactos">
+    <div class="landing-footer" id="contacto">
         <div class="landing-footer-container">
             <div class="landing-footer-columns">
                 <div class="landing-footer-column landing-footer-accesos">
@@ -102,7 +102,7 @@ $__pdf_oferta_urls = [
                         <li><a href="?page=landing#nosotros" data-i18n="footer_nosotros">Nosotros</a></li>
                         <li><a href="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" class="js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" data-i18n="footer_oferta">Oferta exportable</a></li>
                         <li><a href="https://turismosantiago.gob.ar/" target="_blank" rel="noopener" data-i18n="nav_turismo">Turismo</a></li>
-                        <li><a href="?page=landing#contactos" data-i18n="footer_contacto">Contacto</a></li>
+                        <li><a href="?page=landing#contacto" data-i18n="footer_contacto">Contacto</a></li>
                     </ul>
                 </div>
                 <div class="landing-footer-column landing-footer-empresas">

@@ -1696,7 +1696,7 @@ div.label span .req,
   position: relative;
   width: 100%;
   max-width: none;
-  margin: 0;
+  margin: 60px 0 0 0;
   min-height: 100vh;
   padding-top: 80px;
   box-sizing: border-box;
@@ -1933,11 +1933,12 @@ div.label span .req,
 }
 .hero-buttons {
   display: flex;
-  gap: 15px;
+  gap: 10px;
   flex-shrink: 0;
   min-width: 0;
   flex-wrap: wrap;
   justify-content: center;
+  order: 4;
 }
 .landing_header_lang {
   position: relative;
@@ -1952,6 +1953,7 @@ div.label span .req,
   color: #000;
   z-index: 1000;
   cursor: pointer;
+  order: 5;
 }
 .landing_header_lang img {
   width: 20px;
@@ -2451,7 +2453,7 @@ div.label span .req,
 /* Адаптив для средних экранов - уменьшаем размеры элементов header */
 @media (max-width: 1100px) {
   .hero-header {
-    padding: 0 20px 0 0;
+    padding: 20px 10px;
     gap: 8px;
   }
   .logo {
@@ -2476,7 +2478,7 @@ div.label span .req,
     font-size: 16px;
   }
   .hero-buttons {
-    gap: 10px;
+    gap: 8px;
   }
   .btn {
     padding: 10px 24px;
@@ -2518,7 +2520,7 @@ div.label span .req,
 /* Адаптивный фон для средних экранов */
 @media (max-width: 1024px) {
   .hero-section::before {
-    background-size: auto 100%;
+    background-size: cover;
     background-position: center center;
     height: 100%;
     min-height: 100vh;
@@ -2584,8 +2586,8 @@ div.label span .req,
 /* Адаптивный фон для планшетов */
 @media (max-width: 768px) {
   .hero-section::before {
-    background-size: auto 100%;
-    background-position: center center;
+    background-size: cover;
+    background-position: 82% center;
     height: 100%;
     min-height: 100vh;
   }
@@ -2792,8 +2794,8 @@ div.label span .req,
 /* Адаптивный фон для мобильных устройств */
 @media (max-width: 480px) {
   .hero-section::before {
-    background-size: auto 100%;
-    background-position: center center;
+    background-size: cover;
+    background-position: 60% center;
     height: 100%;
     min-height: 100vh;
     background-color: #f8f8f8;
@@ -2905,8 +2907,8 @@ div.label span .req,
 /* Для экстремально узких экранов */
 @media (max-width: 400px) {
   .hero-section::before {
-    background-size: auto 100%;
-    background-position: center center;
+    background-size: cover;
+    background-position: 60% center;
     height: 100%;
     min-height: 100vh;
   }
@@ -2915,8 +2917,8 @@ div.label span .req,
 /* Для очень узких экранов - фокус на важных частях изображения */
 @media (max-width: 360px) {
   .hero-section::before {
-    background-size: auto 100%;
-    background-position: center center;
+    background-size: cover;
+    background-position: 60% center;
     height: 100%;
     min-height: 100vh;
   }

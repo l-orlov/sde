@@ -128,7 +128,7 @@ if ($link) {
                     <a data-i18n="nav_turismo" href="https://turismosantiago.gob.ar/" target="_blank" rel="noopener" class="nav-link">Turismo</a>
                     <span class="hero-nav-sep" aria-hidden="true">|</span>
                     <span class="hero-nav-contact-wrap">
-                        <a data-i18n="nav_contact" href="#contactos" class="nav-link">Contactos</a>
+                        <a data-i18n="nav_contact" href="#contacto" class="nav-link">Contacto</a>
                         <a href="https://wa.me/" class="nav-whatsapp" target="_blank" aria-label="WhatsApp">
                             <img src="img/icono_whatsapp.png" alt="" class="whatsapp-icon">
                         </a>
@@ -388,7 +388,7 @@ if ($link) {
 <!-- MODAL WINDOW -->
 
 <!-- FOOTER -->
-<div class="landing-footer" id="contactos">
+<div class="landing-footer" id="contacto">
     <div class="landing-footer-container">
         <div class="landing-footer-columns">
             <div class="landing-footer-column landing-footer-accesos">
@@ -397,7 +397,7 @@ if ($link) {
                     <li><a href="#nosotros" data-i18n="footer_nosotros">Nosotros</a></li>
                     <li><a href="<?= htmlspecialchars($__pdf_es) ?>" class="js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_es) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_en) ?>" data-i18n="footer_oferta">Oferta exportable</a></li>
                     <li><a href="https://turismosantiago.gob.ar/" target="_blank" rel="noopener" data-i18n="nav_turismo">Turismo</a></li>
-                    <li><a href="#contactos" data-i18n="footer_contacto">Contacto</a></li>
+                    <li><a href="#contacto" data-i18n="footer_contacto">Contacto</a></li>
                 </ul>
             </div>
             <div class="landing-footer-column landing-footer-empresas">
