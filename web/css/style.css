@@ -3821,24 +3821,6 @@ div.label span .req,
   flex-wrap: wrap;
   gap: 16px;
 }
-.footer-pdf-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.btn-footer-pdf {
-  display: block;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 50%;
-  text-decoration: none;
-  transition: background 0.2s;
-}
-.btn-footer-pdf:hover {
-  background: #fff;
-}
 .landing-footer-logos {
   display: flex;
   align-items: center;

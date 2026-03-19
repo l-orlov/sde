@@ -112,13 +112,13 @@ if ($link) {
                         <button type="button" class="nav-link oferta-dropdown-trigger" data-i18n="nav_exportable" aria-expanded="false" aria-haspopup="true" id="oferta-dropdown-btn">Oferta exportable</button>
                         <ul class="oferta-dropdown-menu" id="oferta-dropdown-menu" role="menu" aria-label="Formatos de oferta exportable">
                             <li role="none">
-                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_es) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_es) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_en) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_clasico">Clásico</span><img src="img/icons/clasico_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['clasico_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['clasico_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_clasico">Clásico</span><img src="img/icons/clasico_icon.png" alt="" class="oferta-dropdown-icon"></a>
                             </li>
                             <li role="none">
-                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_es) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_es) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_en) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_corporativo">Corporativo</span><img src="img/icons/corporativo_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['corporativo_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['corporativo_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['corporativo_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_corporativo">Corporativo</span><img src="img/icons/corporativo_icon.png" alt="" class="oferta-dropdown-icon"></a>
                             </li>
                             <li role="none">
-                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_es) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_es) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_en) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_moderno">Moderno</span><img src="img/icons/moderno_icon.png" alt="" class="oferta-dropdown-icon"></a>
+                                <a role="menuitem" class="oferta-dropdown-item js-pdf-link" href="<?= htmlspecialchars($__pdf_oferta_urls['moderno_es']) ?>" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['moderno_es']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['moderno_en']) ?>"><span class="oferta-dropdown-name" data-i18n="pdf_name_moderno">Moderno</span><img src="img/icons/moderno_icon.png" alt="" class="oferta-dropdown-icon"></a>
                             </li>
                         </ul>
                     </div>
@@ -431,11 +431,6 @@ if ($link) {
                     <div class="landing-footer-logo landing-footer-logo-cfi">
                         <img src="img/logo_cfi.svg" alt="CFI" class="landing-footer-logo-image">
                     </div>
-                </div>
-                <div class="footer-pdf-group">
-                    <a href="index.php?page=clasico_pdf_es" class="btn btn-footer-pdf js-pdf-link" target="_blank" rel="noopener" aria-label="PDF Clásico" data-pdf-url-es="index.php?page=clasico_pdf_es" data-pdf-url-en="index.php?page=clasico_pdf_en"></a>
-                    <a href="index.php?page=corporativo_pdf_es" class="btn btn-footer-pdf js-pdf-link" target="_blank" rel="noopener" aria-label="PDF Corporativo" data-pdf-url-es="index.php?page=corporativo_pdf_es" data-pdf-url-en="index.php?page=corporativo_pdf_en"></a>
-                    <a href="index.php?page=moderno_pdf_es" class="btn btn-footer-pdf js-pdf-link" target="_blank" rel="noopener" aria-label="PDF Moderno" data-pdf-url-es="index.php?page=moderno_pdf_es" data-pdf-url-en="index.php?page=moderno_pdf_en"></a>
                 </div>
             </div>
             <p class="landing-footer-copyright" data-i18n="footer_copyright">Copyright © 2026. Santiago del Estero. Todos los derechos reservados.</p>
