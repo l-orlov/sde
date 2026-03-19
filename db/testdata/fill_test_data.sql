@@ -40,7 +40,7 @@ INSERT IGNORE INTO company_social_networks (id, company_id, network_type, url, c
 (2, 2, 'instagram', 'https://instagram.com/mieldelnorte', UNIX_TIMESTAMP()),
 (3, 3, 'linkedin', 'https://linkedin.com/company/sls', UNIX_TIMESTAMP());
 
--- 9 products (3 per company: 2 products + 1 service for variety)
+-- 10 products (Miel del Norte: 3 + 1 extra with long name for UI/layout tests)
 INSERT IGNORE INTO products (id, company_id, user_id, is_main, type, activity, name, name_en, description, tariff_code, annual_export, certifications, created_at, updated_at, deleted_at) VALUES
 (1, 1, 1, 1, 'product', NULL, 'Soja en grano', 'Soybeans', 'Soja de primera calidad para exportación.', '1201.90.00', 'Hasta 5000 tn', 'Orgánico', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
 (2, 1, 1, 0, 'product', NULL, 'Maíz', 'Corn', 'Maíz amarillo y blanco.', '1005.90.00', 'Hasta 3000 tn', NULL, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
@@ -50,4 +50,5 @@ INSERT IGNORE INTO products (id, company_id, user_id, is_main, type, activity, n
 (6, 2, 2, 0, 'service', 'Venta', 'Envasado a medida', 'Custom packaging', 'Envasado de miel para terceros.', NULL, NULL, NULL, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
 (7, 3, 3, 1, 'service', 'Logística', 'Transporte de granos', 'Grain transport', 'Transporte terrestre de granos a puertos.', NULL, NULL, NULL, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
 (8, 3, 3, 0, 'service', 'Almacenaje', 'Depósito fiscal', 'Bonded warehouse', 'Almacenaje y custodia de mercadería.', NULL, NULL, NULL, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-(9, 3, 3, 0, 'product', NULL, 'Servicio de despacho aduanero', 'Customs clearance service', 'Tramitación aduanera.', NULL, NULL, NULL, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL);
+(9, 3, 3, 0, 'product', NULL, 'Servicio de despacho aduanero', 'Customs clearance service', 'Tramitación aduanera.', NULL, NULL, NULL, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+(10, 2, 2, 0, 'product', NULL, 'Miel orgánica multifloral certificada de flora nativa del Chaco Seco (algarrobo, quebracho, eucalipto)', 'Certified organic multifloral honey from native Chaco Seco flora (carob, quebracho, eucalyptus), raw cold-filtered, packed in amber glass with full traceabili', 'Línea premium para mercados exigentes; lotes numerados y análisis de laboratorio.', '0409.00.00', 'Hasta 5 tn', 'Orgánico Arg., trazabilidad', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL);

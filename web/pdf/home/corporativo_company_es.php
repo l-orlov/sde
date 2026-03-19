@@ -185,7 +185,7 @@ if ($currentUserId <= 0) {
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.main_activity, c.website, c.start_date, c.organization_type
+$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.main_activity, c.website, c.start_date, c.organization_type, c.nuestra_historia
       FROM companies c
       WHERE c.user_id = ? AND c.moderation_status = 'approved'
       LIMIT 1");
@@ -202,6 +202,61 @@ $metrics['empresas'] = count($companies);
 
 // Rubros: distinct activity de products de empresas aprobadas (+ main_activity de companies)
 $companyIds = array_column($companies, 'id');
+
+// Columnas reales en `products` (evita SELECT de columnas inexistentes; LIKE en SHOW COLUMNS trata '_' como comodín)
+$productTableCols = [];
+$__ptcRes = @mysqli_query($link, 'SHOW COLUMNS FROM products');
+if ($__ptcRes) {
+    while ($__ptcRow = mysqli_fetch_assoc($__ptcRes)) {
+        $productTableCols[$__ptcRow['Field']] = true;
+    }
+}
+$productHasCol = function (string $field) use ($productTableCols): bool {
+    return isset($productTableCols[$field]);
+};
+
+$corpPdfCleanText = static function ($v): string {
+    $s = trim(html_entity_decode((string) $v, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    return preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $s);
+};
+
+// Competitividad / factores de diferenciación (company_data)
+$competitivenessPorEmpresa = [];
+$differentiationFactorsPorEmpresa = [];
+if (!empty($companyIds)) {
+    $placeholders = implode(',', array_fill(0, count($companyIds), '?'));
+    $stmt = @mysqli_prepare($link, "SELECT company_id, competitiveness, differentiation_factors FROM company_data WHERE company_id IN ($placeholders)");
+    if ($stmt) {
+        $types = str_repeat('i', count($companyIds));
+        @mysqli_stmt_bind_param($stmt, $types, ...$companyIds);
+        @mysqli_stmt_execute($stmt);
+        $res = @mysqli_stmt_get_result($stmt);
+        if ($res) {
+            while ($row = mysqli_fetch_assoc($res)) {
+                $cid = (int) ($row['company_id'] ?? 0);
+                if ($cid <= 0) {
+                    continue;
+                }
+                $rawC = (string) ($row['competitiveness'] ?? '');
+                if ($rawC !== '') {
+                    $dec = json_decode($rawC, true);
+                    if (is_array($dec)) {
+                        $competitivenessPorEmpresa[$cid] = $dec;
+                    }
+                }
+                $rawD = (string) ($row['differentiation_factors'] ?? '');
+                if ($rawD !== '') {
+                    $dec = json_decode($rawD, true);
+                    if (is_array($dec)) {
+                        $differentiationFactorsPorEmpresa[$cid] = $dec;
+                    }
+                }
+            }
+        }
+        @mysqli_stmt_close($stmt);
+    }
+}
+
 $rubrosMap = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
@@ -258,16 +313,24 @@ if (!empty($companyIds)) {
 $productosParaSlides = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    $chk = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'current_markets'");
-    $hasCurrentMarkets = ($chk && mysqli_num_rows($chk) > 0);
-    $chk = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'target_markets'");
-    $hasTargetMarkets = ($chk && mysqli_num_rows($chk) > 0);
-    $marketsCols = ($hasCurrentMarkets ? ', p.current_markets' : '') . ($hasTargetMarkets ? ', p.target_markets' : '');
-    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code" . $marketsCols . "
+    $q = "SELECT p.id, p.name, p.activity, p.description, p.annual_export, p.certifications, p.company_id, p.type, p.tariff_code";
+    foreach (['annual_export_en', 'certifications_en', 'current_markets', 'current_markets_en', 'target_markets', 'target_markets_en'] as $optCol) {
+        if ($productHasCol($optCol)) {
+            $q .= ', p.' . $optCol;
+        }
+    }
+    $q .= "
           FROM products p
-          WHERE p.company_id IN ($ids)
-          ORDER BY p.is_main DESC, p.id ASC
-          LIMIT 20";
+          WHERE p.company_id IN ($ids)";
+    if ($productHasCol('is_main')) {
+        $q .= '
+          ORDER BY p.is_main DESC, p.id ASC';
+    } else {
+        $q .= '
+          ORDER BY p.id ASC';
+    }
+    $q .= '
+          LIMIT 20';
     $r = mysqli_query($link, $q);
     if ($r) {
         while ($row = mysqli_fetch_assoc($r)) {
@@ -477,24 +540,45 @@ if (!empty($companyIds)) {
 $todosLosPaises = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
-    // 1) Desde products.target_markets (formulario guarda mercados por producto/servicio aquí)
-    $hasProductsMarkets = false;
-    $check = @mysqli_query($link, "SHOW COLUMNS FROM products LIKE 'target_markets'");
-    if ($check && mysqli_num_rows($check) > 0) {
-        $hasProductsMarkets = true;
-    }
-    if ($hasProductsMarkets) {
-        $q = "SELECT target_markets FROM products WHERE company_id IN ($ids) AND target_markets IS NOT NULL AND target_markets != '' AND target_markets != '[]'";
+    // 1) Desde products (target_markets y/o target_markets_en según esquema)
+    $hasTm = $productHasCol('target_markets');
+    $hasTmEn = $productHasCol('target_markets_en');
+    if ($hasTm || $hasTmEn) {
+        $selectParts = [];
+        if ($hasTm) {
+            $selectParts[] = 'target_markets';
+        }
+        if ($hasTmEn) {
+            $selectParts[] = 'target_markets_en';
+        }
+        $selectList = implode(', ', $selectParts);
+        $whereOr = [];
+        if ($hasTm) {
+            $whereOr[] = "(target_markets IS NOT NULL AND target_markets != '' AND target_markets != '[]')";
+        }
+        if ($hasTmEn) {
+            $whereOr[] = "(target_markets_en IS NOT NULL AND target_markets_en != '' AND target_markets_en != '[]')";
+        }
+        $q = 'SELECT ' . $selectList . ' FROM products WHERE company_id IN (' . $ids . ') AND (' . implode(' OR ', $whereOr) . ')';
         $res = @mysqli_query($link, $q);
         if ($res) {
             while ($row = mysqli_fetch_assoc($res)) {
-                $dec = json_decode($row['target_markets'], true);
+                $raw = ($hasTm && !empty(trim((string)($row['target_markets'] ?? ''))))
+                    ? $row['target_markets']
+                    : ($hasTmEn ? ($row['target_markets_en'] ?? '') : '');
+                if ($raw === '') {
+                    continue;
+                }
+                $dec = is_string($raw) ? json_decode($raw, true) : $raw;
                 if (is_array($dec)) {
                     foreach ($dec as $p) {
                         if (is_string($p)) {
                             $todosLosPaises[] = trim($p);
-                        } elseif (is_array($p) && isset($p['nombre'])) {
-                            $todosLosPaises[] = trim($p['nombre']);
+                        } elseif (is_array($p)) {
+                            $n = trim((string)($p['nombre'] ?? $p['name'] ?? ''));
+                            if ($n !== '') {
+                                $todosLosPaises[] = $n;
+                            }
                         }
                     }
                 }
@@ -611,7 +695,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->AddPage();
         $mpdf->SetTextColor(255, 255, 255);
         $mpdf->SetDrawColor(255, 255, 255);
-        // Slide 1 corporativo: solo API. Azul = 44%; imagen izq. con marco; texto der. EMPRESA/EMPRENDIMIENTO; header con logo SDE + logo empresa
+        // Slide 1 corporativo: solo API. Azul = 44%; imagen izq. con marco; texto der. nombre empresa; header con logo SDE + logo empresa
         $s1Pad = 20;
         $s1MiddleH = round($hMm * 0.44);
         $remaining = $hMm - $s1MiddleH;
@@ -795,7 +879,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->Image($backgroundSlide1Path, $s1ImgX + $s1ImgBorder, $s1ImgY + $s1ImgBorder, $s1ImgW, $s1ImgH);
         }
 
-        // Texto a la derecha: EMPRESA /, EMPRENDIMIENTO, ACTIVIDAD • LOCALIDAD
+        // Texto a la derecha: nombre de la empresa; debajo ACTIVIDAD • LOCALIDAD
         $s1TextLeft = $s1ImgX + $s1ImgBoxW + 24;
         $s1TextW = $wMm - $s1TextLeft - $s1Pad;
         $mpdf->SetLeftMargin($s1TextLeft);
@@ -804,9 +888,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetXY($s1TextLeft, $s1Ty);
         $mpdf->SetFont($pdfFontFamily, 'B', 56);
         $mpdf->SetTextColor(255, 255, 255);
-        $mpdf->Cell($s1TextW, 20, 'EMPRESA /', 0, 1, 'L');
-        $mpdf->SetFont($pdfFontFamily, 'B', 56);
-        $mpdf->Cell($s1TextW, 20, 'EMPRENDIMIENTO', 0, 1, 'L');
+        $companyName = !empty($companies[0]['name']) ? trim((string) $companies[0]['name']) : 'EMPRESA';
+        $companyTitle = function_exists('mb_strtoupper') ? mb_strtoupper($companyName, 'UTF-8') : strtoupper($companyName);
+        $mpdf->MultiCell($s1TextW, 19, $companyTitle, 0, 'L');
+        $afterTitleY = isset($mpdf->y) ? (float) $mpdf->y : ($s1Ty + 38);
         $s1Sub = 'ACTIVIDAD PRINCIPAL • LOCALIDAD';
         if (!empty($companies[0])) {
             $act = trim($companies[0]['main_activity'] ?? '');
@@ -817,7 +902,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             }
         }
         $mpdf->SetFont($pdfFontFamily, '', 22);
-        $mpdf->SetXY($s1TextLeft, $s1Ty + 48);
+        $mpdf->SetXY($s1TextLeft, $afterTitleY + 6);
         $mpdf->Cell($s1TextW, 10, $s1Sub, 0, 0, 'L');
 
         // Pie: Edición 2026 y flecha — mismos márgenes s1Pad que header; fuente más grande, flecha más ancha y grande
@@ -1132,7 +1217,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetFont($pdfFontFamily, 'B', 52);
         $mpdf->SetXY($p6TitleLeft, $p6TextRowY + $p6TitleLineH + $p6TitleGap);
         $mpdf->Cell($p6TitleW, $p6TitleLineH, 'EXPORTABLES', 0, 1, 'L');
-        // Un producto por slide: header como p6; izq. imagen grande; der. NOMBRE / PRODUCTO (nombre en azul), número + línea + descripción, etiquetas
+        // Un producto por slide: header como p6; izq. imagen grande; der. nombre (azul, MultiCell), número + línea + descripción, etiquetas
         $productoSlidesChunks = array_chunk($productosParaSlides, 1);
         $prodPageNum = $prodIntroPageNum + 1;
         $p7Scale = 100 / 25.4;
@@ -1256,16 +1341,14 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $p7RightX = $p7ImgX + $p7ImgW + $p7ImgGap + $p7TextOffsetRight;
             $p7RightW = $wMm - $p7RightX - $p7Pad;
             $p7TextY = $p7ContentY + 38;
-            $mpdf->SetTextColor(255, 255, 255);
-            $mpdf->SetFont($pdfFontFamily, 'B', 42);
-            $mpdf->SetXY($p7RightX, $p7TextY);
-            $mpdf->Cell($p7RightW, 16, 'NOMBRE', 0, 1, 'L');
             $mpdf->SetTextColor(141, 188, 220);
             $mpdf->SetFont($pdfFontFamily, 'B', 42);
-            $nameStr = $prod['name'] ?? '';
-            $mpdf->SetXY($p7RightX, $p7TextY + 18);
-            $mpdf->Cell($p7RightW, 16, $nameStr, 0, 1, 'L');
-            $p7TextY += 18 + 16 + 22;
+            $nameStr = trim((string) ($prod['name'] ?? '')) ?: '—';
+            $p7TitleLineH = 13;
+            $mpdf->SetXY($p7RightX, $p7TextY);
+            $mpdf->MultiCell($p7RightW, $p7TitleLineH, $nameStr, 0, 'L');
+            $p7NumRowY = (float) $mpdf->y + 10;
+            $p7TextY = $p7NumRowY;
             $p7NumW = 16;
             $p7NumX = $p7RightX;
             $mpdf->SetTextColor(141, 188, 220);
@@ -1280,14 +1363,16 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->SetXY($p7DescX, $p7TextY);
             $descStr = trim($prod['description'] ?? '') ?: 'Breve descripción del producto';
             $mpdf->MultiCell($p7DescW, 7, $descStr, 0, 'L');
-            $p7TextY += 32;
+            $p7AfterDescY = (float) $mpdf->y;
+            $p7LineTop = $p7NumRowY;
+            $p7TextY = $p7AfterDescY + 8;
             $p7LabelFont = $pdfFontFamily;
             $p7LabelSize = 14;
             $p7LabelH = 9;
-            $p7LineBottom = $p7TextY + 4 * $p7LabelH + 10;
+            $p7LineBottom = $p7TextY + 5 * $p7LabelH + 10;
             $mpdf->SetDrawColor(255, 255, 255);
             $mpdf->SetLineWidth(0.3);
-            $mpdf->Line($p7LineX, $p7TextY - 32, $p7LineX, $p7LineBottom);
+            $mpdf->Line($p7LineX, $p7LineTop, $p7LineX, $p7LineBottom);
             $mpdf->SetTextColor(255, 255, 255);
             $mpdf->SetFont($p7LabelFont, 'B', $p7LabelSize);
             $mpdf->SetXY($p7DescX, $p7TextY);
@@ -1297,8 +1382,9 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->SetX($p7DescX);
             $mpdf->Cell($p7DescW, $p7LabelH, 'Código Arancelario (NCM/HS): ' . (trim($prod['tariff_code'] ?? '') ?: '-'), 0, 1, 'L');
             $p7CurrentMarketsStr = '-';
-            if (!empty($prod['current_markets'])) {
-                $raw = $prod['current_markets'];
+            $p7CurrentRaw = !empty($prod['current_markets']) ? $prod['current_markets'] : ($prod['current_markets_en'] ?? null);
+            if (!empty($p7CurrentRaw)) {
+                $raw = $p7CurrentRaw;
                 $dec = is_string($raw) ? json_decode($raw, true) : $raw;
                 if (is_array($dec)) {
                     $list = [];
@@ -1313,8 +1399,9 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 if ($p7CurrentMarketsStr === '') $p7CurrentMarketsStr = '-';
             }
             $p7TargetMarketsStr = '-';
-            if (!empty($prod['target_markets'])) {
-                $raw = $prod['target_markets'];
+            $p7TargetRaw = !empty($prod['target_markets']) ? $prod['target_markets'] : ($prod['target_markets_en'] ?? null);
+            if (!empty($p7TargetRaw)) {
+                $raw = $p7TargetRaw;
                 $dec = is_string($raw) ? json_decode($raw, true) : $raw;
                 if (is_array($dec)) {
                     $list = [];
@@ -1339,6 +1426,34 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         }
         $productoSlidesChunks = array_chunk($productosParaSlides, 1);
     } elseif ($i === 6) {
+        $corpFirstId = !empty($companies[0]['id']) ? (int) $companies[0]['id'] : 0;
+        $corpComp = ($corpFirstId && isset($competitivenessPorEmpresa[$corpFirstId]) && is_array($competitivenessPorEmpresa[$corpFirstId]))
+            ? $competitivenessPorEmpresa[$corpFirstId] : [];
+        $corpDiffList = ($corpFirstId && !empty($differentiationFactorsPorEmpresa[$corpFirstId]) && is_array($differentiationFactorsPorEmpresa[$corpFirstId]))
+            ? $differentiationFactorsPorEmpresa[$corpFirstId] : [];
+        $diffParts = [];
+        foreach ($corpDiffList as $f) {
+            if (is_string($f) && trim($f) !== '') {
+                $diffParts[] = $corpPdfCleanText($f);
+            }
+        }
+        $od = $corpPdfCleanText($corpComp['other_differentiation'] ?? '');
+        if ($od !== '') {
+            $diffParts[] = $od;
+        }
+        $corpDiffStr = !empty($diffParts) ? implode(' · ', $diffParts) : '';
+        $logSectionDescs = [
+            $corpPdfCleanText($corpComp['awards_detail'] ?? ($corpComp['awards'] ?? '')),
+            $corpPdfCleanText($corpComp['fairs_detail'] ?? ($corpComp['fairs'] ?? '')),
+            $corpPdfCleanText($corpComp['rounds_detail'] ?? ($corpComp['rounds'] ?? '')),
+            $corpPdfCleanText($corpComp['export_experience'] ?? ''),
+            $corpPdfCleanText($corpComp['commercial_references'] ?? ''),
+        ];
+        foreach ($logSectionDescs as $ix => $ld) {
+            if ($ld === '') {
+                $logSectionDescs[$ix] = '—';
+            }
+        }
         // Slide Nuestra Historia (antes de Competitividad): siguiente página al último slide de productos
         $histPageNum = $prodIntroPageNum + 1 + count($productoSlidesChunks);
         $mpdf->AddPage();
@@ -1421,7 +1536,16 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetTextColor(255, 255, 255);
         $mpdf->SetFont($pdfFontFamily, '', $histFontSize);
         $mpdf->Ln(8);
-        $histPara = 'Nisi justo faucibus lectus blandit donec gravida proin natoque, malesuada a facilisis dictumst rhoncus pulvinar aliquet feugiat ultrices, mollis phasellus varius tortor habitasse purus enim. Nunc lacus sociis tortor volutpat egestas vel duis erat, eleifend dapibus praesent vehicula fringilla ac suscipit conubia, nibh pulvinar elementum faucibus urna nullam luctus. Augue senectus rutrum suscipit habitasse felis aptent phasellus, nec hendrerit mattis enim congue tempor auctor magnis, mollis neque libero sagittis urna orci.';
+        $histPara = '';
+        if (!empty($companies[0]['nuestra_historia'])) {
+            $histPara = $corpPdfCleanText($companies[0]['nuestra_historia']);
+        }
+        if ($histPara === '' && !empty($corpComp['company_history'])) {
+            $histPara = $corpPdfCleanText($corpComp['company_history']);
+        }
+        if ($histPara === '') {
+            $histPara = '—';
+        }
         $mpdf->MultiCell($histTextW, $histLineHeight, $histPara, 0, 'L');
         $mpdf->SetLeftMargin(0);
         $mpdf->SetRightMargin(0);
@@ -1613,6 +1737,13 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetFont($pdfFontFamily, 'B', 52);
         $mpdf->SetXY($cTitleLeft, $cTextRowY + $cTitleLineH + $cTitleGap);
         $mpdf->Cell($cTitleW, $cTitleLineH, 'DIFERENCIACIÓN', 0, 1, 'L');
+        if ($corpDiffStr !== '') {
+            $cDiffSummaryY = $cTextRowY + 2 * ($cTitleLineH + $cTitleGap);
+            $mpdf->SetXY($cTitleLeft, $cDiffSummaryY);
+            $mpdf->SetTextColor(200, 220, 240);
+            $mpdf->SetFont($pdfFontFamily, '', 11);
+            $mpdf->MultiCell($cTitleW, 5, $corpDiffStr, 0, 'L');
+        }
 
         // Slide Premios / Ferias / Rondas / Experiencia exportadora / Referencias comerciales (antes de Contacto)
         $logrosPageNum = $compPageNum + 1;
@@ -1759,7 +1890,6 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetFillColor($logBlue[0], $logBlue[1], $logBlue[2]);
         $mpdf->Rect($logPanelX, $logPanelY, $logPanelW, $logPanelH, 'F');
         $logSectionTitles = ['PREMIOS', 'FERIAS', 'RONDAS', 'EXPERIENCIA EXPORTADORA', 'REFERENCIAS COMERCIALES'];
-        $logSectionDesc = 'Información proveniente del input del formulario';
         $logSections = 5;
         $logInnerPad = 12;
         $logLineSepH = 0.4;
@@ -1783,7 +1913,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->SetFont($pdfFontFamily, 'B', $logTitleFontSize);
             $mpdf->Cell($logTextW, $logTitleH, $logSectionTitles[$s], 0, 1, 'L');
             $mpdf->SetFont($pdfFontFamily, '', $logDescFontSize);
-            $mpdf->MultiCell($logTextW, $logDescLineH, $logSectionDesc, 0, 'L');
+            $mpdf->MultiCell($logTextW, $logDescLineH, $logSectionDescs[$s] ?? '—', 0, 'L');
         }
         $mpdf->SetLeftMargin(0);
         $mpdf->SetRightMargin(0);

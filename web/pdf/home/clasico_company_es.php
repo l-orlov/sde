@@ -176,7 +176,7 @@ if ($currentUserId <= 0) {
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.main_activity, c.website, c.start_date
+$stmt = mysqli_prepare($link, "SELECT c.id, c.name, c.main_activity, c.website, c.start_date, c.nuestra_historia
       FROM companies c
       WHERE c.user_id = ? AND c.moderation_status = 'approved'
       LIMIT 1");
@@ -212,6 +212,32 @@ if (!empty($companyIds)) {
 $rubros = array_slice(array_keys($rubrosMap), 0, 3);
 if (count($rubros) < 3) {
     $rubros = array_pad($rubros, 3, 'Otros sectores');
+}
+
+// Competitividad (slide 8): datos desde company_data.competitiveness (JSON)
+$competitivenessPorEmpresa = [];
+if (!empty($companyIds)) {
+    $placeholders = implode(',', array_fill(0, count($companyIds), '?'));
+    $stmt = @mysqli_prepare($link, "SELECT company_id, competitiveness FROM company_data WHERE company_id IN ($placeholders)");
+    if ($stmt) {
+        $types = str_repeat('i', count($companyIds));
+        @mysqli_stmt_bind_param($stmt, $types, ...$companyIds);
+        @mysqli_stmt_execute($stmt);
+        $res = @mysqli_stmt_get_result($stmt);
+        if ($res) {
+            while ($row = mysqli_fetch_assoc($res)) {
+                $cid = (int) ($row['company_id'] ?? 0);
+                $raw = (string) ($row['competitiveness'] ?? '');
+                if ($cid > 0 && $raw !== '') {
+                    $dec = json_decode($raw, true);
+                    if (is_array($dec)) {
+                        $competitivenessPorEmpresa[$cid] = $dec;
+                    }
+                }
+            }
+        }
+        @mysqli_stmt_close($stmt);
+    }
 }
 
 // Métricas: empresas con oferta y productos cargados
@@ -657,16 +683,17 @@ for ($i = 0; $i < 5; $i++) {
         $mpdf->SetRightMargin(24);
         $mpdf->SetXY($s1TextLeft, $s1Y);
         $mpdf->SetTextColor(255, 255, 255);
-        $mpdf->SetFont($pdfFontFamily, 'B', 59);
-        $mpdf->Cell($s1TextW, 21, 'EMPRESA/', 0, 1, 'L');
-        $mpdf->SetFont($pdfFontFamily, 'B', 59);
-        $mpdf->Cell($s1TextW, 21, 'EMPRENDIMIENTO', 0, 1, 'L');
+        $companyName = !empty($companies[0]['name']) ? trim((string) $companies[0]['name']) : 'EMPRESA';
+        $companyTitle = function_exists('mb_strtoupper') ? mb_strtoupper($companyName, 'UTF-8') : strtoupper($companyName);
+        $mpdf->SetFont($pdfFontFamily, 'B', 54);
+        $mpdf->MultiCell($s1TextW, 19, $companyTitle, 0, 'L');
+        $afterTitleY = isset($mpdf->y) ? (float) $mpdf->y : ($s1Y + 38);
         $actividad = !empty($companies[0]['main_activity']) ? $companies[0]['main_activity'] : 'Comercio Exterior';
         $localidad = !empty($configInstitucional['localidad_direccion']) ? $configInstitucional['localidad_direccion'] : $configInstitucional['nombre_provincia'];
         $s1Subtitle = (function_exists('mb_strtoupper ') ? mb_strtoupper($actividad) : strtoupper($actividad)) . ' · ' . (function_exists(' mb_strtoupper') ? mb_strtoupper($localidad) : strtoupper($localidad));
         $mpdf->SetTextColor(255, 255, 255);
         $mpdf->SetFont($pdfFontFamily, 'B', 26);
-        $mpdf->SetXY($s1TextLeft, $s1Y + 44);
+        $mpdf->SetXY($s1TextLeft, $afterTitleY + 6);
         $mpdf->Cell($s1TextW, 12, $s1Subtitle, 0, 1, 'L');
         // Badge: logo empresa (izq) + logo SDE (derecha)
         $s1BadgeH = 24;
@@ -799,16 +826,21 @@ for ($i = 0; $i < 5; $i++) {
             }
             $mpdf->Image($pfSdePath, $pfSdeLogoX + ($pfSdeLogoW - $lw) / 2, $pfLogoY + ($pfLogoH - $lh) / 2, $lw, $lh);
         }
+        // Para alinear el título con el margen derecho del logo grande (columna derecha)
+        $pfLogoSize = 125;
+        $pfLogoRightX = $pfLeftW + ($pfRightW - $pfLogoSize) / 2;
         $pfTitleLeft = $pfLeftW + 44;
-        $pfTitleW = $pfRightW - 48;
-        $mpdf->SetXY($pfTitleLeft, 18);
+        $pfTitleRightEdge = $pfLogoRightX + $pfLogoSize;
+        $pfTitleW = max(10, $pfTitleRightEdge - $pfTitleLeft);
+
+        $mpdf->SetXY($pfTitleLeft, 16);
         $mpdf->SetTextColor(141, 188, 220);
-        $mpdf->SetFont($pdfFontFamily, 'B', 42);
-        $mpdf->Cell($pfTitleW, 14, 'PERFIL DE LA', 0, 1, 'L');
-        $mpdf->SetXY($pfTitleLeft, 34);
+        $mpdf->SetFont($pdfFontFamily, 'B', 54);
+        $mpdf->Cell($pfTitleW, 18, 'PERFIL DE LA', 0, 1, 'R');
+        $mpdf->SetXY($pfTitleLeft, 36);
         $mpdf->SetTextColor(0, 0, 0);
-        $mpdf->SetFont($pdfFontFamily, 'B', 48);
-        $mpdf->Cell($pfTitleW, 18, 'EMPRESA', 0, 1, 'L');
+        $mpdf->SetFont($pdfFontFamily, 'B', 54);
+        $mpdf->Cell($pfTitleW, 18, 'EMPRESA', 0, 1, 'R');
         $pfSecLeft = 24;
         $pfSecW = $pfLeftW - 2 * $pfSecLeft;
         $pfLineColor = [141, 188, 220];
@@ -863,8 +895,6 @@ for ($i = 0; $i < 5; $i++) {
             $pfY += 4;
         }
         // Derecha: logo de la empresa (tamaño mayor)
-        $pfLogoSize = 125;
-        $pfLogoRightX = $pfLeftW + ($pfRightW - $pfLogoSize) / 2;
         $pfLogoRightY = $pfHeaderH + 30;
         $pfCompanyLogoImgPath = ($perfilFirstId && isset($logosPorEmpresa[$perfilFirstId])) ? $logosPorEmpresa[$perfilFirstId] : (($perfilFirstId && isset($imagenesPorEmpresa[$perfilFirstId])) ? $imagenesPorEmpresa[$perfilFirstId] : null);
         if ($pfCompanyLogoImgPath && file_exists($pfCompanyLogoImgPath)) {
@@ -1271,28 +1301,55 @@ for ($i = 0; $i < 5; $i++) {
             if (mb_strlen($prodTargetMarketsStr) > 45) {
                 $prodTargetMarketsStr = mb_substr($prodTargetMarketsStr, 0, 44) . '…';
             }
+            $prodTitleName = trim((string)($prod['name'] ?? '')) !== '' ? (string)($prod['name'] ?? '') : 'PRODUCTO/SERVICIO';
+            $descStr = trim($prod['description'] ?? '') ?: 'Nisi justo faucibus lectus blandit donec gravida proin natoque, malesuada a facilisis dictumst rhoncus pulvinar aliquet feugiat ultrices, mollis phasellus varius tortor habitasse purus enim.';
+            $descStr = mb_strlen($descStr) > 200 ? mb_substr($descStr, 0, 199) . '…' : $descStr;
+            $mpdf->SetFont($pdfFontFamily, '', 14);
+            $descLineCount = pdf_mpdf_wrapped_line_count($mpdf, (float) $prodTextW, $descStr);
+            $descBlockH = $descLineCount * 7;
+            $prodSlideContentYMax = $hMm - 20;
+            $titleGapAfter = 16;
+            $descLabelH = 8;
+            $postDescGap = 7;
+            $prodIconRowsH = 5 * 15;
+            $layoutBuffer = 6;
+            $restBelowTitle = $titleGapAfter + $descLabelH + $descBlockH + $postDescGap + $prodIconRowsH + $layoutBuffer;
+            $maxTitleBlockH = $prodSlideContentYMax - $prodTitleY - $restBelowTitle;
+            $maxTitleBlockH = max(10.0, $maxTitleBlockH);
+            $titleFontMax = 52;
+            $titleFontMin = 20;
+            $titleChosenPt = $titleFontMin;
+            $titleChosenLh = 9;
+            for ($titleFs = $titleFontMax; $titleFs >= $titleFontMin; $titleFs--) {
+                $mpdf->SetFont($pdfFontFamily, 'B', $titleFs);
+                $titleLh = max(8, (int) round($titleFs * 17 / 52));
+                $titleLineCount = pdf_mpdf_wrapped_line_count($mpdf, (float) $prodTextW, $prodTitleName);
+                if ($titleLineCount * $titleLh <= $maxTitleBlockH) {
+                    $titleChosenPt = $titleFs;
+                    $titleChosenLh = $titleLh;
+                    break;
+                }
+            }
             $mpdf->SetXY($prodPad, $prodTitleY);
             $mpdf->SetTextColor(0, 0, 0);
-            $mpdf->SetFont($pdfFontFamily, 'B', 52);
-            $mpdf->Cell($prodTextW, 18, mb_strlen($prod['name'] ?? '') > 28 ? (mb_substr($prod['name'], 0, 27) . '…') : ($prod['name'] ?? 'PRODUCTO/SERVICIO'), 0, 1, 'L');
+            $mpdf->SetFont($pdfFontFamily, 'B', $titleChosenPt);
+            $mpdf->MultiCell($prodTextW, $titleChosenLh, $prodTitleName, 0, 'L');
             $mpdf->Ln(10);
             $prodContentX = $prodPad;
             $prodContentW = $prodTextW;
-            $prodY = $prodTitleY + 18 + 10 + 6;
+            $prodY = $mpdf->y + 6;
             $mpdf->SetXY($prodContentX, $prodY);
             $mpdf->SetFont($pdfFontFamily, 'B', 16);
             $mpdf->SetTextColor(0, 0, 0);
             $mpdf->Cell($prodContentW, 8, 'Descripción del producto:', 0, 1, 'L');
             $mpdf->SetFont($pdfFontFamily, '', 14);
-            $descStr = trim($prod['description'] ?? '') ?: 'Nisi justo faucibus lectus blandit donec gravida proin natoque, malesuada a facilisis dictumst rhoncus pulvinar aliquet feugiat ultrices, mollis phasellus varius tortor habitasse purus enim.';
-            $descStr = mb_strlen($descStr) > 200 ? mb_substr($descStr, 0, 199) . '…' : $descStr;
             $mpdf->MultiCell($prodContentW, 7, $descStr, 0, 'L');
             $mpdf->Ln(7);
             $prodIconSize = 18;
             $prodIconW = $prodIconSize;
             $prodIconH = $prodIconSize;
             $prodRowH = 15;
-            $prodRowY0 = $prodY + 7 + 28 + 8;
+            $prodRowY0 = $mpdf->y;
             $prodIconOffsetY = ($prodRowH - $prodIconH) / 2;
             $prodRowLineH = 9;
             $prodTextOffsetY = ($prodRowH - $prodRowLineH) / 2;
@@ -1562,7 +1619,13 @@ for ($i = 0; $i < 5; $i++) {
         $s2ParaTop = $s2TextTop + 20 + 20 + 18;
         $mpdf->SetXY($s2TextLeft, $s2ParaTop);
         $mpdf->SetFont($pdfFontFamily, '', $s2FontSize);
-        $s2Para = "Nisi justo faucibus lectus blandit donec gravida proin natoque, malesuada a facilisis dictumst rhoncus pulvinar aliquet feugiat ultrices, mollis phasellus varius tortor habitasse purus enim. Nunc lacus sociis tortor volutpat egestas vel duis erat, eleifend dapibus praesent vehicula fringilla ac suscipit conubia, nibh pulvinar elementum faucibus urna nullam luctus. Augue senectus rutrum suscipit habitasse felis aptent phasellus, nec hendrerit mattis enim congue tempor auctor magnis, mollis neque libero sagittis urna orci.";
+        $s2Para = '';
+        if (!empty($companies[0]['nuestra_historia'])) {
+            $s2Para = trim((string) $companies[0]['nuestra_historia']);
+        }
+        if ($s2Para === '') {
+            $s2Para = '—';
+        }
         $mpdf->MultiCell($s2TextW, $s2LineHeight, $s2Para, 0, 'L');
         $s2PageBoxW = 40;
         $s2PageBoxH = 13;
@@ -1723,7 +1786,22 @@ for ($i = 0; $i < 5; $i++) {
             ['EXPERIENCIA', 'EXPORTADORA'],
             ['REFERENCIAS', 'COMERCIALES'],
         ];
-        $s6ColDesc = 'Información proveniente del input del formulario';
+        $s6FirstCompanyId = !empty($companies[0]['id']) ? (int) $companies[0]['id'] : 0;
+        $s6Comp = ($s6FirstCompanyId && isset($competitivenessPorEmpresa[$s6FirstCompanyId]) && is_array($competitivenessPorEmpresa[$s6FirstCompanyId]))
+            ? $competitivenessPorEmpresa[$s6FirstCompanyId]
+            : [];
+        $cleanText = static function ($v): string {
+            $s = trim((string) $v);
+            $s = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $s);
+            return $s;
+        };
+        $s6ColDescs = [
+            $cleanText($s6Comp['awards_detail'] ?? ($s6Comp['awards'] ?? '')),
+            $cleanText($s6Comp['fairs_detail'] ?? ($s6Comp['fairs'] ?? '')),
+            $cleanText($s6Comp['rounds_detail'] ?? ($s6Comp['rounds'] ?? '')),
+            $cleanText($s6Comp['export_experience'] ?? ''),
+            $cleanText($s6Comp['commercial_references'] ?? ''),
+        ];
         $s6ColCount = 5;
         $s6ColPad = 16;
         $s6ColW = ($wMm - 2 * $s6ColPad - ($s6ColCount - 1) * 8) / $s6ColCount;
@@ -1762,7 +1840,11 @@ for ($i = 0; $i < 5; $i++) {
             $mpdf->Cell($s6ColW, 12, sprintf('%02d', $col + 1), 0, 1, 'L');
             $mpdf->SetXY($cx, $s6DescY);
             $mpdf->SetFont($pdfFontFamily, '', 14);
-            $mpdf->MultiCell($s6ColW, 6, $s6ColDesc, 0, 'L');
+            $desc = $s6ColDescs[$col] ?? '';
+            if ($desc === '') {
+                $desc = '—';
+            }
+            $mpdf->MultiCell($s6ColW, 6, $desc, 0, 'L');
         }
         $s6PageBoxW = 40;
         $s6PageBoxH = 13;

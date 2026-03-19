@@ -82,3 +82,65 @@ function get_serve_file_public_url($file_id) {
     }
     return $web_base . '/serve_file_public.php?id=' . (int) $file_id;
 }
+
+/**
+ * Сколько строк займёт текст при переносе по ширине $widthMm (мм) в текущем шрифте mPDF.
+ * Перед вызовом нужно выставить шрифт через $mpdf->SetFont(...).
+ *
+ * @param \Mpdf\Mpdf $mpdf
+ */
+function pdf_mpdf_wrapped_line_count($mpdf, float $widthMm, string $text): int {
+    $text = str_replace(["\r\n", "\r"], "\n", trim($text));
+    if ($text === '') {
+        return 1;
+    }
+    $linesOut = 0;
+    foreach (explode("\n", $text) as $para) {
+        if ($para === '') {
+            $linesOut++;
+            continue;
+        }
+        $words = preg_split('/\s+/u', $para, -1, PREG_SPLIT_NO_EMPTY);
+        if ($words === false) {
+            $words = [];
+        }
+        $line = '';
+        foreach ($words as $w) {
+            $trial = $line === '' ? $w : $line . ' ' . $w;
+            if ($mpdf->GetStringWidth($trial) <= $widthMm) {
+                $line = $trial;
+                continue;
+            }
+            if ($line !== '') {
+                $linesOut++;
+                $line = '';
+            }
+            if ($mpdf->GetStringWidth($w) <= $widthMm) {
+                $line = $w;
+                continue;
+            }
+            $chars = preg_split('//u', $w, -1, PREG_SPLIT_NO_EMPTY);
+            if ($chars === false) {
+                $chars = [];
+            }
+            $chunk = '';
+            foreach ($chars as $ch) {
+                $t2 = $chunk . $ch;
+                if ($mpdf->GetStringWidth($t2) <= $widthMm || $chunk === '') {
+                    $chunk = $t2;
+                } else {
+                    $linesOut++;
+                    $chunk = $ch;
+                }
+            }
+            if ($chunk !== '') {
+                $linesOut++;
+            }
+            $line = '';
+        }
+        if ($line !== '') {
+            $linesOut++;
+        }
+    }
+    return max(1, $linesOut);
+}

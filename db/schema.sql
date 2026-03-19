@@ -20,7 +20,7 @@ CREATE TABLE `companies` (
   `updated_at` int(10) unsigned NOT NULL DEFAULT unix_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `companies_user_uidx` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 DROP TABLE IF EXISTS `company_addresses`;
 CREATE TABLE `company_addresses` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -38,7 +38,7 @@ CREATE TABLE `company_addresses` (
   `created_at` int(10) unsigned NOT NULL DEFAULT unix_timestamp(),
   PRIMARY KEY (`id`),
   KEY `company_addresses_company_idx` (`company_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 DROP TABLE IF EXISTS `company_contacts`;
 CREATE TABLE `company_contacts` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -52,7 +52,7 @@ CREATE TABLE `company_contacts` (
   `created_at` int(10) unsigned NOT NULL DEFAULT unix_timestamp(),
   PRIMARY KEY (`id`),
   KEY `company_contacts_company_idx` (`company_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 DROP TABLE IF EXISTS `company_data`;
 CREATE TABLE `company_data` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -69,7 +69,7 @@ CREATE TABLE `company_data` (
   `updated_at` int(10) unsigned NOT NULL DEFAULT unix_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `company_data_company_uidx` (`company_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 DROP TABLE IF EXISTS `company_social_networks`;
 CREATE TABLE `company_social_networks` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -79,7 +79,7 @@ CREATE TABLE `company_social_networks` (
   `created_at` int(10) unsigned NOT NULL DEFAULT unix_timestamp(),
   PRIMARY KEY (`id`),
   KEY `company_social_company_idx` (`company_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 DROP TABLE IF EXISTS `files`;
 CREATE TABLE `files` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -135,12 +135,20 @@ CREATE TABLE `products` (
   PRIMARY KEY (`id`),
   KEY `products_company_idx` (`company_id`),
   KEY `products_user_idx` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 DROP TABLE IF EXISTS `schema_migrations`;
 CREATE TABLE `schema_migrations` (
   `name` varchar(255) NOT NULL,
   `applied_at` timestamp NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+DROP TABLE IF EXISTS `test_table`;
+CREATE TABLE `test_table` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `note` varchar(500) DEFAULT NULL,
+  `created_at` int(10) unsigned NOT NULL DEFAULT unix_timestamp(),
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
@@ -156,4 +164,4 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `users_phone_uidx` (`phone`),
   UNIQUE KEY `users_email_uidx` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
