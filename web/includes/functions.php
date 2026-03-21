@@ -144,3 +144,56 @@ function pdf_mpdf_wrapped_line_count($mpdf, float $widthMm, string $text): int {
     }
     return max(1, $linesOut);
 }
+
+/**
+ * Una fila de company_contacts → texto multilínea para slides PDF (oferta exportable).
+ * Solo teléfono y correo (sin nombre ni cargo).
+ *
+ * @param array<string,mixed> $row
+ */
+function pdf_company_contact_slide_value(array $row): string {
+    $lines = [];
+    $phone = trim(trim((string) ($row['area_code'] ?? '')) . ' ' . trim((string) ($row['phone'] ?? '')));
+    if ($phone !== '') {
+        $lines[] = $phone;
+    }
+    $em = trim((string) ($row['email'] ?? ''));
+    if ($em !== '') {
+        $lines[] = $em;
+    }
+
+    return $lines !== [] ? implode("\n", $lines) : '-';
+}
+
+/**
+ * Primer registro de company_contacts por empresa (para slides de datos de compañía).
+ *
+ * @param array<int|string> $companyIds
+ * @return array<int,string> company_id => texto multilínea o '-'
+ */
+function pdf_load_first_company_contact_strings_for_slides($link, array $companyIds): array {
+    $out = [];
+    if ($companyIds === [] || !$link) {
+        return $out;
+    }
+    $check = @mysqli_query($link, "SHOW TABLES LIKE 'company_contacts'");
+    if (!$check || mysqli_num_rows($check) === 0) {
+        return $out;
+    }
+    $fields = ['company_id', 'email', 'area_code', 'phone'];
+    $ids = implode(',', array_map('intval', $companyIds));
+    $q = 'SELECT ' . implode(', ', $fields) . " FROM company_contacts WHERE company_id IN ($ids) ORDER BY company_id, id ASC";
+    $r = @mysqli_query($link, $q);
+    if (!$r) {
+        return $out;
+    }
+    while ($row = mysqli_fetch_assoc($r)) {
+        $cid = (int) ($row['company_id'] ?? 0);
+        if ($cid <= 0 || isset($out[$cid])) {
+            continue;
+        }
+        $out[$cid] = pdf_company_contact_slide_value($row);
+    }
+
+    return $out;
+}

@@ -64,6 +64,13 @@ async function setLang(page, lang) {
       }
     });
 
+    document.querySelectorAll('[data-i18n-alt]').forEach(el => {
+      const key = el.getAttribute('data-i18n-alt');
+      if (dict[key]) {
+        el.setAttribute('alt', dict[key]);
+      }
+    });
+
     // HTML-тексты
     document.querySelectorAll('[data-i18n-html]').forEach(el => {
       const key = el.getAttribute('data-i18n-html');

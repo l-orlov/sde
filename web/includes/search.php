@@ -61,7 +61,7 @@ $__pdf_oferta_urls = [
             <span class="hero-nav-sep hero-nav-sep-search" aria-hidden="true">|</span>
             <span class="hero-nav-contact-wrap">
                 <a data-i18n="nav_contact" href="?page=landing#contacto" class="nav-link nav-link-search">Contacto</a>
-                <a href="https://wa.me/" class="nav-whatsapp" target="_blank" rel="noopener" aria-label="WhatsApp">
+                <a href="https://wa.me/5491165943613" class="nav-whatsapp" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
                     <img src="img/icono_whatsapp.png" alt="" class="whatsapp-icon">
                 </a>
             </span>
@@ -99,10 +99,10 @@ $__pdf_oferta_urls = [
                 <div class="landing-footer-column landing-footer-accesos">
                     <h3 class="landing-footer-title" data-i18n="footer_accesos">ACCESOS</h3>
                     <ul class="landing-footer-links">
-                        <li><a href="?page=landing#nosotros" data-i18n="footer_nosotros">Nosotros</a></li>
+                        <li><a href="https://sde.gob.ar/" target="_blank" rel="noopener noreferrer" data-i18n="footer_nosotros">Nosotros</a></li>
                         <li><a href="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" class="js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_oferta_urls['static_pdf']) ?>" data-i18n="footer_oferta">Oferta exportable</a></li>
                         <li><a href="https://turismosantiago.gob.ar/" target="_blank" rel="noopener" data-i18n="nav_turismo">Turismo</a></li>
-                        <li><a href="?page=landing#contacto" data-i18n="footer_contacto">Contacto</a></li>
+                        <li><a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=info%40ecopolys.eu" target="_blank" rel="noopener noreferrer"><span data-i18n="footer_contacto">Contacto</span></a></li>
                     </ul>
                 </div>
                 <div class="landing-footer-column landing-footer-empresas">

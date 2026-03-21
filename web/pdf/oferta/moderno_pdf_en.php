@@ -167,8 +167,8 @@ $productosMuestra = [];
 $mercadosPorRegion = [];
 $contactoInstitucional = $configInstitucional;
 
-// Companies aprobadas (con start_date para año de inicio en slide empresa)
-$q = "SELECT c.id, c.name, c.name_en, c.main_activity, c.main_activity_en, c.website, c.start_date
+// Companies aprobadas (company slide: contact from company_contacts)
+$q = "SELECT c.id, c.name, c.name_en, c.main_activity, c.main_activity_en, c.website
       FROM companies c
       INNER JOIN users u ON u.id = c.user_id
       WHERE c.moderation_status = 'approved'
@@ -183,6 +183,7 @@ $metrics['empresas'] = count($companies);
 
 // Rubros: distinct activity de products de empresas aprobadas (+ main_activity de companies)
 $companyIds = array_column($companies, 'id');
+$contactoSlidePorEmpresa = pdf_load_first_company_contact_strings_for_slides($link, $companyIds);
 $rubrosMap = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
@@ -2597,7 +2598,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $s5BlockY = 95;
             $s5Cols = 2;
             $s5ColW = ($s5LeftZoneW - 2 * $s5Pad - 8) / $s5Cols;
-            $s5RowHeights = [42, 56, 42];
+            $s5RowHeights = [42, 56, 64];
             $s5NumW = 12;
             $s5LabelLineH = 7;
             $s5Rows = [
@@ -2605,7 +2606,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 ['02', 'LOCATION', $localidadPorEmpresa[$cid] ?? '-'],
                 ['03', 'WEBSITE', $emp['website'] ?? '-'],
                 ['04', "SOCIAL\nMEDIA", isset($redesPorEmpresa[$cid]) ? implode("\n", $redesPorEmpresa[$cid]) : '-'],
-                ['05', "YEAR\nESTABLISHED", !empty($emp['start_date']) ? date('Y', (int)$emp['start_date']) : '-'],
+                ['05', 'CONTACT', $contactoSlidePorEmpresa[$cid] ?? '-'],
             ];
             foreach ($s5Rows as $idx => $row) {
                 $col = $idx % $s5Cols;

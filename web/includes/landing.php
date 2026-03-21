@@ -129,7 +129,7 @@ if ($link) {
                     <span class="hero-nav-sep" aria-hidden="true">|</span>
                     <span class="hero-nav-contact-wrap">
                         <a data-i18n="nav_contact" href="#contacto" class="nav-link">Contacto</a>
-                        <a href="https://wa.me/" class="nav-whatsapp" target="_blank" aria-label="WhatsApp">
+                        <a href="https://wa.me/5491165943613" class="nav-whatsapp" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
                             <img src="img/icono_whatsapp.png" alt="" class="whatsapp-icon">
                         </a>
                     </span>
@@ -151,13 +151,44 @@ if ($link) {
         <div class="hero-tagline">
             <span data-i18n="hero_tagline_normal" class="tagline-normal">CON </span>
             <span data-i18n="hero_tagline_bold" class="tagline-bold">SU GENTE</span>
-            <span data-i18n="hero_tagline_normal_2" class="tagline-normal">, EL NORTE CAMINA</span><br>
-            <span data-i18n="hero_tagline_normal_3" class="tagline-normal">HACIA UN </span>
+            <span data-i18n="hero_tagline_normal_2" class="tagline-normal">, EL NORTE ARGENTINO</span><br>
+            <span data-i18n="hero_tagline_normal_3" class="tagline-normal">CAMINA HACIA UN </span>
             <span data-i18n="hero_tagline_bold_2" class="tagline-bold">FUTURO SOSTENIBLE.</span>
         </div>
     </div>
 </div>
 <!-- HEADER -->
+
+<!-- PROVINCIA: UBICACIÓN Y CARACTERÍSTICAS -->
+<section class="provincia-ubicacion-section" aria-labelledby="provincia-ubicacion-heading">
+    <div class="provincia-ubicacion-container">
+        <div class="provincia-ubicacion-title-col">
+            <h2 id="provincia-ubicacion-heading" class="provincia-ubicacion-heading">
+                <span class="provincia-ubicacion-title-line provincia-ubicacion-title-dark" data-i18n="provincia_title_line1">LA PROVINCIA</span>
+                <span class="provincia-ubicacion-title-line provincia-ubicacion-title-light" data-i18n="provincia_title_line2">UBICACIÓN Y</span>
+                <span class="provincia-ubicacion-title-line provincia-ubicacion-title-light" data-i18n="provincia_title_line3">CARACTERÍSTICAS</span>
+            </h2>
+        </div>
+        <div class="provincia-ubicacion-map-col">
+            <img src="img/mapa_sde.png" alt="Mapa de Argentina con la provincia de Santiago del Estero resaltada" class="provincia-ubicacion-map" width="520" height="520" loading="lazy" decoding="async" data-i18n-alt="provincia_map_alt">
+        </div>
+        <div class="provincia-ubicacion-text-col">
+            <div class="provincia-ubicacion-block">
+                <h3 class="provincia-ubicacion-block-title" data-i18n="provincia_card1_title">Ubicación</h3>
+                <p class="provincia-ubicacion-block-text" data-i18n="provincia_card1_text">Ubicada en el noroeste argentino, forma parte de la región del Gran Chaco y limita con importantes provincias productivas del país.</p>
+            </div>
+            <div class="provincia-ubicacion-block">
+                <h3 class="provincia-ubicacion-block-title" data-i18n="provincia_card2_title">Perfil productivo</h3>
+                <p class="provincia-ubicacion-block-text" data-i18n="provincia_card2_text">Con suelos aptos y condiciones naturales favorables, se destaca en actividades agrícolas, ganaderas y forestales.</p>
+            </div>
+            <div class="provincia-ubicacion-block">
+                <h3 class="provincia-ubicacion-block-title" data-i18n="provincia_card3_title">Clima y geografía</h3>
+                <p class="provincia-ubicacion-block-text" data-i18n="provincia_card3_text">Caracterizada por un clima subtropical con estación seca y extensas llanuras, propias de una región semiárida.</p>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- PROVINCIA: UBICACIÓN Y CARACTERÍSTICAS -->
 
 <?php if (!empty($__carousel_products)): ?>
 <!-- PRODUCTS CAROUSEL -->
@@ -394,10 +425,10 @@ if ($link) {
             <div class="landing-footer-column landing-footer-accesos">
                 <h3 class="landing-footer-title" data-i18n="footer_accesos">ACCESOS</h3>
                 <ul class="landing-footer-links">
-                    <li><a href="#nosotros" data-i18n="footer_nosotros">Nosotros</a></li>
+                    <li><a href="https://sde.gob.ar/" target="_blank" rel="noopener noreferrer" data-i18n="footer_nosotros">Nosotros</a></li>
                     <li><a href="<?= htmlspecialchars($__pdf_es) ?>" class="js-pdf-link" target="_blank" rel="noopener" data-pdf-url-es="<?= htmlspecialchars($__pdf_es) ?>" data-pdf-url-en="<?= htmlspecialchars($__pdf_en) ?>" data-i18n="footer_oferta">Oferta exportable</a></li>
                     <li><a href="https://turismosantiago.gob.ar/" target="_blank" rel="noopener" data-i18n="nav_turismo">Turismo</a></li>
-                    <li><a href="#contacto" data-i18n="footer_contacto">Contacto</a></li>
+                    <li><a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=info%40ecopolys.eu" target="_blank" rel="noopener noreferrer"><span data-i18n="footer_contacto">Contacto</span></a></li>
                 </ul>
             </div>
             <div class="landing-footer-column landing-footer-empresas">

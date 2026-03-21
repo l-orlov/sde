@@ -175,8 +175,8 @@ $productosMuestra = [];
 $mercadosPorRegion = [];
 $contactoInstitucional = $configInstitucional;
 
-// Companies aprobadas (con start_date para año de inicio en slide empresa)
-$q = "SELECT c.id, c.name, c.name_en, c.main_activity, c.main_activity_en, c.website, c.start_date
+// Companies aprobadas (company slide: contact from company_contacts)
+$q = "SELECT c.id, c.name, c.name_en, c.main_activity, c.main_activity_en, c.website
       FROM companies c
       INNER JOIN users u ON u.id = c.user_id
       WHERE c.moderation_status = 'approved'
@@ -191,6 +191,7 @@ $metrics['empresas'] = count($companies);
 
 // Rubros: distinct activity de products de empresas aprobadas (+ main_activity de companies)
 $companyIds = array_column($companies, 'id');
+$contactoSlidePorEmpresa = pdf_load_first_company_contact_strings_for_slides($link, $companyIds);
 $rubrosMap = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
@@ -2903,7 +2904,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 ['Location', $localidadPorEmpresa[$cid] ?? '-'],
                 ['Website', $emp['website'] ?? '-'],
                 ['Social Media', isset($redesPorEmpresa[$cid]) ? implode("\n", $redesPorEmpresa[$cid]) : '-'],
-                ['Year Established', !empty($emp['start_date']) ? date('Y', (int)$emp['start_date']) : '-'],
+                ['Contact', $contactoSlidePorEmpresa[$cid] ?? '-'],
             ];
             foreach ($s5Rows as $idx => $row) {
                 if ($idx > 0) {

@@ -162,8 +162,8 @@ $productosMuestra = [];
 $mercadosPorRegion = [];
 $contactoInstitucional = $configInstitucional;
 
-// Companies aprobadas (con start_date para año de inicio en slide empresa)
-$q = "SELECT c.id, c.name, c.main_activity, c.website, c.start_date
+// Companies aprobadas (slide empresa: contacto desde company_contacts)
+$q = "SELECT c.id, c.name, c.main_activity, c.website
       FROM companies c
       INNER JOIN users u ON u.id = c.user_id
       WHERE c.moderation_status = 'approved'
@@ -178,6 +178,7 @@ $metrics['empresas'] = count($companies);
 
 // Rubros: distinct activity de products de empresas aprobadas (+ main_activity de companies)
 $companyIds = array_column($companies, 'id');
+$contactoSlidePorEmpresa = pdf_load_first_company_contact_strings_for_slides($link, $companyIds);
 $rubrosMap = [];
 if (!empty($companyIds)) {
     $ids = implode(',', array_map('intval', $companyIds));
@@ -2366,7 +2367,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 ['LOCALIDAD', null, $localidadPorEmpresa[$cid] ?? '-'],
                 ['SITIO WEB', null, $emp['website'] ?? '-'],
                 ['REDES', 'SOCIALES', isset($redesPorEmpresa[$cid]) ? implode("\n", $redesPorEmpresa[$cid]) : '-'],
-                ['AÑO DE', 'INICIO', !empty($emp['start_date']) ? date('Y', (int)$emp['start_date']) : '-'],
+                ['CONTACTO', null, $contactoSlidePorEmpresa[$cid] ?? '-'],
             ];
             $s5LabelW = $s5TextW * 0.32;
             $s5ValW = $s5TextW * 0.68;
@@ -2393,12 +2394,13 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $valStr = is_string($value) ? $value : (string)$value;
                 $rowH = ($line2 !== null) ? $s5LabelH * 2 : $s5LineH;
                 $isRedes = ($line1 === 'REDES' && $line2 === 'SOCIALES');
-                if ($isRedes || mb_strlen($valStr) > 45) {
+                $isContactoRow = ($line1 === 'CONTACTO');
+                if ($isRedes || $isContactoRow || mb_strlen($valStr) > 45) {
                     $mpdf->MultiCell($s5ValW, 5, $valStr, 0, 'R');
                 } else {
                     $mpdf->Cell($s5ValW, $rowH, $valStr, 0, 1, 'R');
                 }
-                // Ensure minimum row height for two-line labels so next row does not overlap (e.g. REDES SOCIALES / AÑO DE INICIO)
+                // Ensure minimum row height for two-line labels so next row does not overlap (e.g. REDES SOCIALES / CONTACTO)
                 $s5Y = max($mpdf->y, $s5Y + $rowH) + $s5GapAfterText;
                 $mpdf->SetDrawColor($s5LineColor[0], $s5LineColor[1], $s5LineColor[2]);
                 $mpdf->SetLineWidth(0.4);
