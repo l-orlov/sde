@@ -1729,7 +1729,7 @@ div.label span .req,
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('../img/bg_image.jpeg');
+  background-image: url('../img/bg_image.jpg');
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -1741,7 +1741,7 @@ div.label span .req,
     display: none;
   }
   .hero-section::before {
-    background-image: url('../img/bg_image.jpeg');
+    background-image: url('../img/bg_image.jpg');
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
