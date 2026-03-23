@@ -85,6 +85,16 @@ $busc = '';
 							</div>
 						</div>
 
+						<div class="form-field-group">
+							<div class="adm_add_tit">Catálogo público (landing, búsqueda, PDF oferta):</div>
+							<div class="adm_add_txt">
+								<select class="add_input" id="include_in_business_exports">
+									<option value="1" selected>Sí</option>
+									<option value="0">No (cuenta interna)</option>
+								</select>
+							</div>
+						</div>
+
 						<div class="form-field-group" style="text-align:right; margin-top: 10px;">
 							<button type="button" onclick="user_create()" style="background: #003399; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
 								Guardar
@@ -237,7 +247,8 @@ function user_create() {
         email:		    document.getElementById('email')?.value		    || '',
         phone:		    document.getElementById('phone')?.value		    || '',
         password:		document.getElementById('password')?.value		|| '',
-        is_admin:		document.getElementById('is_admin')?.value		|| '0'
+        is_admin:		document.getElementById('is_admin')?.value		|| '0',
+        include_in_business_exports: document.getElementById('include_in_business_exports')?.value || '1'
     };
 
     fetch(basePath + 'includes/users_create_js.php', {
@@ -258,6 +269,7 @@ function user_create() {
             document.getElementById('phone').value = '';
             document.getElementById('password').value = '';
             document.getElementById('is_admin').value = '0';
+            document.getElementById('include_in_business_exports').value = '1';
 
             user_list(0, '');
         } else {

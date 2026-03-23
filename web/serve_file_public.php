@@ -25,10 +25,12 @@ $stmt = $link->prepare("
     FROM files f
     INNER JOIN products p ON p.id = f.product_id
     INNER JOIN companies c ON c.id = p.company_id AND c.user_id = p.user_id
+    INNER JOIN users u ON u.id = c.user_id
     WHERE f.id = ? 
       AND f.file_type IN ('product_photo', 'product_photo_sec', 'service_photo')
       AND (f.is_temporary = 0 OR f.is_temporary IS NULL)
       AND c.moderation_status = 'approved'
+      AND u.include_in_business_exports = 1
 ");
 $stmt->bind_param('i', $fileId);
 $stmt->execute();

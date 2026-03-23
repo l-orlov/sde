@@ -16,6 +16,15 @@ function asset_version($path) {
     return $appVersion . '.' . $mtime;
 }
 
+/**
+ * SQL fragment: user participates in public catalog (landing, search, serve_file_public, PDF oferta).
+ * Use only after `users` is joined (alias $userAlias, default `u`), e.g.
+ *   INNER JOIN users u ON u.id = c.user_id AND u.include_in_business_exports = 1
+ */
+function sql_user_include_in_business_exports_on($userAlias = 'u') {
+    return $userAlias . '.include_in_business_exports = 1';
+}
+
 function DBconnect() {
     global $link;
 

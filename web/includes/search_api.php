@@ -33,7 +33,9 @@ if ($suggest) {
     $stmt = @mysqli_prepare($link, "SELECT DISTINCT p.tariff_code
         FROM products p
         INNER JOIN companies c ON c.id = p.company_id AND c.user_id = p.user_id
+        INNER JOIN users u ON u.id = c.user_id
         WHERE c.moderation_status = 'approved'
+          AND u.include_in_business_exports = 1
           AND (p.deleted_at IS NULL OR p.deleted_at = 0)
           AND p.tariff_code IS NOT NULL AND p.tariff_code != ''
           AND (p.tariff_code LIKE ? OR p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ? OR c.organization_type LIKE ? OR c.main_activity LIKE ?)
@@ -65,7 +67,9 @@ if ($suggest) {
 $stmt = @mysqli_prepare($link, "SELECT p.id, p.name, p.tariff_code, p.company_id, p.type, c.name AS company_name, c.website
     FROM products p
     INNER JOIN companies c ON c.id = p.company_id AND c.user_id = p.user_id
+    INNER JOIN users u ON u.id = c.user_id
     WHERE c.moderation_status = 'approved'
+      AND u.include_in_business_exports = 1
       AND (p.deleted_at IS NULL OR p.deleted_at = 0)
       AND (
         p.tariff_code LIKE ?
@@ -166,10 +170,12 @@ if (!empty($productIds)) {
     $q = "SELECT f.id, f.product_id FROM files f
           INNER JOIN products p ON p.id = f.product_id
           INNER JOIN companies c ON c.id = p.company_id AND c.user_id = p.user_id
+          INNER JOIN users u ON u.id = c.user_id
           WHERE f.product_id IN ($placeholders)
             AND f.file_type IN ('product_photo', 'product_photo_sec', 'service_photo')
             AND (f.is_temporary = 0 OR f.is_temporary IS NULL)
             AND c.moderation_status = 'approved'
+            AND u.include_in_business_exports = 1
             AND (p.deleted_at IS NULL)
           ORDER BY f.product_id, f.id ASC";
     $stmt = mysqli_prepare($link, $q);

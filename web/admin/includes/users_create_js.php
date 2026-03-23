@@ -24,6 +24,8 @@ $email = isset($input['email']) ? mysqli_real_escape_string($link, $input['email
 $phone = isset($input['phone']) ? mysqli_real_escape_string($link, $input['phone']) : '';
 $password = isset($input['password']) ? mysqli_real_escape_string($link, $input['password']) : '';
 $is_admin = isset($input['is_admin']) ? intval($input['is_admin']) : 0;
+$include_in_business_exports = isset($input['include_in_business_exports']) ? intval($input['include_in_business_exports']) : 1;
+$include_in_business_exports = $include_in_business_exports ? 1 : 0;
 
 // En la administración no hay campos obligatorios
 // Проверка уникальности email и phone (только если указаны)
@@ -40,8 +42,8 @@ if (!empty($email) || !empty($phone)) {
 }
 
 $query = "INSERT INTO users 
-  (company_name, tax_id, email, phone, password, is_admin) 
-  VALUES (?, ?, ?, ?, ?, ?)";
+  (company_name, tax_id, email, phone, password, is_admin, include_in_business_exports) 
+  VALUES (?, ?, ?, ?, ?, ?, ?)";
 
 $stmt = mysqli_prepare($link, $query);
 if (!$stmt) {
@@ -51,8 +53,8 @@ if (!$stmt) {
 
 mysqli_stmt_bind_param(
   $stmt, 
-  "sssssi",
-  $company_name, $tax_id, $email, $phone, $password, $is_admin
+  "sssssii",
+  $company_name, $tax_id, $email, $phone, $password, $is_admin, $include_in_business_exports
 );
 
 $success = mysqli_stmt_execute($stmt);

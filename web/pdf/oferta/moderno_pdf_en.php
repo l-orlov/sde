@@ -171,7 +171,7 @@ $contactoInstitucional = $configInstitucional;
 $q = "SELECT c.id, c.name, c.name_en, c.main_activity, c.main_activity_en, c.website
       FROM companies c
       INNER JOIN users u ON u.id = c.user_id
-      WHERE c.moderation_status = 'approved'
+      WHERE c.moderation_status = 'approved' AND u.include_in_business_exports = 1
       ORDER BY c.id ASC";
 $res = mysqli_query($link, $q);
 if ($res) {

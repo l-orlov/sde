@@ -5,10 +5,10 @@
 SET NAMES utf8mb4;
 
 -- 3 users (password hash = 'password' via bcrypt)
-INSERT IGNORE INTO users (id, company_name, tax_id, email, phone, password, is_admin, created_at, updated_at) VALUES
-(1, 'Agro SDE S.A.', '30123456789', 'contacto@agrosde.local', '+5493854123456', '12345', 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-(2, 'Miel del Norte', '30234567890', 'info@mieldelnorte.local', '+5493854234567', '12345', 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-(3, 'Servicios Logísticos Santiago', '30345678901', 'admin@logistica.local', '+5493854345678', '12345', 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+INSERT IGNORE INTO users (id, company_name, tax_id, email, phone, password, is_admin, include_in_business_exports, created_at, updated_at) VALUES
+(1, 'Agro SDE S.A.', '30123456789', 'contacto@agrosde.local', '+5493854123456', '12345', 0, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(2, 'Miel del Norte', '30234567890', 'info@mieldelnorte.local', '+5493854234567', '12345', 0, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+(3, 'Servicios Logísticos Santiago', '30345678901', 'admin@logistica.local', '+5493854345678', '12345', 1, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 
 -- 3 companies (one per user)
 INSERT IGNORE INTO companies (id, user_id, name, name_en, tax_id, legal_name, start_date, website, nuestra_historia, organization_type, main_activity, main_activity_en, moderation_status, created_at, updated_at) VALUES

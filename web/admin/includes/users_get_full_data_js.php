@@ -29,7 +29,7 @@ $userId = intval($input['user_id']);
 
 try {
     // 0. Основные данные пользователя из таблицы users
-    $query = "SELECT id, company_name, tax_id, email, phone, is_admin, created_at, updated_at 
+    $query = "SELECT id, company_name, tax_id, email, phone, is_admin, include_in_business_exports, created_at, updated_at 
               FROM users WHERE id = ? LIMIT 1";
     $stmt = mysqli_prepare($link, $query);
     mysqli_stmt_bind_param($stmt, 'i', $userId);
@@ -46,6 +46,9 @@ try {
         echo json_encode(['ok' => 0, 'err' => 'Usuario no encontrado']);
         exit;
     }
+    
+    $userData['is_admin'] = (int) ($userData['is_admin'] ?? 0);
+    $userData['include_in_business_exports'] = (int) ($userData['include_in_business_exports'] ?? 1);
     
     // Конвертация дат
     $userData['created_at'] = $userData['created_at'] ? date('Y-m-d H:i', $userData['created_at']) : '';

@@ -44,6 +44,9 @@ function initChangeTracking(data) {
         user_email: data.user?.email || '',
         user_phone: data.user?.phone || '',
         user_is_admin: data.user?.is_admin || '0',
+        user_include_in_business_exports: data.user?.include_in_business_exports !== undefined && data.user?.include_in_business_exports !== null
+            ? String(data.user.include_in_business_exports)
+            : '1',
         name: data.company?.name || '',
         tax_id: data.company?.tax_id || '',
         legal_name: data.company?.legal_name || '',
@@ -82,6 +85,10 @@ function initChangeTracking(data) {
             const isAdminField = document.getElementById('form_user_is_admin');
             if (isAdminField && originalFormData.user_is_admin !== undefined) {
                 isAdminField.value = String(originalFormData.user_is_admin);
+            }
+            const includeExportsField = document.getElementById('form_user_include_in_business_exports');
+            if (includeExportsField && originalFormData.user_include_in_business_exports !== undefined) {
+                includeExportsField.value = String(originalFormData.user_include_in_business_exports);
             }
             
             const orgTypeField = document.getElementById('form_organization_type');
@@ -148,6 +155,7 @@ function setupChangeTracking() {
     // Dropdown поля (select)
     const selectFields = [
         'form_user_is_admin',
+        'form_user_include_in_business_exports',
         'form_organization_type', 'form_main_activity'
     ];
     
@@ -186,6 +194,7 @@ function getOriginalValue(fieldId) {
         'form_user_email': 'user_email',
         'form_user_phone': 'user_phone',
         'form_user_is_admin': 'user_is_admin',
+        'form_user_include_in_business_exports': 'user_include_in_business_exports',
         'form_name': 'name',
         'form_tax_id': 'tax_id',
         'form_legal_name': 'legal_name',
@@ -265,6 +274,14 @@ function generateUserFormHTML(data, userId) {
     html += '<option value="0"' + (user.is_admin == 0 ? ' selected' : '') + '>No</option>';
     html += '<option value="1"' + (user.is_admin == 1 ? ' selected' : '') + '>Sí</option>';
     html += '</select></div>';
+    
+    const incExp = user.include_in_business_exports !== undefined && user.include_in_business_exports !== null ? parseInt(user.include_in_business_exports, 10) : 1;
+    html += '<div class="form-group"><label>Incluir en catálogo público (landing, búsqueda, PDF oferta)</label>';
+    html += '<select class="form-control" id="form_user_include_in_business_exports">';
+    html += '<option value="1"' + (incExp === 1 ? ' selected' : '') + '>Sí</option>';
+    html += '<option value="0"' + (incExp === 0 ? ' selected' : '') + '>No</option>';
+    html += '</select>';
+    html += '<small class="form-text text-muted">Si es «No», el usuario puede seguir entrando al sistema o a la administración; sus datos no aparecen en el catálogo ni en los PDF institucionales.</small></div>';
     
     html += '<div class="form-group"><label>Creado el</label>';
     html += '<div class="readonly-field">' + escapeHtml(user.created_at || '') + '</div></div>';
@@ -844,6 +861,7 @@ function saveUserBasicData(userId) {
     }
     
     const isAdminValue = document.getElementById('form_user_is_admin')?.value || '0';
+    const includeExportsValue = document.getElementById('form_user_include_in_business_exports')?.value ?? '1';
     
     if (errors.length > 0) {
         document.getElementById('save_message').innerHTML = '<div class="alert alert-danger">Por favor, complete los campos obligatorios: ' + errors.join(', ') + '</div>';
@@ -854,7 +872,8 @@ function saveUserBasicData(userId) {
         user_id: userId,
         user_email: emailValue,
         user_phone: phoneValue,
-        user_is_admin: isAdminValue
+        user_is_admin: isAdminValue,
+        user_include_in_business_exports: includeExportsValue
     };
     
     document.getElementById('save_message').innerHTML = '<div class="alert alert-info">Guardando...</div>';
@@ -940,6 +959,9 @@ function saveUserFullData(userId) {
         user_is_admin: isFieldChanged('form_user_is_admin') 
             ? (document.getElementById('form_user_is_admin')?.value || '0') 
             : (originalFormData.user_is_admin || '0'),
+        user_include_in_business_exports: isFieldChanged('form_user_include_in_business_exports')
+            ? (document.getElementById('form_user_include_in_business_exports')?.value ?? '1')
+            : (originalFormData.user_include_in_business_exports || '1'),
         name: getFieldValue('form_name', originalFormData.name),
         tax_id: getFieldValue('form_tax_id', originalFormData.tax_id),
         legal_name: getFieldValue('form_legal_name', originalFormData.legal_name),

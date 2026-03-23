@@ -32,10 +32,13 @@ if ($link) {
     }
     $deletedCondition = $hasDeletedAt ? " AND (p.deleted_at IS NULL)" : "";
     // Сначала выбираем только одобренные компании, затем только товары этих компаний (жёсткая связь по id и user_id)
+    $exportUser = sql_user_include_in_business_exports_on('u');
     $q = "SELECT p.id, p.name, p.description, p.type, p.company_id, c.name AS company_name
           FROM products p
           INNER JOIN (
-            SELECT id, user_id, name FROM companies WHERE BINARY moderation_status = 'approved'
+            SELECT c.id, c.user_id, c.name FROM companies c
+            INNER JOIN users u ON u.id = c.user_id
+            WHERE BINARY c.moderation_status = 'approved' AND {$exportUser}
           ) c ON c.id = p.company_id AND c.user_id = p.user_id
           WHERE 1=1" . $deletedCondition . "
           ORDER BY COALESCE(p.updated_at, p.id) DESC
@@ -60,7 +63,11 @@ if ($link) {
         $placeholders = implode(',', array_fill(0, count($productIds), '?'));
         $q = "SELECT f.id, f.product_id FROM files f
               INNER JOIN products p ON p.id = f.product_id
-              INNER JOIN (SELECT id, user_id FROM companies WHERE BINARY moderation_status = 'approved') c ON c.id = p.company_id AND c.user_id = p.user_id
+              INNER JOIN (
+                SELECT c.id, c.user_id FROM companies c
+                INNER JOIN users u ON u.id = c.user_id
+                WHERE BINARY c.moderation_status = 'approved' AND {$exportUser}
+              ) c ON c.id = p.company_id AND c.user_id = p.user_id
               WHERE f.product_id IN ($placeholders)
                 AND f.file_type IN ('product_photo', 'product_photo_sec', 'service_photo')
                 AND (f.is_temporary = 0 OR f.is_temporary IS NULL)" . $deletedCondition . "

@@ -135,7 +135,7 @@ CREATE TABLE `products` (
   PRIMARY KEY (`id`),
   KEY `products_company_idx` (`company_id`),
   KEY `products_user_idx` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 DROP TABLE IF EXISTS `schema_migrations`;
 CREATE TABLE `schema_migrations` (
   `name` varchar(255) NOT NULL,
@@ -159,6 +159,7 @@ CREATE TABLE `users` (
   `phone` varchar(32) NOT NULL,
   `password` varchar(255) NOT NULL,
   `is_admin` tinyint(1) NOT NULL DEFAULT 0,
+  `include_in_business_exports` tinyint(1) NOT NULL DEFAULT 1,
   `created_at` int(10) unsigned NOT NULL DEFAULT unix_timestamp(),
   `updated_at` int(10) unsigned NOT NULL DEFAULT unix_timestamp(),
   PRIMARY KEY (`id`),
