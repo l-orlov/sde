@@ -1230,58 +1230,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // Máscara Código Arancelario: NNNN.NN.NN.NNNL (solo dígitos y una letra al final)
+  // Máscara NCM/HS desactivada temporalmente: entrada libre (maxlength en el input).
   function applyTariffCodeMask(inputEl) {
     if (!inputEl || inputEl._tariffMaskBound) return;
     inputEl._tariffMaskBound = true;
-    inputEl.addEventListener('input', function() {
-      let raw = this.value.replace(/\s/g, '');
-      let digits = '';
-      let letter = '';
-      const onlyDigitsAndLetter = raw.replace(/[^0-9A-Za-z]/g, '');
-      if (onlyDigitsAndLetter.length > 0 && /[A-Za-z]/.test(onlyDigitsAndLetter.slice(-1))) {
-        letter = onlyDigitsAndLetter.slice(-1);
-        digits = onlyDigitsAndLetter.slice(0, -1).replace(/[^0-9]/g, '').slice(0, 11);
-      } else {
-        digits = onlyDigitsAndLetter.replace(/[^0-9]/g, '').slice(0, 11);
-      }
-      let formatted = digits.slice(0, 4);
-      if (digits.length > 4) {
-        formatted += '.' + digits.slice(4, 6);
-        if (digits.length > 6) {
-          formatted += '.' + digits.slice(6, 8);
-          if (digits.length > 8) {
-            formatted += '.' + digits.slice(8, 11);
-          }
-        }
-      }
-      formatted += letter;
-      if (this.value !== formatted) {
-        this.value = formatted;
-      }
-    });
-    inputEl.addEventListener('blur', function() {
-      let raw = this.value.replace(/\s/g, '');
-      let digits = '';
-      let letter = '';
-      const onlyDigitsAndLetter = raw.replace(/[^0-9A-Za-z]/g, '');
-      if (onlyDigitsAndLetter.length > 0 && /[A-Za-z]/.test(onlyDigitsAndLetter.slice(-1))) {
-        letter = onlyDigitsAndLetter.slice(-1);
-        digits = onlyDigitsAndLetter.slice(0, -1).replace(/[^0-9]/g, '').slice(0, 11);
-      } else {
-        digits = onlyDigitsAndLetter.replace(/[^0-9]/g, '').slice(0, 11);
-      }
-      let formatted = digits.slice(0, 4);
-      if (digits.length > 4) {
-        formatted += '.' + digits.slice(4, 6);
-        if (digits.length > 6) {
-          formatted += '.' + digits.slice(6, 8);
-          if (digits.length > 8) formatted += '.' + digits.slice(8, 11);
-        }
-      }
-      formatted += letter;
-      if (formatted !== this.value) this.value = formatted;
-    });
   }
   
   // Привязка обработчиков для продукта
@@ -2404,24 +2356,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (productDesc) productDesc.style.borderColor = '';
         }
         
-        // Código Arancelario (NCM/HS): si está lleno, validar formato NNNN.NN.NN.NNNL
         const productTariffInput = item.querySelector('input[name="product_tariff_code[]"]');
-        if (productTariffInput && productTariffInput.value && productTariffInput.value.trim()) {
-          const v = productTariffInput.value.trim();
-          if (!/^[0-9.]+[A-Za-z]$/.test(v)) {
-            errors.push('Producto ' + (index + 1) + ': Carácter no válido. El código arancelario solo puede contener dígitos, puntos (.) y una letra al final.');
-            productTariffInput.style.borderColor = '#f44336';
-            productTariffInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          } else if (!/^\d{4}\.\d{2}\.\d{2}\.\d{3}[A-Za-z]$/.test(v)) {
-            errors.push('Producto ' + (index + 1) + ': Formato incorrecto. Use el formato NNNN.NN.NN.NNNL (por ejemplo: 0602.90.90.100X).');
-            productTariffInput.style.borderColor = '#f44336';
-            productTariffInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          } else {
-            productTariffInput.style.borderColor = '';
-          }
-        } else if (productTariffInput) {
-          productTariffInput.style.borderColor = '';
-        }
+        if (productTariffInput) productTariffInput.style.borderColor = '';
         
         // Проверка файла продукта
         const fileState = window.getFileState ? window.getFileState() : { existingFiles: {}, newFiles: {} };
@@ -2576,24 +2512,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (serviceDesc) serviceDesc.style.borderColor = '';
         }
         
-        // Código Arancelario (NCM/HS): si está lleno, validar formato NNNN.NN.NN.NNNL
         const serviceTariffInput = item.querySelector('input[name="service_tariff_code[]"]');
-        if (serviceTariffInput && serviceTariffInput.value && serviceTariffInput.value.trim()) {
-          const v = serviceTariffInput.value.trim();
-          if (!/^[0-9.]+[A-Za-z]$/.test(v)) {
-            errors.push('Servicio ' + (index + 1) + ': Carácter no válido. El código arancelario solo puede contener dígitos, puntos (.) y una letra al final.');
-            serviceTariffInput.style.borderColor = '#f44336';
-            serviceTariffInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          } else if (!/^\d{4}\.\d{2}\.\d{2}\.\d{3}[A-Za-z]$/.test(v)) {
-            errors.push('Servicio ' + (index + 1) + ': Formato incorrecto. Use el formato NNNN.NN.NN.NNNL (por ejemplo: 0602.90.90.100X).');
-            serviceTariffInput.style.borderColor = '#f44336';
-            serviceTariffInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          } else {
-            serviceTariffInput.style.borderColor = '';
-          }
-        } else if (serviceTariffInput) {
-          serviceTariffInput.style.borderColor = '';
-        }
+        if (serviceTariffInput) serviceTariffInput.style.borderColor = '';
         
         // Проверка файла услуги (аналогично продукту)
         const fileState = window.getFileState ? window.getFileState() : { existingFiles: {}, newFiles: {} };

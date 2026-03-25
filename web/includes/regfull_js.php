@@ -353,19 +353,12 @@ try {
             }
             $tariffCodeRaw = isset($input['product_tariff_code'][$index]) && is_array($input['product_tariff_code'])
                 ? trim((string) $input['product_tariff_code'][$index]) : '';
-            // Validación Código Arancelario (NCM/HS): formato NNNN.NN.NN.NNNL
+            // Código arancelario: sin formato estricto por ahora (columna VARCHAR(20))
             if ($tariffCodeRaw !== '') {
-                if (!preg_match('/^[0-9.]+[A-Za-z]$/', $tariffCodeRaw)) {
-                    $return['err'] = 'Producto ' . ($index + 1) . ': Carácter no válido. El código arancelario (NCM/HS) solo puede contener dígitos, puntos (.) y una letra al final.';
-                    header('Content-Type: application/json');
-                    echo json_encode($return);
-                    exit;
-                }
-                if (!preg_match('/^\d{4}\.\d{2}\.\d{2}\.\d{3}[A-Za-z]$/', $tariffCodeRaw)) {
-                    $return['err'] = 'Producto ' . ($index + 1) . ': Formato incorrecto en Código Arancelario (NCM/HS). Use el formato NNNN.NN.NN.NNNL (por ejemplo: 0602.90.90.100X).';
-                    header('Content-Type: application/json');
-                    echo json_encode($return);
-                    exit;
+                if (function_exists('mb_strlen') && mb_strlen($tariffCodeRaw) > 20) {
+                    $tariffCodeRaw = function_exists('mb_substr') ? mb_substr($tariffCodeRaw, 0, 20) : substr($tariffCodeRaw, 0, 20);
+                } elseif (strlen($tariffCodeRaw) > 20) {
+                    $tariffCodeRaw = substr($tariffCodeRaw, 0, 20);
                 }
             }
             if ($tariffCodeRaw !== '') {
@@ -669,17 +662,10 @@ try {
             $tariffCodeRaw = isset($input['service_tariff_code'][$index]) && is_array($input['service_tariff_code'])
                 ? trim((string) $input['service_tariff_code'][$index]) : '';
             if ($tariffCodeRaw !== '') {
-                if (!preg_match('/^[0-9.]+[A-Za-z]$/', $tariffCodeRaw)) {
-                    $return['err'] = 'Servicio ' . ($index + 1) . ': Carácter no válido. El código arancelario (NCM/HS) solo puede contener dígitos, puntos (.) y una letra al final.';
-                    header('Content-Type: application/json');
-                    echo json_encode($return);
-                    exit;
-                }
-                if (!preg_match('/^\d{4}\.\d{2}\.\d{2}\.\d{3}[A-Za-z]$/', $tariffCodeRaw)) {
-                    $return['err'] = 'Servicio ' . ($index + 1) . ': Formato incorrecto en Código Arancelario (NCM/HS). Use el formato NNNN.NN.NN.NNNL (por ejemplo: 0602.90.90.100X).';
-                    header('Content-Type: application/json');
-                    echo json_encode($return);
-                    exit;
+                if (function_exists('mb_strlen') && mb_strlen($tariffCodeRaw) > 20) {
+                    $tariffCodeRaw = function_exists('mb_substr') ? mb_substr($tariffCodeRaw, 0, 20) : substr($tariffCodeRaw, 0, 20);
+                } elseif (strlen($tariffCodeRaw) > 20) {
+                    $tariffCodeRaw = substr($tariffCodeRaw, 0, 20);
                 }
             }
             if ($tariffCodeRaw !== '') {
