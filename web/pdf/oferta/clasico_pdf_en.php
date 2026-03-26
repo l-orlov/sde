@@ -1562,7 +1562,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetTextColor(255, 255, 255);
         $mpdf->SetFont('dejavusans', 'B', $s3cTitleFs);
         $mpdf->SetXY($s3cCol1X + $s3cPad, $s3cSideTextY + 2);
-        $mpdf->Cell($s3cCol1W - 2 * $s3cPad, 7, 'Termas de Río Hondo', 0, 1, 'L');
+        $mpdf->Cell($s3cCol1W - 2 * $s3cPad, 7, 'Rio Hondo Hot Springs', 0, 1, 'L');
         $mpdf->SetFont('dejavusans', '', $s3cSubtitleFs);
         $mpdf->SetXY($s3cCol1X + $s3cPad, $s3cSideTextY + 11);
         $mpdf->Cell($s3cCol1W - 2 * $s3cPad, 6, 'International thermal tourism', 0, 1, 'L');
@@ -1581,7 +1581,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetTextColor(0, 0, 0);
         $mpdf->SetFont('dejavusans', 'B', 19);
         $mpdf->SetXY($s3cCol2X + $s3cPad, $s3cEstadioImgY + $s3cEstadioImgH + 6);
-        $mpdf->Cell($s3cCol2W - 2 * $s3cPad, 9, 'Estadio Único Madre de Ciudades', 0, 1, 'L');
+        $mpdf->Cell($s3cCol2W - 2 * $s3cPad, 9, 'Mother of Cities Stadium', 0, 1, 'L');
         $mpdf->SetFont('dejavusans', '', 14);
         $mpdf->SetXY($s3cCol2X + $s3cPad, $s3cEstadioImgY + $s3cEstadioImgH + 17);
         $mpdf->Cell($s3cCol2W - 2 * $s3cPad, 7, 'Events and entertainment', 0, 1, 'L');
@@ -1590,7 +1590,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetTextColor(0, 0, 0);
         $mpdf->SetFont('dejavusans', 'B', $s3cTitleFs);
         $mpdf->SetXY($s3cCol3X + $s3cPad, $s3cSideTextY + 2);
-        $mpdf->Cell($s3cCol3W - 2 * $s3cPad, 7, 'Autódromo Internacional', 0, 1, 'L');
+        $mpdf->Cell($s3cCol3W - 2 * $s3cPad, 7, 'International Racetrack', 0, 1, 'L');
         $mpdf->SetFont('dejavusans', '', $s3cSubtitleFs);
         $mpdf->SetXY($s3cCol3X + $s3cPad, $s3cSideTextY + 11);
         $mpdf->Cell($s3cCol3W - 2 * $s3cPad, 6, 'Sports tourism', 0, 1, 'L');

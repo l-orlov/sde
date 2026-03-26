@@ -216,9 +216,20 @@ try {
     mysqli_stmt_execute($stmt);
     mysqli_stmt_close($stmt);
     
-    if (isset($input['contact_person']) && !empty($input['contact_person'])) {
-        $areaCodeRaw = trim($input['contact_area_code'] ?? '');
-        $phoneRaw = trim($input['contact_phone'] ?? '');
+    $contactPersonRaw = trim($input['contact_person'] ?? '');
+    $contactPositionRaw = trim($input['contact_position'] ?? '');
+    $contactEmailRaw = trim($input['contact_email'] ?? '');
+    $areaCodeRaw = trim($input['contact_area_code'] ?? '');
+    $phoneRaw = trim($input['contact_phone'] ?? '');
+    $hasAnyContactData = (
+        $contactPersonRaw !== '' ||
+        $contactPositionRaw !== '' ||
+        $contactEmailRaw !== '' ||
+        $areaCodeRaw !== '' ||
+        $phoneRaw !== ''
+    );
+
+    if ($hasAnyContactData) {
         $areaDigits = preg_replace('/\D/', '', $areaCodeRaw);
         $phoneDigits = preg_replace('/\D/', '', $phoneRaw);
         if ($areaCodeRaw !== '' || $phoneRaw !== '') {
@@ -235,9 +246,9 @@ try {
         $query = "INSERT INTO company_contacts (company_id, contact_person, position, email, area_code, phone) 
                   VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($link, $query);
-        $contactPerson = htmlspecialchars(trim($input['contact_person'] ?? ''));
-        $position = htmlspecialchars(trim($input['contact_position'] ?? ''));
-        $email = htmlspecialchars(trim($input['contact_email'] ?? ''));
+        $contactPerson = htmlspecialchars($contactPersonRaw);
+        $position = htmlspecialchars($contactPositionRaw);
+        $email = htmlspecialchars($contactEmailRaw);
         $areaCode = $areaDigits !== '' ? $areaDigits : htmlspecialchars($areaCodeRaw);
         $phone = $phoneDigits !== '' ? $phoneDigits : htmlspecialchars($phoneRaw);
         mysqli_stmt_bind_param($stmt, 'isssss', $companyId, $contactPerson, $position, $email, $areaCode, $phone);

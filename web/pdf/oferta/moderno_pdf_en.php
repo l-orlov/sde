@@ -2064,10 +2064,10 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         };
 
         $stDrawCoverImg($assetsDir . '/Turismo_termal.jpg', $stX1 + $stImgInset, $stY0 + $stColSideTextDrop + $stHdrH + $stGap, $stImgSq, $stImgSq);
-        $stRenderHeader($stX1, $stY0 + $stColSideTextDrop, $stColW, '01', 'Termas de Río Hondo', 'International thermal tourism');
+        $stRenderHeader($stX1, $stY0 + $stColSideTextDrop, $stColW, '01', 'Rio Hondo Hot Springs', 'International thermal tourism');
 
         $stDrawCoverImg($assetsDir . '/Estadio_Unico.jpeg', $stX2 + $stImgInset, $stY0, $stImgSq, $stImgSq);
-        $stRenderHeader($stX2, $stY0 + $stImgSq + $stGap + $stCol2TextDrop, $stColW, '02', 'Estadio Único Madre de Ciudades', 'Events and entertainment');
+        $stRenderHeader($stX2, $stY0 + $stImgSq + $stGap + $stCol2TextDrop, $stColW, '02', 'Mother of Cities Stadium', 'Events and entertainment');
 
         $stDrawCoverImg($assetsDir . '/Autodromo_Internacional.jpg', $stX3 + $stImgInset, $stY0 + $stColSideTextDrop + $stHdrH + $stGap, $stImgSq, $stImgSq);
         $stRenderHeader($stX3, $stY0 + $stColSideTextDrop, $stColW, '03', 'International Racetrack', 'Sports tourism');
@@ -2711,13 +2711,13 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $s5RedBlockH = $hMm - $s5RedBlockTop - $s5RedBlockBottom;
             $mpdf->SetFillColor($s5RedR, $s5RedG, $s5RedB);
             $mpdf->Rect($s5RedBlockX, $s5RedBlockY, $s5RedBlockW, $s5RedBlockH, 'F');
-            $s5ImgPadW = 12;
-            $s5ImgPadV = 26;
-            $s5RedBlockWRef = $s5RightZoneW - 28;
-            $s5ImgW = $s5RedBlockWRef - 2 * $s5ImgPadW;
-            $s5ImgH = $s5RedBlockH - 2 * $s5ImgPadV;
-            $s5ImgX = $s5RedBlockX - (2 / 3) * $s5ImgW;
-            $s5ImgY = $s5RedBlockY + $s5ImgPadV;
+            $s5ImgPadV = 18;
+            // Company image on the right: larger square, vertically centered.
+            $s5ImgSide = min($s5RedBlockH - 2 * $s5ImgPadV, $s5RightZoneW + 24);
+            $s5ImgW = $s5ImgSide;
+            $s5ImgH = $s5ImgSide;
+            $s5ImgX = $s5RedBlockX - (0.78 * $s5ImgW);
+            $s5ImgY = $s5RedBlockY + ($s5RedBlockH - $s5ImgH) / 2;
             $compImgPath = $imagenesPorEmpresa[$cid] ?? $logosPorEmpresa[$cid] ?? null;
             if ($compImgPath && file_exists($compImgPath)) {
                 $renderCroppedImage($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);

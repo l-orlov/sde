@@ -2691,13 +2691,13 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $s5RedBlockH = $hMm - $s5RedBlockTop - $s5RedBlockBottom;
             $mpdf->SetFillColor($s5RedR, $s5RedG, $s5RedB);
             $mpdf->Rect($s5RedBlockX, $s5RedBlockY, $s5RedBlockW, $s5RedBlockH, 'F');
-            $s5ImgPadW = 12;
-            $s5ImgPadV = 26;
-            $s5RedBlockWRef = $s5RightZoneW - 28;
-            $s5ImgW = $s5RedBlockWRef - 2 * $s5ImgPadW;
-            $s5ImgH = $s5RedBlockH - 2 * $s5ImgPadV;
-            $s5ImgX = $s5RedBlockX - (2 / 3) * $s5ImgW;
-            $s5ImgY = $s5RedBlockY + $s5ImgPadV;
+            $s5ImgPadV = 18;
+            // Imagen de empresa a la derecha: cuadrada, más grande y centrada en vertical.
+            $s5ImgSide = min($s5RedBlockH - 2 * $s5ImgPadV, $s5RightZoneW + 24);
+            $s5ImgW = $s5ImgSide;
+            $s5ImgH = $s5ImgSide;
+            $s5ImgX = $s5RedBlockX - (0.78 * $s5ImgW);
+            $s5ImgY = $s5RedBlockY + ($s5RedBlockH - $s5ImgH) / 2;
             $compImgPath = $imagenesPorEmpresa[$cid] ?? $logosPorEmpresa[$cid] ?? null;
             if ($compImgPath && file_exists($compImgPath)) {
                 $renderCroppedImage($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
