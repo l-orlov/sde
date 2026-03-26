@@ -297,20 +297,23 @@ if (!empty($companyIds)) {
 
 // Imágenes por empresa destacada (primera imagen de algún producto de esa empresa; respaldo si no hay logo)
 $imagenesPorEmpresa = [];
-foreach ($empresasDestacadas as $emp) {
-    $cid = (int) $emp['id'];
-    $q = "SELECT f.file_path FROM files f
-          INNER JOIN products p ON p.id = f.product_id AND p.company_id = ?
-          WHERE f.file_type IN ('product_photo','product_photo_sec') AND (f.is_temporary = 0 OR f.is_temporary IS NULL)
-          ORDER BY f.id ASC LIMIT 1";
-    $stmt = mysqli_prepare($link, $q);
-    mysqli_stmt_bind_param($stmt, 'i', $cid);
-    mysqli_stmt_execute($stmt);
-    $r = mysqli_stmt_get_result($stmt);
-    if ($r && ($row = mysqli_fetch_assoc($r))) {
-        $imagenesPorEmpresa[$cid] = $storageUploadsDir . '/' . ltrim($row['file_path'], '/');
+if (!empty($empresasDestacadas)) {
+    $destacadaIds = array_column($empresasDestacadas, 'id');
+    $idsStr = implode(',', array_map('intval', $destacadaIds));
+    $q = "SELECT p.company_id, f.file_path FROM files f
+          INNER JOIN products p ON p.id = f.product_id
+          WHERE p.company_id IN ($idsStr) AND f.file_type IN ('product_photo','product_photo_sec')
+            AND (f.is_temporary = 0 OR f.is_temporary IS NULL)
+          ORDER BY p.company_id ASC, f.id ASC";
+    $r = mysqli_query($link, $q);
+    if ($r) {
+        while ($row = mysqli_fetch_assoc($r)) {
+            $cid = (int) $row['company_id'];
+            if (!isset($imagenesPorEmpresa[$cid])) {
+                $imagenesPorEmpresa[$cid] = $storageUploadsDir . '/' . ltrim($row['file_path'], '/');
+            }
+        }
     }
-    mysqli_stmt_close($stmt);
 }
 
 // Localidad por empresa (company_addresses; EN PDF usa locality_en)
@@ -351,7 +354,7 @@ $formatSocialUrlToHandle = function ($url) {
     $u = trim($url);
     if ($u === '') return '';
     $u = preg_replace('#^https?://#i', '', $u);
-    $u = preg_replace('#[?#].*$#', '', $u);
+    $u = preg_replace('/[?#].*$/', '', $u);
     $u = trim($u);
     $u = preg_replace('#^www\.#i', '', $u);
     $parts = array_values(array_filter(explode('/', $u), function ($p) { return $p !== ''; }));
@@ -526,6 +529,48 @@ $mpdf = new \Mpdf\Mpdf([
 ]);
 $mpdf->SetDisplayMode('fullpage');
 $mpdf->SetTitle($configInstitucional['titulo_documento'] . ' - ' . $configInstitucional['nombre_provincia']);
+
+$renderCroppedImage = function ($imgPath, $x, $y, $w, $h) use ($mpdf) {
+    if (!$imgPath || !file_exists($imgPath)) return;
+    if (extension_loaded('gd')) {
+        $info = @getimagesize($imgPath);
+        $ext  = strtolower(pathinfo($imgPath, PATHINFO_EXTENSION));
+        $src  = false;
+        if ($info && $info[2] === IMAGETYPE_JPEG)
+            $src = @imagecreatefromjpeg($imgPath);
+        elseif ($info && $info[2] === IMAGETYPE_PNG)
+            $src = @imagecreatefrompng($imgPath);
+        elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp'))
+            $src = @imagecreatefromwebp($imgPath);
+        if ($src) {
+            $sw = imagesx($src); $sh = imagesy($src);
+            $pxPerMm  = 96 / 25.4;
+            $tw       = (int) round($w * $pxPerMm);
+            $th       = (int) round($h * $pxPerMm);
+            $scale    = max($tw / $sw, $th / $sh);
+            $srcCropW = (int) round($tw / $scale);
+            $srcCropH = (int) round($th / $scale);
+            $srcX     = (int) max(0, ($sw - $srcCropW) / 2);
+            $srcY     = (int) max(0, ($sh - $srcCropH) / 2);
+            $dst = @imagecreatetruecolor($tw, $th);
+            if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $tw, $th, $srcCropW, $srcCropH)) {
+                $tmp = sys_get_temp_dir() . '/crop_' . uniqid() . '.jpg';
+                if (imagejpeg($dst, $tmp, 85)) {
+                    imagedestroy($dst);
+                    imagedestroy($src);
+                    $mpdf->Image($tmp, $x, $y, $w, $h);
+                    @unlink($tmp);
+                    return;
+                }
+                imagedestroy($dst);
+            } else {
+                if ($dst) imagedestroy($dst);
+            }
+            imagedestroy($src);
+        }
+    }
+    $mpdf->Image($imgPath, $x, $y, $w, $h);
+};
 
 $redBarH = 5;
 $contentH = $hMm - $redBarH;
@@ -2233,46 +2278,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $s5CompLogoY = $s5BlackY + 52;
             $compLogoPath = $logosPorEmpresa[$cid] ?? $imagenesPorEmpresa[$cid] ?? null;
             if ($compLogoPath && file_exists($compLogoPath)) {
-                $compLogoOutPath = null;
-                if (extension_loaded('gd')) {
-                    $info = @getimagesize($compLogoPath);
-                    $ext = strtolower(pathinfo($compLogoPath, PATHINFO_EXTENSION));
-                    $src = false;
-                    if ($info && $info[2] === IMAGETYPE_JPEG) {
-                        $src = @imagecreatefromjpeg($compLogoPath);
-                    } elseif ($info && $info[2] === IMAGETYPE_PNG) {
-                        $src = @imagecreatefrompng($compLogoPath);
-                    } elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) {
-                        $src = @imagecreatefromwebp($compLogoPath);
-                    }
-                    if ($src && !empty($info[0]) && !empty($info[1])) {
-                        $sw = imagesx($src);
-                        $sh = imagesy($src);
-                        $pxPerMm = 96 / 25.4;
-                        $tw = (int) round($s5CompLogoSize * $pxPerMm);
-                        $th = $tw;
-                        $scale = max($tw / $sw, $th / $sh);
-                        $srcCropW = (int) round($tw / $scale);
-                        $srcCropH = (int) round($th / $scale);
-                        $srcX = (int) max(0, ($sw - $srcCropW) / 2);
-                        $srcY = (int) max(0, ($sh - $srcCropH) / 2);
-                        $dst = @imagecreatetruecolor($tw, $th);
-                        if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $tw, $th, $srcCropW, $srcCropH)) {
-                            $tmp = sys_get_temp_dir() . '/clasico_comp_logo_' . uniqid() . '.png';
-                            if (imagepng($dst, $tmp)) {
-                                $compLogoOutPath = $tmp;
-                            }
-                            imagedestroy($dst);
-                        }
-                        imagedestroy($src);
-                    }
-                }
-                if ($compLogoOutPath && file_exists($compLogoOutPath)) {
-                    $mpdf->Image($compLogoOutPath, $s5CompLogoX, $s5CompLogoY, $s5CompLogoSize, $s5CompLogoSize);
-                    @unlink($compLogoOutPath);
-                } else {
-                    $mpdf->Image($compLogoPath, $s5CompLogoX, $s5CompLogoY, $s5CompLogoSize, $s5CompLogoSize);
-                }
+                $renderCroppedImage($compLogoPath, $s5CompLogoX, $s5CompLogoY, $s5CompLogoSize, $s5CompLogoSize);
             }
             // Left: company name (blue), then list with blue lines; name with hyphenation for long words
             $s5Pad = 24;
@@ -2379,46 +2385,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             if (!empty($productoImgCandidates)) {
                 $prodImgPath = $productoImgCandidates[$idx % count($productoImgCandidates)];
                 if (file_exists($prodImgPath)) {
-                    $prodImgOutPath = null;
-                    if (extension_loaded('gd')) {
-                        $info = @getimagesize($prodImgPath);
-                        $ext = strtolower(pathinfo($prodImgPath, PATHINFO_EXTENSION));
-                        $src = false;
-                        if ($info && $info[2] === IMAGETYPE_JPEG) {
-                            $src = @imagecreatefromjpeg($prodImgPath);
-                        } elseif ($info && $info[2] === IMAGETYPE_PNG) {
-                            $src = @imagecreatefrompng($prodImgPath);
-                        } elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) {
-                            $src = @imagecreatefromwebp($prodImgPath);
-                        }
-                        if ($src && !empty($info[0]) && !empty($info[1])) {
-                            $sw = imagesx($src);
-                            $sh = imagesy($src);
-                            $pxPerMm = 96 / 25.4;
-                            $tw = (int) round($prodImgW * $pxPerMm);
-                            $th = (int) round($prodImgH * $pxPerMm);
-                            $scale = max($tw / $sw, $th / $sh);
-                            $srcCropW = (int) round($tw / $scale);
-                            $srcCropH = (int) round($th / $scale);
-                            $srcX = (int) max(0, ($sw - $srcCropW) / 2);
-                            $srcY = (int) max(0, ($sh - $srcCropH) / 2);
-                            $dst = @imagecreatetruecolor($tw, $th);
-                            if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $tw, $th, $srcCropW, $srcCropH)) {
-                                $tmp = sys_get_temp_dir() . '/clasico_producto_' . uniqid() . '.png';
-                                if (imagepng($dst, $tmp)) {
-                                    $prodImgOutPath = $tmp;
-                                }
-                                imagedestroy($dst);
-                            }
-                            imagedestroy($src);
-                        }
-                    }
-                    if ($prodImgOutPath && file_exists($prodImgOutPath)) {
-                        $mpdf->Image($prodImgOutPath, $prodImgX, $prodImgY, $prodImgW, $prodImgH);
-                        @unlink($prodImgOutPath);
-                    } else {
-                        $mpdf->Image($prodImgPath, $prodImgX, $prodImgY, $prodImgW, $prodImgH);
-                    }
+                    $renderCroppedImage($prodImgPath, $prodImgX, $prodImgY, $prodImgW, $prodImgH);
                 }
             }
             if (file_exists($pdfLogoPath)) {

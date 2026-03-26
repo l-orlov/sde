@@ -2,8 +2,8 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-set_time_limit(120);
-@ini_set('memory_limit', '256M');
+set_time_limit(0);
+@ini_set('memory_limit', '512M');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
@@ -661,6 +661,48 @@ $mpdf = new \Mpdf\Mpdf($mpdfConfig);
 $mpdf->SetDisplayMode('fullpage');
 $mpdf->SetTitle($configInstitucional['titulo_documento'] . ' - ' . $configInstitucional['nombre_provincia']);
 
+$renderCroppedImage = function ($imgPath, $x, $y, $w, $h) use ($mpdf) {
+    if (!$imgPath || !file_exists($imgPath)) return;
+    if (extension_loaded('gd')) {
+        $info = @getimagesize($imgPath);
+        $ext  = strtolower(pathinfo($imgPath, PATHINFO_EXTENSION));
+        $src  = false;
+        if ($info && $info[2] === IMAGETYPE_JPEG)
+            $src = @imagecreatefromjpeg($imgPath);
+        elseif ($info && $info[2] === IMAGETYPE_PNG)
+            $src = @imagecreatefrompng($imgPath);
+        elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp'))
+            $src = @imagecreatefromwebp($imgPath);
+        if ($src) {
+            $sw = imagesx($src); $sh = imagesy($src);
+            $pxPerMm  = 96 / 25.4;
+            $tw       = (int) round($w * $pxPerMm);
+            $th       = (int) round($h * $pxPerMm);
+            $scale    = max($tw / $sw, $th / $sh);
+            $srcCropW = (int) round($tw / $scale);
+            $srcCropH = (int) round($th / $scale);
+            $srcX     = (int) max(0, ($sw - $srcCropW) / 2);
+            $srcY     = (int) max(0, ($sh - $srcCropH) / 2);
+            $dst = @imagecreatetruecolor($tw, $th);
+            if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $tw, $th, $srcCropW, $srcCropH)) {
+                $tmp = sys_get_temp_dir() . '/crop_' . uniqid() . '.jpg';
+                if (imagejpeg($dst, $tmp, 85)) {
+                    imagedestroy($dst);
+                    imagedestroy($src);
+                    $mpdf->Image($tmp, $x, $y, $w, $h);
+                    @unlink($tmp);
+                    return;
+                }
+                imagedestroy($dst);
+            } else {
+                if ($dst) imagedestroy($dst);
+            }
+            imagedestroy($src);
+        }
+    }
+    $mpdf->Image($imgPath, $x, $y, $w, $h);
+};
+
 $redBarH = 5;
 $contentH = $hMm - $redBarH;
 
@@ -1200,46 +1242,7 @@ for ($i = 0; $i < 5; $i++) {
                 $prodImgPath = !empty($productoImgCandidates) ? $productoImgCandidates[$idx % count($productoImgCandidates)] : null;
             }
             if ($prodImgPath && file_exists($prodImgPath)) {
-                $prodImgOutPath = null;
-                if (extension_loaded('gd')) {
-                    $info = @getimagesize($prodImgPath);
-                    $ext = strtolower(pathinfo($prodImgPath, PATHINFO_EXTENSION));
-                    $src = false;
-                    if ($info && $info[2] === IMAGETYPE_JPEG) {
-                        $src = @imagecreatefromjpeg($prodImgPath);
-                    } elseif ($info && $info[2] === IMAGETYPE_PNG) {
-                        $src = @imagecreatefrompng($prodImgPath);
-                    } elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) {
-                        $src = @imagecreatefromwebp($prodImgPath);
-                    }
-                    if ($src && !empty($info[0]) && !empty($info[1])) {
-                        $sw = imagesx($src);
-                        $sh = imagesy($src);
-                        $pxPerMm = 96 / 25.4;
-                        $tw = (int) round($prodImgW * $pxPerMm);
-                        $th = (int) round($prodImgH * $pxPerMm);
-                        $scale = max($tw / $sw, $th / $sh);
-                        $srcCropW = (int) round($tw / $scale);
-                        $srcCropH = (int) round($th / $scale);
-                        $srcX = (int) max(0, ($sw - $srcCropW) / 2);
-                        $srcY = (int) max(0, ($sh - $srcCropH) / 2);
-                        $dst = @imagecreatetruecolor($tw, $th);
-                        if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $tw, $th, $srcCropW, $srcCropH)) {
-                            $tmp = sys_get_temp_dir() . '/clasico_producto_' . uniqid() . '.png';
-                            if (imagepng($dst, $tmp)) {
-                                $prodImgOutPath = $tmp;
-                            }
-                            imagedestroy($dst);
-                        }
-                        imagedestroy($src);
-                    }
-                }
-                if ($prodImgOutPath && file_exists($prodImgOutPath)) {
-                    $mpdf->Image($prodImgOutPath, $prodImgX, $prodImgY, $prodImgW, $prodImgH);
-                    @unlink($prodImgOutPath);
-                } else {
-                    $mpdf->Image($prodImgPath, $prodImgX, $prodImgY, $prodImgW, $prodImgH);
-                }
+                $renderCroppedImage($prodImgPath, $prodImgX, $prodImgY, $prodImgW, $prodImgH);
             }
             $prodBadgeH = 24;
             $prodSdeBadgeW = 64;

@@ -302,20 +302,23 @@ if (!empty($companyIds)) {
 
 // Imágenes por empresa destacada (primera imagen de algún producto de esa empresa; respaldo si no hay logo)
 $imagenesPorEmpresa = [];
-foreach ($empresasDestacadas as $emp) {
-    $cid = (int) $emp['id'];
-    $q = "SELECT f.file_path FROM files f
-          INNER JOIN products p ON p.id = f.product_id AND p.company_id = ?
-          WHERE f.file_type IN ('product_photo','product_photo_sec') AND (f.is_temporary = 0 OR f.is_temporary IS NULL)
-          ORDER BY f.id ASC LIMIT 1";
-    $stmt = mysqli_prepare($link, $q);
-    mysqli_stmt_bind_param($stmt, 'i', $cid);
-    mysqli_stmt_execute($stmt);
-    $r = mysqli_stmt_get_result($stmt);
-    if ($r && ($row = mysqli_fetch_assoc($r))) {
-        $imagenesPorEmpresa[$cid] = $storageUploadsDir . '/' . ltrim($row['file_path'], '/');
+if (!empty($empresasDestacadas)) {
+    $destacadaIds = array_column($empresasDestacadas, 'id');
+    $idsStr = implode(',', array_map('intval', $destacadaIds));
+    $q = "SELECT p.company_id, f.file_path FROM files f
+          INNER JOIN products p ON p.id = f.product_id
+          WHERE p.company_id IN ($idsStr) AND f.file_type IN ('product_photo','product_photo_sec')
+            AND (f.is_temporary = 0 OR f.is_temporary IS NULL)
+          ORDER BY p.company_id ASC, f.id ASC";
+    $r = mysqli_query($link, $q);
+    if ($r) {
+        while ($row = mysqli_fetch_assoc($r)) {
+            $cid = (int) $row['company_id'];
+            if (!isset($imagenesPorEmpresa[$cid])) {
+                $imagenesPorEmpresa[$cid] = $storageUploadsDir . '/' . ltrim($row['file_path'], '/');
+            }
+        }
     }
-    mysqli_stmt_close($stmt);
 }
 
 // Localidad por empresa (company_addresses; EN PDF usa locality_en)
@@ -356,7 +359,7 @@ $formatSocialUrlToHandle = function ($url) {
     $u = trim($url);
     if ($u === '') return '';
     $u = preg_replace('#^https?://#i', '', $u);
-    $u = preg_replace('#[?#].*$#', '', $u);
+    $u = preg_replace('/[?#].*$/', '', $u);
     $u = trim($u);
     $u = preg_replace('#^www\.#i', '', $u);
     $parts = array_values(array_filter(explode('/', $u), function ($p) { return $p !== ''; }));
@@ -546,6 +549,48 @@ $mpdf = new \Mpdf\Mpdf([
 ]);
 $mpdf->SetDisplayMode('fullpage');
 $mpdf->SetTitle($configInstitucional['titulo_documento'] . ' - ' . $configInstitucional['nombre_provincia']);
+
+$renderCroppedImage = function ($imgPath, $x, $y, $w, $h) use ($mpdf) {
+    if (!$imgPath || !file_exists($imgPath)) return;
+    if (extension_loaded('gd')) {
+        $info = @getimagesize($imgPath);
+        $ext  = strtolower(pathinfo($imgPath, PATHINFO_EXTENSION));
+        $src  = false;
+        if ($info && $info[2] === IMAGETYPE_JPEG)
+            $src = @imagecreatefromjpeg($imgPath);
+        elseif ($info && $info[2] === IMAGETYPE_PNG)
+            $src = @imagecreatefrompng($imgPath);
+        elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp'))
+            $src = @imagecreatefromwebp($imgPath);
+        if ($src) {
+            $sw = imagesx($src); $sh = imagesy($src);
+            $pxPerMm  = 96 / 25.4;
+            $tw       = (int) round($w * $pxPerMm);
+            $th       = (int) round($h * $pxPerMm);
+            $scale    = max($tw / $sw, $th / $sh);
+            $srcCropW = (int) round($tw / $scale);
+            $srcCropH = (int) round($th / $scale);
+            $srcX     = (int) max(0, ($sw - $srcCropW) / 2);
+            $srcY     = (int) max(0, ($sh - $srcCropH) / 2);
+            $dst = @imagecreatetruecolor($tw, $th);
+            if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $tw, $th, $srcCropW, $srcCropH)) {
+                $tmp = sys_get_temp_dir() . '/crop_' . uniqid() . '.jpg';
+                if (imagejpeg($dst, $tmp, 85)) {
+                    imagedestroy($dst);
+                    imagedestroy($src);
+                    $mpdf->Image($tmp, $x, $y, $w, $h);
+                    @unlink($tmp);
+                    return;
+                }
+                imagedestroy($dst);
+            } else {
+                if ($dst) imagedestroy($dst);
+            }
+            imagedestroy($src);
+        }
+    }
+    $mpdf->Image($imgPath, $x, $y, $w, $h);
+};
 
 $redBarH = 5;
 $contentH = $hMm - $redBarH;
@@ -2675,46 +2720,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $s5ImgY = $s5RedBlockY + $s5ImgPadV;
             $compImgPath = $imagenesPorEmpresa[$cid] ?? $logosPorEmpresa[$cid] ?? null;
             if ($compImgPath && file_exists($compImgPath)) {
-                $compImgOutPath = null;
-                if (extension_loaded('gd')) {
-                    $info = @getimagesize($compImgPath);
-                    $ext = strtolower(pathinfo($compImgPath, PATHINFO_EXTENSION));
-                    $src = false;
-                    if ($info && $info[2] === IMAGETYPE_JPEG) {
-                        $src = @imagecreatefromjpeg($compImgPath);
-                    } elseif ($info && $info[2] === IMAGETYPE_PNG) {
-                        $src = @imagecreatefrompng($compImgPath);
-                    } elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) {
-                        $src = @imagecreatefromwebp($compImgPath);
-                    }
-                    if ($src && !empty($info[0]) && !empty($info[1])) {
-                        $sw = imagesx($src);
-                        $sh = imagesy($src);
-                        $pxPerMm = 96 / 25.4;
-                        $tw = (int) round($s5ImgW * $pxPerMm);
-                        $th = (int) round($s5ImgH * $pxPerMm);
-                        $scale = max($tw / $sw, $th / $sh);
-                        $srcCropW = (int) round($tw / $scale);
-                        $srcCropH = (int) round($th / $scale);
-                        $srcX = (int) max(0, ($sw - $srcCropW) / 2);
-                        $srcY = (int) max(0, ($sh - $srcCropH) / 2);
-                        $dst = @imagecreatetruecolor($tw, $th);
-                        if ($dst && @imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $tw, $th, $srcCropW, $srcCropH)) {
-                            $tmp = sys_get_temp_dir() . '/mod_comp_img_' . uniqid() . '.png';
-                            if (imagepng($dst, $tmp)) {
-                                $compImgOutPath = $tmp;
-                            }
-                            imagedestroy($dst);
-                        }
-                        imagedestroy($src);
-                    }
-                }
-                if ($compImgOutPath && file_exists($compImgOutPath)) {
-                    $mpdf->Image($compImgOutPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
-                    @unlink($compImgOutPath);
-                } else {
-                    $mpdf->Image($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
-                }
+                $renderCroppedImage($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
             } else {
                 $mpdf->SetFillColor(220, 220, 220);
                 $mpdf->Rect($s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH, 'F');
@@ -2732,47 +2738,6 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $p6RedG = 52;
         $p6RedB = 59;
         $p6Scale = 100 / 25.4;
-        $p6LoadCrop = function ($path, $boxW, $boxH) use ($p6Scale) {
-            if (!$path || !file_exists($path) || !extension_loaded('gd')) return null;
-            $info = @getimagesize($path);
-            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-            $src = false;
-            if ($info && $info[2] === IMAGETYPE_JPEG) $src = @imagecreatefromjpeg($path);
-            elseif ($info && $info[2] === IMAGETYPE_PNG) $src = @imagecreatefrompng($path);
-            elseif (($ext === 'webp' || ($info && $info[2] === 18)) && function_exists('imagecreatefromwebp')) $src = @imagecreatefromwebp($path);
-            if (!$src) return null;
-            $sw = imagesx($src);
-            $sh = imagesy($src);
-            $dwPx = (int) max(1, round($boxW * $p6Scale));
-            $dhPx = (int) max(1, round($boxH * $p6Scale));
-            $ratio = $boxW / $boxH;
-            $imgR = $sw / $sh;
-            if ($imgR >= $ratio) {
-                $cropW = (int) round($sh * $ratio);
-                $cropH = $sh;
-                $srcX = (int) floor(($sw - $cropW) / 2);
-                $srcY = 0;
-            } else {
-                $cropW = $sw;
-                $cropH = (int) round($sw / $ratio);
-                $srcX = 0;
-                $srcY = (int) floor(($sh - $cropH) / 2);
-            }
-            $dst = @imagecreatetruecolor($dwPx, $dhPx);
-            if (!$dst || !@imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $dwPx, $dhPx, $cropW, $cropH)) {
-                if ($dst) imagedestroy($dst);
-                imagedestroy($src);
-                return null;
-            }
-            imagedestroy($src);
-            $tmp = sys_get_temp_dir() . '/corp_p6_' . uniqid() . '.png';
-            if (!imagepng($dst, $tmp)) {
-                imagedestroy($dst);
-                return null;
-            }
-            imagedestroy($dst);
-            return $tmp;
-        };
         foreach ($productoSlidesChunks as $p6PageIdx => $p6Chunk) {
             $mpdf->AddPage();
             $mpdf->SetXY(0, 0);
@@ -2845,24 +2810,16 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $p6innerY = $p6ImgLeftY + $p6BorderW + $p6WhiteMargin;
                 $p6innerW = $p6ImgLeftW - 2 * $p6BorderW - 2 * $p6WhiteMargin;
                 $p6innerH = $p6ImgLeftH - 2 * $p6BorderW - 2 * $p6WhiteMargin;
-                $tmp = $p6LoadCrop($path, $p6innerW, $p6innerH);
-                if ($tmp && file_exists($tmp)) {
-                    $mpdf->Image($tmp, $p6innerX, $p6innerY, $p6innerW, $p6innerH);
-                    @unlink($tmp);
-                } elseif ($path && file_exists($path)) {
-                    $mpdf->Image($path, $p6innerX, $p6innerY, $p6innerW, $p6innerH);
+                if ($path && file_exists($path)) {
+                    $renderCroppedImage($path, $p6innerX, $p6innerY, $p6innerW, $p6innerH);
                 } else {
                     $mpdf->SetFillColor(240, 240, 240);
                     $mpdf->Rect($p6innerX, $p6innerY, $p6innerW, $p6innerH, 'F');
                 }
             } else {
                 $p6x = $p6StartX + $p6ImgLeftW + $p6ImgGap;
-                $tmp = $p6LoadCrop($path, $p6ImgRightW, $p6ImgRightH);
-                if ($tmp && file_exists($tmp)) {
-                    $mpdf->Image($tmp, $p6x, $p6ImgRightY, $p6ImgRightW, $p6ImgRightH);
-                    @unlink($tmp);
-                } elseif ($path && file_exists($path)) {
-                    $mpdf->Image($path, $p6x, $p6ImgRightY, $p6ImgRightW, $p6ImgRightH);
+                if ($path && file_exists($path)) {
+                    $renderCroppedImage($path, $p6x, $p6ImgRightY, $p6ImgRightW, $p6ImgRightH);
                 } else {
                     $mpdf->SetFillColor(240, 240, 240);
                     $mpdf->Rect($p6x, $p6ImgRightY, $p6ImgRightW, $p6ImgRightH, 'F');

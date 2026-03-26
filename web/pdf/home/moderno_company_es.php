@@ -3,8 +3,8 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-set_time_limit(120);
-@ini_set('memory_limit', '256M');
+set_time_limit(0);
+@ini_set('memory_limit', '512M');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
