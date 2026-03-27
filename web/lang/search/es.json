@@ -8,6 +8,12 @@
     "search_title": "BUSCADOR DE PRODUCTOS Y SERVICIOS",
     "search_placeholder": "Buscar por producto, descripción, empresa, sector o industria",
     "search_no_results": "No se encontraron resultados.",
+    "search_type_product": "Producto",
+    "search_type_service": "Servicio",
+    "search_label_company": "Empresa",
+    "search_label_contact": "Contacto",
+    "search_label_locality": "Localidad",
+    "search_company_fallback": "Nombre de empresa",
     "search_back": "Volver",
     "pdf_name_clasico": "Clásico",
     "pdf_name_corporativo": "Corporativo",
@@ -18,6 +24,15 @@
     "nav_news": "Noticias",
     "nav_contact": "Contacto",
     "btn_register": "Registrarse",
-    "btn_login": "Entrar"
+    "btn_login": "Entrar",
+    "footer_accesos": "ACCESOS",
+    "footer_nosotros": "Nosotros",
+    "footer_oferta": "Oferta exportable",
+    "footer_contacto": "Contacto",
+    "footer_empresas": "EMPRESAS",
+    "footer_registro": "Cómo registrarse",
+    "footer_cargar": "Cómo cargar productos/servicios",
+    "footer_redes": "REDES",
+    "footer_copyright": "Copyright © 2026. Santiago del Estero. Todos los derechos reservados."
 }
 

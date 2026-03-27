@@ -8,6 +8,12 @@
     "search_title": "PRODUCT AND SERVICES SEARCH ENGINE",
     "search_placeholder": "Search by product, description, company, sector or industry",
     "search_no_results": "No results found.",
+    "search_type_product": "Product",
+    "search_type_service": "Service",
+    "search_label_company": "Company",
+    "search_label_contact": "Contact",
+    "search_label_locality": "Locality",
+    "search_company_fallback": "Company name",
     "search_back": "Back",
     "pdf_name_clasico": "Classic",
     "pdf_name_corporativo": "Corporate",
@@ -18,5 +24,14 @@
     "nav_news": "News",
     "nav_contact": "Contact",
     "btn_register": "Register",
-    "btn_login": "Login"
+    "btn_login": "Login",
+    "footer_accesos": "ACCESS",
+    "footer_nosotros": "About Us",
+    "footer_oferta": "Exportable Offer",
+    "footer_contacto": "Contact",
+    "footer_empresas": "COMPANIES",
+    "footer_registro": "How to register",
+    "footer_cargar": "How to upload products/services",
+    "footer_redes": "NETWORKS",
+    "footer_copyright": "Copyright © 2026. Santiago del Estero. All rights reserved."
 }

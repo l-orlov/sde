@@ -33,10 +33,10 @@ if ($link) {
     $deletedCondition = $hasDeletedAt ? " AND (p.deleted_at IS NULL)" : "";
     // Сначала выбираем только одобренные компании, затем только товары этих компаний (жёсткая связь по id и user_id)
     $exportUser = sql_user_include_in_business_exports_on('u');
-    $q = "SELECT p.id, p.name, p.description, p.type, p.company_id, c.name AS company_name
+    $q = "SELECT p.id, p.name, p.name_en, p.description, p.type, p.company_id, c.name AS company_name, c.name_en AS company_name_en
           FROM products p
           INNER JOIN (
-            SELECT c.id, c.user_id, c.name FROM companies c
+            SELECT c.id, c.user_id, c.name, c.name_en FROM companies c
             INNER JOIN users u ON u.id = c.user_id
             WHERE BINARY c.moderation_status = 'approved' AND {$exportUser}
           ) c ON c.id = p.company_id AND c.user_id = p.user_id
@@ -47,12 +47,20 @@ if ($link) {
     if ($res) {
         while ($row = mysqli_fetch_assoc($res)) {
             $desc = trim($row['description'] ?? '');
+            $nameEs = htmlspecialchars($row['name'] ?? '', ENT_QUOTES, 'UTF-8');
+            $nameEnRaw = trim((string) ($row['name_en'] ?? ''));
+            $nameEn = $nameEnRaw !== '' ? htmlspecialchars($nameEnRaw, ENT_QUOTES, 'UTF-8') : $nameEs;
+            $coEs = htmlspecialchars($row['company_name'] ?? '', ENT_QUOTES, 'UTF-8');
+            $coEnRaw = trim((string) ($row['company_name_en'] ?? ''));
+            $coEn = $coEnRaw !== '' ? htmlspecialchars($coEnRaw, ENT_QUOTES, 'UTF-8') : $coEs;
             $__carousel_products[] = [
                 'id' => (int) $row['id'],
-                'name' => htmlspecialchars($row['name'] ?? ''),
+                'name' => $nameEs,
+                'name_en' => $nameEn,
                 'description' => htmlspecialchars($desc),
                 'type' => ($row['type'] ?? 'product') === 'service' ? 'service' : 'product',
-                'company_name' => htmlspecialchars($row['company_name'] ?? ''),
+                'company_name' => $coEs,
+                'company_name_en' => $coEn,
             ];
         }
     }
@@ -216,15 +224,15 @@ if ($link) {
                     <div class="products-carousel-slide">
                         <div class="products-carousel-card">
                             <?php if ($imgUrl): ?>
-                            <img src="<?= htmlspecialchars($imgUrl) ?>" alt="<?= $p['name'] ?>" class="products-carousel-image" loading="lazy">
+                            <img src="<?= htmlspecialchars($imgUrl) ?>" alt="<?= $p['name'] ?>" class="products-carousel-image" loading="lazy" data-bilingual-alt-es="<?= $p['name'] ?>" data-bilingual-alt-en="<?= $p['name_en'] ?>">
                             <?php else: ?>
                             <div class="products-carousel-image products-carousel-image-placeholder" aria-hidden="true"></div>
                             <?php endif; ?>
                             <?php if (!empty($p['name'])): ?>
-                            <span class="products-carousel-type"><?= $p['name'] ?></span>
+                            <span class="products-carousel-type" data-bilingual-es="<?= $p['name'] ?>" data-bilingual-en="<?= $p['name_en'] ?>"><?= $p['name'] ?></span>
                             <?php endif; ?>
                             <?php if (!empty($p['company_name'])): ?>
-                            <span class="products-carousel-company"><?= $p['company_name'] ?></span>
+                            <span class="products-carousel-company" data-bilingual-es="<?= $p['company_name'] ?>" data-bilingual-en="<?= $p['company_name_en'] ?>"><?= $p['company_name'] ?></span>
                             <?php endif; ?>
                         </div>
                     </div>

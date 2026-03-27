@@ -1,11 +1,40 @@
+const supportedLangs = ['es', 'en'];
+
+function normalizeLang(lang) {
+  const s = String(lang == null ? 'es' : lang).trim().toLowerCase();
+  return supportedLangs.includes(s) ? s : 'es';
+}
+
+/** База приложения (напр. /sde/web) из пути к подключённому i18n.js — для корректного fetch JSON при нестандартном DOCUMENT_ROOT */
+function getWebRootFromI18nScript() {
+  try {
+    const s = document.querySelector('script[src*="i18n.js"]');
+    if (!s || !s.src) return '';
+    const u = new URL(s.src, window.location.href);
+    const p = u.pathname;
+    const ix = p.indexOf('/js/i18n.js');
+    if (ix === -1) return '';
+    return p.slice(0, ix);
+  } catch (e) {
+    return '';
+  }
+}
+
+function buildLangJsonUrl(page, lang, v) {
+  const root = getWebRootFromI18nScript().replace(/\/$/, '');
+  const path = `lang/${page}/${lang}.json`;
+  const base = root ? `${root}/` : '';
+  return base + path + (v ? '?v=' + encodeURIComponent(v) : '');
+}
+
 async function setLang(page, lang) {
+  const langNorm = normalizeLang(lang);
   const currentLangEl = document.getElementById('current-lang');
   if (currentLangEl) {
-    currentLangEl.textContent = lang.toUpperCase();
+    currentLangEl.textContent = langNorm.toUpperCase();
   }
 
-  // Сохраняем выбранный язык в localStorage
-  localStorage.setItem('lang', lang);
+  localStorage.setItem('lang', langNorm);
 
   try {
     let v = '';
@@ -16,12 +45,12 @@ async function setLang(page, lang) {
         v = m ? m[1] : '';
       }
     } catch (e) {}
-    let url = `lang/${page}/${lang}.json` + (v ? '?v=' + v : '');
+    let url = buildLangJsonUrl(page, langNorm, v);
     let res = await fetch(url);
-    let fallbackLang = (lang === 'es') ? 'en' : 'es';
+    let fallbackLang = (langNorm === 'es') ? 'en' : 'es';
 
     if (!res.ok) {
-      url = `lang/${page}/${fallbackLang}.json` + (v ? '?v=' + v : '');
+      url = buildLangJsonUrl(page, fallbackLang, v);
       res = await fetch(url);
       if (!res.ok) {
         throw new Error(`Failed to load lang file, status ${res.status}`);
@@ -33,7 +62,7 @@ async function setLang(page, lang) {
     // Обычные тексты
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
-      if (dict[key]) {
+      if (key && Object.prototype.hasOwnProperty.call(dict, key) && dict[key] != null) {
         // Проверяем, есть ли внутри элемента звездочка с классом .req
         const reqSpan = el.querySelector('.req');
         const hasAsterisk = !!reqSpan;
@@ -42,7 +71,7 @@ async function setLang(page, lang) {
         const asterisk = hasAsterisk ? reqSpan.outerHTML : null;
         
         // Получаем переведенный текст и удаляем из него все звездочки
-        let translatedText = dict[key];
+        let translatedText = String(dict[key]);
         // Удаляем все звездочки и пробелы вокруг них из переведенного текста
         translatedText = translatedText.replace(/\s*\*\s*/g, '').trim();
         
@@ -59,34 +88,46 @@ async function setLang(page, lang) {
     // Плейсхолдеры
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
       const key = el.getAttribute('data-i18n-placeholder');
-      if (dict[key]) {
-        el.setAttribute('placeholder', dict[key]);
+      if (key && Object.prototype.hasOwnProperty.call(dict, key) && dict[key] != null) {
+        el.setAttribute('placeholder', String(dict[key]));
       }
     });
 
     document.querySelectorAll('[data-i18n-alt]').forEach(el => {
       const key = el.getAttribute('data-i18n-alt');
-      if (dict[key]) {
-        el.setAttribute('alt', dict[key]);
+      if (key && Object.prototype.hasOwnProperty.call(dict, key) && dict[key] != null) {
+        el.setAttribute('alt', String(dict[key]));
       }
     });
 
     // HTML-тексты
     document.querySelectorAll('[data-i18n-html]').forEach(el => {
       const key = el.getAttribute('data-i18n-html');
-      if (dict[key]) {
-        el.innerHTML = dict[key];
+      if (key && Object.prototype.hasOwnProperty.call(dict, key) && dict[key] != null) {
+        el.innerHTML = String(dict[key]);
       }
     });
 
+    document.querySelectorAll('[data-bilingual-es]').forEach(el => {
+      const es = el.getAttribute('data-bilingual-es') ?? '';
+      const en = el.getAttribute('data-bilingual-en');
+      const useEn = langNorm === 'en' && en != null && String(en).trim() !== '';
+      el.textContent = useEn ? en : es;
+    });
+
+    document.querySelectorAll('[data-bilingual-alt-es]').forEach(el => {
+      const es = el.getAttribute('data-bilingual-alt-es') ?? '';
+      const en = el.getAttribute('data-bilingual-alt-en');
+      const useEn = langNorm === 'en' && en != null && String(en).trim() !== '';
+      el.setAttribute('alt', useEn ? en : es);
+    });
+
     window.__i18nDict = dict;
-    appendPdfLangToLinks(lang);
+    appendPdfLangToLinks(langNorm);
   } catch (err) {
-    console.error(`Language load error for ${lang}:`, err);
+    console.error(`Language load error for ${langNorm}:`, err);
   }
 }
-
-const supportedLangs = ['es', 'en'];
 
 /** Текущий язык для PDF: только 'en' или 'es'. */
 function getPdfLang() {
@@ -96,7 +137,7 @@ function getPdfLang() {
 
 /** Ставит href у ссылок .js-pdf-link по выбранному языку (data-pdf-url-es / data-pdf-url-en). */
 function appendPdfLangToLinks(lang) {
-  var safeLang = (lang === 'en') ? 'en' : 'es';
+  var safeLang = (normalizeLang(lang) === 'en') ? 'en' : 'es';
   var attr = 'data-pdf-url-' + safeLang;
   document.querySelectorAll('.js-pdf-link').forEach(function (a) {
     var url = a.getAttribute(attr);
@@ -147,9 +188,9 @@ function initPdfLangClick() {
 
 function initLang(page = 'landing', defaultLang = 'es') {
   var storedLang = localStorage.getItem('lang');
-  var browserLang = (navigator.language || '').split('-')[0];
+  var browserLang = ((navigator.language || '').split('-')[0] || '').toLowerCase();
   var requested = storedLang != null ? storedLang : (supportedLangs.includes(browserLang) ? browserLang : defaultLang);
-  var lang = supportedLangs.includes(requested) ? requested : defaultLang;
+  var lang = normalizeLang(requested);
 
   appendPdfLangToLinks(lang);
   setLang(page, lang);

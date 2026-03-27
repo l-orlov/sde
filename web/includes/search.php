@@ -144,6 +144,7 @@ $__pdf_oferta_urls = [
     </div>
 </div>
 
+<script src="js/i18n.js?v=<?= asset_version('js/i18n.js') ?>"></script>
 <script>
 (function() {
     var searchInput = document.getElementById('search-input');
@@ -151,6 +152,21 @@ $__pdf_oferta_urls = [
     var searchSuggestions = document.getElementById('search-suggestions');
     var searchResults = document.getElementById('search-results');
     var baseUrl = '<?= addslashes($__web_base) ?>' || '';
+
+    function escapeHtml(s) {
+        return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function escAttr(s) {
+        return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    function refreshSearchI18n() {
+        if (typeof setLang === 'function') {
+            var curLang = localStorage.getItem('lang') || 'es';
+            return setLang('search', curLang);
+        }
+        return Promise.resolve();
+    }
 
     if (searchClear) {
         searchClear.addEventListener('click', function() {
@@ -232,33 +248,51 @@ $__pdf_oferta_urls = [
                 if (currentQ !== q) return;
                 if (!data.items || !data.items.length) {
                     searchResults.innerHTML = '<p class="search-no-results" data-i18n="search_no_results">No se encontraron resultados.</p>';
-                    return;
+                    return refreshSearchI18n();
                 }
                 searchResults.innerHTML = data.items.map(function(item) {
-                    var img = (item.image_url ? '<img src="' + item.image_url.replace(/"/g, '&quot;') + '" alt="" class="search-card-img">' : '<div class="search-card-img search-card-img-placeholder"></div>');
-                    var typeLabel = (item.type === 'service' ? 'Servicio' : 'Producto');
-                    var name = (item.name || '').replace(/</g, '&lt;');
+                    var typeKey = item.type === 'service' ? 'search_type_service' : 'search_type_product';
+                    var typeDefaultEs = (item.type === 'service' ? 'Servicio' : 'Producto');
+                    var nameEs = item.name || '';
+                    var nameEn = item.name_en || nameEs;
+                    var coEs = item.company_name || '';
+                    var coEn = item.company_name_en || coEs;
+                    var locEs = item.locality || '';
+                    var locEn = item.locality_en || locEs;
+                    var coDisplay = coEs || '';
+                    var coDisplayEn = coEn || coEs;
+                    var companySpan = coDisplay
+                        ? '<span data-bilingual-es="' + escAttr(coEs) + '" data-bilingual-en="' + escAttr(coDisplayEn) + '">' + escapeHtml(coEs) + '</span>'
+                        : '<span data-i18n="search_company_fallback">Nombre de empresa</span>';
+                    var img = item.image_url
+                        ? '<img src="' + item.image_url.replace(/"/g, '&quot;') + '" alt="' + escAttr(nameEs) + '" class="search-card-img" data-bilingual-alt-es="' + escAttr(nameEs) + '" data-bilingual-alt-en="' + escAttr(nameEn) + '">'
+                        : '<div class="search-card-img search-card-img-placeholder"></div>';
                     var code = (item.tariff_code || '').replace(/</g, '&lt;');
                     return '<article class="search-card">' +
                         '<div class="search-card-body">' +
                         '<div class="search-card-header-row">' +
-                        '<span class="search-card-title">' + typeLabel + ' - ' + name + '</span>' +
+                        '<span class="search-card-title">' +
+                        '<span class="search-card-type" data-i18n="' + typeKey + '">' + typeDefaultEs + '</span>' +
+                        ' - <span data-bilingual-es="' + escAttr(nameEs) + '" data-bilingual-en="' + escAttr(nameEn) + '">' + escapeHtml(nameEs) + '</span>' +
+                        '</span>' +
                         '<span class="search-card-code-block">' + code + '</span>' +
                         '</div>' +
                         '<div class="search-card-divider"></div>' +
                         '<div class="search-card-content-row">' +
                         '<div class="search-card-text">' +
-                        '<p class="search-card-company"><span class="search-card-label">Empresa</span><br><span>' + (item.company_name || 'Nombre de empresa').replace(/</g, '&lt;') + '</span></p>' +
-                        '<p class="search-card-contact"><span class="search-card-label">Contacto</span><br>' +
-                            (item.email ? item.email.replace(/</g, '&lt;') + '<br>' : '') +
-                            (item.phone ? item.phone.replace(/</g, '&lt;') + '<br>' : '') +
-                            (item.website ? item.website.replace(/</g, '&lt;') : '') + '</p>' +
-                        '<p class="search-card-locality"><span class="search-card-label">Localidad</span><br><span>' + (item.locality || 'Localidad/Departamento').replace(/</g, '&lt;') + '</span></p>' +
+                        '<p class="search-card-company"><span class="search-card-label" data-i18n="search_label_company">Empresa</span><br>' + companySpan + '</p>' +
+                        '<p class="search-card-contact"><span class="search-card-label" data-i18n="search_label_contact">Contacto</span><br>' +
+                            (item.email ? escapeHtml(item.email) + '<br>' : '') +
+                            (item.phone ? escapeHtml(item.phone) + '<br>' : '') +
+                            (item.website ? escapeHtml(item.website) : '') + '</p>' +
+                        '<p class="search-card-locality"><span class="search-card-label" data-i18n="search_label_locality">Localidad</span><br>' +
+                        '<span data-bilingual-es="' + escAttr(locEs) + '" data-bilingual-en="' + escAttr(locEn) + '">' + escapeHtml(locEs) + '</span></p>' +
                         '</div>' +
                         '<div class="search-card-image">' + img + '</div>' +
                         '</div>' +
                         '</div></article>';
                 }).join('');
+                return refreshSearchI18n();
             })
             .catch(function() {
                 searchResults.innerHTML = '<p class="search-no-results">Error al buscar. Intente de nuevo.</p>';
@@ -266,7 +300,6 @@ $__pdf_oferta_urls = [
     }
 })();
 </script>
-<script src="js/i18n.js?v=<?= asset_version('js/i18n.js') ?>"></script>
 <script>
 function toggleLangMenu() {
   var menu = document.getElementById('landing_header_lang_menu');
