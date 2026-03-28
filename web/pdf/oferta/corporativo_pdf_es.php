@@ -151,6 +151,7 @@ foreach (['Producto1.jpg', 'Producto2.jpg', 'Producto3.jpg', 'Producto4.jpg'] as
 }
 $pdfLogoPath = $assetsDir . '/logo.png';
 $pdfLogoWhitePath = $assetsDir . '/logo_white.png';
+$pdfLogoCfiWhitePath = $assetsDir . '/LogoCFIwhite.png';
 $pdfLogoUri = (file_exists($pdfLogoPath)) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pdfLogoPath)) : '';
 $imgSlide2Path = $assetsDir . '/img_slide2.png';
 $imgSlide3Path = $assetsDir . '/img_slide3.png';
@@ -611,6 +612,8 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $s1LogoX = $s1Pad;
         $s1LogoW = 44;
         $s1LogoH = 22;
+        $s1Lw = 0.0;
+        $s1Lh = 0.0;
         if (file_exists($s1LogoPath)) {
             $imgSize = @getimagesize($s1LogoPath);
             if (!empty($imgSize[0]) && !empty($imgSize[1])) {
@@ -622,7 +625,27 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                     $lw = $s1LogoW;
                     $lh = $s1LogoW / $r;
                 }
+                $s1Lw = $lw;
+                $s1Lh = $lh;
                 $mpdf->Image($s1LogoPath, $s1LogoX, ($s1HeaderH - $lh) / 2, $lw, $lh);
+            }
+        }
+        $s1CfiGap = 6;
+        $s1CfiMaxW = 44;
+        $s1CfiMaxH = 22;
+        if (file_exists($pdfLogoCfiWhitePath)) {
+            $imgSizeCfi = @getimagesize($pdfLogoCfiWhitePath);
+            $s1CfiX = $s1LogoX + ($s1Lw > 0 ? $s1Lw + $s1CfiGap : 0);
+            if (!empty($imgSizeCfi[0]) && !empty($imgSizeCfi[1])) {
+                $rc = $imgSizeCfi[0] / $imgSizeCfi[1];
+                if ($s1CfiMaxH * $rc <= $s1CfiMaxW) {
+                    $cfiLw = $s1CfiMaxH * $rc;
+                    $cfiLh = $s1CfiMaxH;
+                } else {
+                    $cfiLw = $s1CfiMaxW;
+                    $cfiLh = $s1CfiMaxW / $rc;
+                }
+                $mpdf->Image($pdfLogoCfiWhitePath, $s1CfiX, ($s1HeaderH - $cfiLh) / 2, $cfiLw, $cfiLh);
             }
         }
         $mpdf->SetFont('dejavusans', '', 17);
@@ -632,7 +655,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
 
         // Línea blanca bajo logo y Página 01, más arriba (cerca del logo), mismos márgenes s1Pad
         $s1LineH = 0.5;
-        $s1LineGap = 21;
+        $s1LineGap = 16;
         $mpdf->SetFillColor(255, 255, 255);
         $mpdf->Rect($s1Pad, $s1HeaderH - $s1LineGap - $s1LineH, $wMm - 2 * $s1Pad, $s1LineH, 'F');
 
@@ -2745,7 +2768,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $s5ContentInnerH = $s5ContentH - $s5TopPad - $s5ContentPad;
             $nombreEmpresa = function_exists('mb_strtoupper') ? mb_strtoupper($emp['name'] ?? '') : strtoupper($emp['name'] ?? '');
             $mpdf->SetTextColor(141, 188, 220);
-            $mpdf->SetFont('dejavusans', 'B', 44);
+            $mpdf->SetFont('dejavusans', 'B', 36);
             // Títulos: cortar primero entre palabras; si una palabra excede el ancho, partirla con guión
             $s5Words = preg_split('/\s+/u', $nombreEmpresa, -1, PREG_SPLIT_NO_EMPTY);
             $s5Lines = [];
@@ -2854,13 +2877,13 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             }
             $s5NumLines = count($s5Lines);
             $s5TitleYBase = $s5ContentY + $s5ContentPad + round($s5ContentH * 0.28);
-            $s5TitleY = $s5TitleYBase - ($s5NumLines > 2 ? ($s5NumLines - 2) * 6 : 0);
+            $s5TitleY = $s5TitleYBase - ($s5NumLines > 2 ? ($s5NumLines - 2) * 5 : 0);
             $s5TitleY = max($s5ContentY + $s5ContentPad + 6, $s5TitleY);
             $mpdf->SetXY($s5LeftX, $s5TitleY);
-            $mpdf->MultiCell($s5LeftColW, 16, implode("\n", $s5Lines), 0, 'L');
+            $mpdf->MultiCell($s5LeftColW, 14, implode("\n", $s5Lines), 0, 'L');
             $s5ImgH = round($s5ContentInnerH * 0.82);
             $s5ImgY = $s5ContentY + $s5TopPad + ($s5ContentInnerH - $s5ImgH) / 2;
-            $compImgPath = $imagenesPorEmpresa[$cid] ?? $logosPorEmpresa[$cid] ?? null;
+            $compImgPath = $logosPorEmpresa[$cid] ?? $imagenesPorEmpresa[$cid] ?? null;
             if ($compImgPath && file_exists($compImgPath)) {
                 $renderCroppedImage($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
             } else {
@@ -3265,26 +3288,50 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->SetFillColor($s7BlueColor[0], $s7BlueColor[1], $s7BlueColor[2]);
             $mpdf->Rect(0, $s7BlueY, $s7FullW, $s7BlueH, 'F');
         }
+        $s7PairGap = 10;
+        $s7LogoMaxH = 56;
+        $s7CfiMaxW = 95;
+        $s7SdeMaxW = 115;
+        $s7CfiLw = 0.0;
+        $s7CfiLh = 0.0;
+        if (file_exists($pdfLogoCfiWhitePath)) {
+            $imgSizeCfi = @getimagesize($pdfLogoCfiWhitePath);
+            if (!empty($imgSizeCfi[0]) && !empty($imgSizeCfi[1])) {
+                $rc = $imgSizeCfi[0] / $imgSizeCfi[1];
+                if ($s7LogoMaxH * $rc <= $s7CfiMaxW) {
+                    $s7CfiLw = $s7LogoMaxH * $rc;
+                    $s7CfiLh = $s7LogoMaxH;
+                } else {
+                    $s7CfiLw = $s7CfiMaxW;
+                    $s7CfiLh = $s7CfiMaxW / $rc;
+                }
+            }
+        }
         $s7LogoPath = (file_exists($pdfLogoWhitePath)) ? $pdfLogoWhitePath : $pdfLogoPath;
-        $s7LogoW = 118;
-        $s7LogoH = 62;
-        $s7BlockX = ($s7FullW - $s7LogoW) / 2;
-        $s7BlockY = $s7BlueY + ($s7BlueH - $s7LogoH) / 2;
+        $s7SdeLw = 0.0;
+        $s7SdeLh = 0.0;
         if (file_exists($s7LogoPath)) {
             $imgSize = @getimagesize($s7LogoPath);
             if (!empty($imgSize[0]) && !empty($imgSize[1])) {
                 $r = $imgSize[0] / $imgSize[1];
-                if ($s7LogoH * $r <= $s7LogoW) {
-                    $lw = $s7LogoH * $r;
-                    $lh = $s7LogoH;
+                if ($s7LogoMaxH * $r <= $s7SdeMaxW) {
+                    $s7SdeLw = $s7LogoMaxH * $r;
+                    $s7SdeLh = $s7LogoMaxH;
                 } else {
-                    $lw = $s7LogoW;
-                    $lh = $s7LogoW / $r;
+                    $s7SdeLw = $s7SdeMaxW;
+                    $s7SdeLh = $s7SdeMaxW / $r;
                 }
-                $mpdf->Image($s7LogoPath, ($s7FullW - $lw) / 2, $s7BlueY + ($s7BlueH - $lh) / 2, $lw, $lh);
-            } else {
-                $mpdf->Image($s7LogoPath, $s7BlockX, $s7BlockY, $s7LogoW, $s7LogoH);
             }
+        }
+        $s7PairW = $s7CfiLw + (($s7CfiLw > 0 && $s7SdeLw > 0) ? $s7PairGap : 0) + $s7SdeLw;
+        $s7PairStartX = ($s7FullW - $s7PairW) / 2;
+        $s7PairCenterY = $s7BlueY + $s7BlueH / 2;
+        if ($s7CfiLw > 0) {
+            $mpdf->Image($pdfLogoCfiWhitePath, $s7PairStartX, $s7PairCenterY - $s7CfiLh / 2, $s7CfiLw, $s7CfiLh);
+        }
+        if ($s7SdeLw > 0) {
+            $s7SdeX = $s7PairStartX + $s7CfiLw + ($s7CfiLw > 0 ? $s7PairGap : 0);
+            $mpdf->Image($s7LogoPath, $s7SdeX, $s7PairCenterY - $s7SdeLh / 2, $s7SdeLw, $s7SdeLh);
         }
         $contacto = $configInstitucional;
         $s7Loc = trim($contacto['localidad_direccion'] ?? '') ?: 'Localidad';

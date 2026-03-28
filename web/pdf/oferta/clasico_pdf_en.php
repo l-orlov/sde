@@ -138,6 +138,7 @@ foreach (['Producto1.jpg', 'Producto2.jpg', 'Producto3.jpg', 'Producto4.jpg'] as
 }
 $pdfLogoPath = $assetsDir . '/logo.png';
 $pdfLogoWhitePath = $assetsDir . '/logo_white.png';
+$pdfLogoCfiPath = $assetsDir . '/LogoCFI.png';
 $pdfLogoUri = (file_exists($pdfLogoPath)) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pdfLogoPath)) : '';
 $imgSlide2Path = $assetsDir . '/img_slide2.png';
 $imgSlide3Path = $assetsDir . '/img_slide3.png';
@@ -658,6 +659,31 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $s1BadgeH = 24;
         $s1BadgeX = $wMm - $s1BadgeW - 24;
         $s1BadgeY = 20;
+        $s1LogoPairGap = 4;
+        $s1CfiBadgeW = 64;
+        $s1CfiBadgeH = 24;
+        if (file_exists($pdfLogoCfiPath)) {
+            $s1CfiBadgeX = $s1BadgeX - $s1LogoPairGap - $s1CfiBadgeW;
+            $imgSizeCfi = @getimagesize($pdfLogoCfiPath);
+            $maxCfiW = $s1CfiBadgeW;
+            $maxCfiH = $s1CfiBadgeH;
+            if (!empty($imgSizeCfi[0]) && !empty($imgSizeCfi[1])) {
+                $cfiRatio = $imgSizeCfi[0] / $imgSizeCfi[1];
+                if ($maxCfiH * $cfiRatio <= $maxCfiW) {
+                    $cfiH = $maxCfiH;
+                    $cfiW = $maxCfiH * $cfiRatio;
+                } else {
+                    $cfiW = $maxCfiW;
+                    $cfiH = $maxCfiW / $cfiRatio;
+                }
+            } else {
+                $cfiW = $maxCfiW;
+                $cfiH = $maxCfiH;
+            }
+            $cfiX = $s1CfiBadgeX + ($s1CfiBadgeW - $cfiW) / 2;
+            $cfiY = $s1BadgeY + ($s1CfiBadgeH - $cfiH) / 2;
+            $mpdf->Image($pdfLogoCfiPath, $cfiX, $cfiY, $cfiW, $cfiH);
+        }
         $mpdf->SetFillColor(0, 51, 153);
         $mpdf->Rect($s1BadgeX, $s1BadgeY, $s1BadgeW, $s1BadgeH, 'F');
         $s1LogoPath = (file_exists($pdfLogoWhitePath)) ? $pdfLogoWhitePath : $pdfLogoPath;
@@ -2623,6 +2649,31 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $s7BadgeH = 24;
         $s7BadgeX = $s7ImageW - $s7BadgeW - 24;
         $s7BadgeY = 20;
+        $s7LogoPairGap = 4;
+        $s7CfiBadgeW = 64;
+        $s7CfiBadgeH = 24;
+        if (file_exists($pdfLogoCfiPath)) {
+            $s7CfiBadgeX = $s7BadgeX - $s7LogoPairGap - $s7CfiBadgeW;
+            $imgSizeCfi7 = @getimagesize($pdfLogoCfiPath);
+            $maxCfi7W = $s7CfiBadgeW;
+            $maxCfi7H = $s7CfiBadgeH;
+            if (!empty($imgSizeCfi7[0]) && !empty($imgSizeCfi7[1])) {
+                $cfi7Ratio = $imgSizeCfi7[0] / $imgSizeCfi7[1];
+                if ($maxCfi7H * $cfi7Ratio <= $maxCfi7W) {
+                    $cfi7H = $maxCfi7H;
+                    $cfi7W = $maxCfi7H * $cfi7Ratio;
+                } else {
+                    $cfi7W = $maxCfi7W;
+                    $cfi7H = $maxCfi7W / $cfi7Ratio;
+                }
+            } else {
+                $cfi7W = $maxCfi7W;
+                $cfi7H = $maxCfi7H;
+            }
+            $cfi7X = $s7CfiBadgeX + ($s7CfiBadgeW - $cfi7W) / 2;
+            $cfi7Y = $s7BadgeY + ($s7CfiBadgeH - $cfi7H) / 2;
+            $mpdf->Image($pdfLogoCfiPath, $cfi7X, $cfi7Y, $cfi7W, $cfi7H);
+        }
         $mpdf->SetFillColor(0, 51, 153);
         $mpdf->Rect($s7BadgeX, $s7BadgeY, $s7BadgeW, $s7BadgeH, 'F');
         $s7LogoPath = (file_exists($pdfLogoWhitePath)) ? $pdfLogoWhitePath : $pdfLogoPath;

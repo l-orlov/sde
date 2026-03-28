@@ -143,6 +143,8 @@ foreach (['Producto1.jpg', 'Producto2.jpg', 'Producto3.jpg', 'Producto4.jpg'] as
 }
 $pdfLogoPath = $assetsDir . '/logo.png';
 $pdfLogoWhitePath = $assetsDir . '/logo_white.png';
+$pdfLogoCfiPath = $assetsDir . '/LogoCFI.png';
+$pdfLogoCfiWhitePath = $assetsDir . '/LogoCFIwhite.png';
 $pdfLogoUri = (file_exists($pdfLogoPath)) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pdfLogoPath)) : '';
 $imgSlide2Path = $assetsDir . '/img_slide2.png';
 $imgSlide3Path = $assetsDir . '/img_slide3.png';
@@ -687,18 +689,49 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
         $mpdf->SetXY($s1TextLeft + $s1BoxPad, $s1BoxY + ($s1BoxH - 8) / 2);
         $mpdf->SetTextColor(255, 255, 255);
         $mpdf->Cell($s1BoxW - 2 * $s1BoxPad, 8, $s1ProvText, 0, 0, 'L');
+        $s1BarH = 28;
+        $s1BarPadR = 14;
         $s1LogoPadFromImage = 10;
-        $s1LogoBadgeW = 62;
-        $s1LogoBadgeH = 28;
-        $s1LogoBadgeX = $s1BgMargin + $s1BgW - $s1LogoPadFromImage - $s1LogoBadgeW;
-        $s1LogoBadgeY = $s1BgMargin + $s1LogoPadFromImage;
+        $s1BarY = $s1BgMargin + $s1LogoPadFromImage;
+        $s1SdeBarW = 64;
+        $s1CfiBarW = 54;
+        $s1BarGap = 4;
+        $s1CfiDarkR = 32;
+        $s1CfiDarkG = 38;
+        $s1CfiDarkB = 48;
+        $s1SdeBarX = ($s1BgMargin + $s1BgW) - $s1BarPadR - $s1SdeBarW;
+        $s1CfiBarX = $s1SdeBarX - $s1BarGap - $s1CfiBarW;
+        $s1CfiImgPath = (file_exists($pdfLogoCfiWhitePath)) ? $pdfLogoCfiWhitePath : $pdfLogoCfiPath;
+        if (file_exists($s1CfiImgPath)) {
+            $mpdf->SetFillColor($s1CfiDarkR, $s1CfiDarkG, $s1CfiDarkB);
+            $mpdf->Rect($s1CfiBarX, $s1BarY, $s1CfiBarW, $s1BarH, 'F');
+            $imgSizeCfi = @getimagesize($s1CfiImgPath);
+            $maxCfiInW = $s1CfiBarW - 8;
+            $maxCfiInH = $s1BarH - 8;
+            if (!empty($imgSizeCfi[0]) && !empty($imgSizeCfi[1])) {
+                $cfiR = $imgSizeCfi[0] / $imgSizeCfi[1];
+                if ($maxCfiInH * $cfiR <= $maxCfiInW) {
+                    $cfiLw = $maxCfiInH * $cfiR;
+                    $cfiLh = $maxCfiInH;
+                } else {
+                    $cfiLw = $maxCfiInW;
+                    $cfiLh = $maxCfiInW / $cfiR;
+                }
+            } else {
+                $cfiLw = $maxCfiInW;
+                $cfiLh = $maxCfiInH;
+            }
+            $mpdf->Image($s1CfiImgPath, $s1CfiBarX + ($s1CfiBarW - $cfiLw) / 2, $s1BarY + ($s1BarH - $cfiLh) / 2, $cfiLw, $cfiLh);
+        } else {
+            $s1SdeBarX = ($s1BgMargin + $s1BgW) - $s1BarPadR - $s1SdeBarW;
+        }
         $mpdf->SetFillColor(196, 52, 59);
-        $mpdf->Rect($s1LogoBadgeX, $s1LogoBadgeY, $s1LogoBadgeW, $s1LogoBadgeH, 'F');
+        $mpdf->Rect($s1SdeBarX, $s1BarY, $s1SdeBarW, $s1BarH, 'F');
         $s1LogoPath = (file_exists($pdfLogoWhitePath)) ? $pdfLogoWhitePath : $pdfLogoPath;
         if (file_exists($s1LogoPath)) {
             $imgSize = @getimagesize($s1LogoPath);
-            $maxW = $s1LogoBadgeW - 8;
-            $maxH = $s1LogoBadgeH - 8;
+            $maxW = $s1SdeBarW - 8;
+            $maxH = $s1BarH - 8;
             if (!empty($imgSize[0]) && !empty($imgSize[1])) {
                 $r = $imgSize[0] / $imgSize[1];
                 if ($maxH * $r <= $maxW) {
@@ -712,7 +745,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
                 $lw = $maxW;
                 $lh = $maxH;
             }
-            $mpdf->Image($s1LogoPath, $s1LogoBadgeX + ($s1LogoBadgeW - $lw) / 2, $s1LogoBadgeY + ($s1LogoBadgeH - $lh) / 2, $lw, $lh);
+            $mpdf->Image($s1LogoPath, $s1SdeBarX + ($s1SdeBarW - $lw) / 2, $s1BarY + ($s1BarH - $lh) / 2, $lw, $lh);
         }
         $s1EdicionText = 'Edition ' . $configInstitucional['periodo_ano'];
         $s1EdicionBoxPad = 10;
@@ -2718,7 +2751,7 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $s5ImgH = $s5ImgSide;
             $s5ImgX = $s5RedBlockX - (0.78 * $s5ImgW);
             $s5ImgY = $s5RedBlockY + ($s5RedBlockH - $s5ImgH) / 2;
-            $compImgPath = $imagenesPorEmpresa[$cid] ?? $logosPorEmpresa[$cid] ?? null;
+            $compImgPath = $logosPorEmpresa[$cid] ?? $imagenesPorEmpresa[$cid] ?? null;
             if ($compImgPath && file_exists($compImgPath)) {
                 $renderCroppedImage($compImgPath, $s5ImgX, $s5ImgY, $s5ImgW, $s5ImgH);
             } else {
@@ -3001,26 +3034,59 @@ for ($i = 0; $i < count($htmlChunks); $i++) {
             $mpdf->SetFillColor(255, 255, 255);
             $mpdf->Rect(0, 0, $s7FullW, $s7WhiteVSideMm, 'F');
         }
-        $s7LogoPath = $pdfLogoPath;
-        $s7LogoW = 44;
-        $s7LogoH = 22;
-        $s7LogoX = $s7Pad;
-        $s7LogoY = $s7Pad;
+        $s7BarH = 28;
+        $s7BarPadR = 14;
+        $s7BarPadB = 14;
+        $s7SdeBarW = 64;
+        $s7CfiBarW = 54;
+        $s7BarGap = 4;
+        $s7CfiDarkR = 32;
+        $s7CfiDarkG = 38;
+        $s7CfiDarkB = 48;
+        $s7SdeBarX = $s7FullW - $s7BarPadR - $s7SdeBarW;
+        $s7CfiBarX = $s7SdeBarX - $s7BarGap - $s7CfiBarW;
+        $s7BarY = $s7FullH - $s7BarPadB - $s7BarH;
+        $s7CfiImgPath = (file_exists($pdfLogoCfiWhitePath)) ? $pdfLogoCfiWhitePath : $pdfLogoCfiPath;
+        if (file_exists($s7CfiImgPath)) {
+            $mpdf->SetFillColor($s7CfiDarkR, $s7CfiDarkG, $s7CfiDarkB);
+            $mpdf->Rect($s7CfiBarX, $s7BarY, $s7CfiBarW, $s7BarH, 'F');
+            $imgSizeCfi = @getimagesize($s7CfiImgPath);
+            $maxCfiInW = $s7CfiBarW - 8;
+            $maxCfiInH = $s7BarH - 8;
+            if (!empty($imgSizeCfi[0]) && !empty($imgSizeCfi[1])) {
+                $rc = $imgSizeCfi[0] / $imgSizeCfi[1];
+                if ($maxCfiInH * $rc <= $maxCfiInW) {
+                    $cfiLw = $maxCfiInH * $rc;
+                    $cfiLh = $maxCfiInH;
+                } else {
+                    $cfiLw = $maxCfiInW;
+                    $cfiLh = $maxCfiInW / $rc;
+                }
+                $mpdf->Image($s7CfiImgPath, $s7CfiBarX + ($s7CfiBarW - $cfiLw) / 2, $s7BarY + ($s7BarH - $cfiLh) / 2, $cfiLw, $cfiLh);
+            }
+        } else {
+            $s7SdeBarX = $s7FullW - $s7BarPadR - $s7SdeBarW;
+        }
+        $mpdf->SetFillColor($s7RedR, $s7RedG, $s7RedB);
+        $mpdf->Rect($s7SdeBarX, $s7BarY, $s7SdeBarW, $s7BarH, 'F');
+        $s7LogoPath = (file_exists($pdfLogoWhitePath)) ? $pdfLogoWhitePath : $pdfLogoPath;
         if (file_exists($s7LogoPath)) {
             $imgSize = @getimagesize($s7LogoPath);
+            $maxW = $s7SdeBarW - 8;
+            $maxH = $s7BarH - 8;
             if (!empty($imgSize[0]) && !empty($imgSize[1])) {
                 $r = $imgSize[0] / $imgSize[1];
-                if ($s7LogoH * $r <= $s7LogoW) {
-                    $lw = $s7LogoH * $r;
-                    $lh = $s7LogoH;
+                if ($maxH * $r <= $maxW) {
+                    $lw = $maxH * $r;
+                    $lh = $maxH;
                 } else {
-                    $lw = $s7LogoW;
-                    $lh = $s7LogoW / $r;
+                    $lw = $maxW;
+                    $lh = $maxW / $r;
                 }
-                $mpdf->Image($s7LogoPath, $s7LogoX, $s7LogoY, $lw, $lh);
+                $mpdf->Image($s7LogoPath, $s7SdeBarX + ($s7SdeBarW - $lw) / 2, $s7BarY + ($s7BarH - $lh) / 2, $lw, $lh);
             }
         }
-        $s7TitleY = $s7LogoY + $s7LogoH + 18;
+        $s7TitleY = $s7Pad + 12;
         $mpdf->SetTextColor($s7RedR, $s7RedG, $s7RedB);
         $mpdf->SetFont('dejavusans', 'B', 54);
         $mpdf->SetXY($s7Pad, $s7TitleY);
